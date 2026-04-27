@@ -53,6 +53,19 @@ export interface BrowseResult {
   children: { name: string; path: string }[]
 }
 
+export interface ExifData {
+  camera: string
+  lens: string
+  focalLength: string
+  aperture: string
+  shutterSpeed: string
+  iso: string
+  width: number
+  height: number
+  dateTime: string
+  fileSize: string
+}
+
 export const api = {
   browseFolders: (dirPath?: string) =>
     request<BrowseResult>(`/folders/browse${dirPath ? `?path=${encodeURIComponent(dirPath)}` : ''}`),
@@ -111,4 +124,7 @@ export const api = {
 
   thumbnailUrl: (id: string) => `/api/photos/${encodeURIComponent(id)}/thumbnail`,
   fullUrl: (id: string) => `/api/photos/${encodeURIComponent(id)}/full`,
+
+  getExif: (id: string) =>
+    request<ExifData | null>(`/photos/${encodeURIComponent(id)}/exif`),
 }

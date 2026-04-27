@@ -6,6 +6,7 @@ import { scanFolder, getPhotoById, getPhotosForFolder } from '../services/scanne
 import { recordReview, getRandomUnreviewedPhoto, getCacheDays, setCacheDays, getStats } from '../services/review.js'
 import { getThumbnail, getFullImage, getImageMimeType } from '../services/image.js'
 import { deletePhoto, deleteOrphanedFiles } from '../services/deleter.js'
+import { extractExif } from '../services/exif.js'
 
 const BLOCKED_PREFIXES = [
   '/etc', '/usr', '/bin', '/sbin', '/var', '/System', '/Library',
@@ -130,6 +131,16 @@ router.delete('/photos/:id', async (req, res) => {
   } catch (e: any) {
     res.status(500).json({ message: e.message })
   }
+})
+
+// Get EXIF data for a photo
+router.get('/photos/:id/exif', async (req, res) => {
+  const photo = getPhotoById(req.params.id)
+  if (!photo) return res.status(404).json({ message: '照片不存在' })
+
+  const exif = await extractExif(photo)
+  if (!exif) return res.json(null)
+  res.json(exif)
 })
 
 // Get orphaned files
