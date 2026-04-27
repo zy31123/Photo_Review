@@ -1,8 +1,20 @@
+import { useState, useEffect } from 'react'
+import { api, type ExifData } from '../../api'
 import { useReview } from '../../context/ReviewContext'
 import SectionHeader from '../ui/SectionHeader'
 
 export default function DetailsPanel() {
   const { currentPhoto, rightPanelOpen, reviewedIds } = useReview()
+  const [exif, setExif] = useState<ExifData | null>(null)
+
+  useEffect(() => {
+    if (!currentPhoto) { setExif(null); return }
+    let cancelled = false
+    api.getExif(currentPhoto.id).then(data => {
+      if (!cancelled) setExif(data)
+    })
+    return () => { cancelled = true }
+  }, [currentPhoto])
 
   if (!rightPanelOpen || !currentPhoto) return <div />
 
@@ -19,6 +31,27 @@ export default function DetailsPanel() {
         <MetaRow label="ID" value={currentPhoto.id} mono />
       </div>
 
+      {exif && (
+        <>
+          <SectionHeader title="拍摄参数" />
+          <div className="px-4 py-3 space-y-3">
+            <MetaRow label="相机" value={exif.camera} />
+            <MetaRow label="镜头" value={exif.lens} />
+            <MetaRow label="焦距" value={exif.focalLength} />
+            <MetaRow label="光圈" value={exif.aperture} />
+            <MetaRow label="快门" value={exif.shutterSpeed} />
+            <MetaRow label="ISO" value={exif.iso} />
+            <MetaRow label="文件大小" value={exif.fileSize} />
+            {(exif.width > 0 && exif.height > 0) && (
+              <MetaRow label="分辨率" value={`${exif.width} × ${exif.height}`} />
+            )}
+            {exif.dateTime !== '—' && (
+              <MetaRow label="拍摄时间" value={exif.dateTime} />
+            )}
+          </div>
+        </>
+      )}
+
       <SectionHeader title="文件状态" />
       <div className="px-4 py-3 space-y-2">
         <div className="flex items-center gap-2">
@@ -31,14 +64,6 @@ export default function DetailsPanel() {
           <span className={`w-2.5 h-2.5 rounded-full ${currentPhoto.hasRaw ? 'bg-success' : 'bg-danger'}`} />
           <span className={`text-base ${currentPhoto.hasRaw ? 'text-success' : 'text-danger'}`}>
             {currentPhoto.hasRaw ? 'RAW 已配对' : 'RAW 缺失'}
-          </span>
-        </div>
-        <div className="flex items-center gap-2">
-          <span className={`w-2.5 h-2.5 rounded-full ${currentPhoto.isOrphan ? 'bg-danger' : 'bg-text-muted'}`} />
-          <span className={`text-base ${currentPhoto.isOrphan ? 'text-danger' : 'text-text-secondary'}`}>
-            {currentPhoto.isOrphan
-              ? `孤立文件 (${currentPhoto.orphanType?.toUpperCase() || '未知'})`
-              : '配对正常'}
           </span>
         </div>
       </div>
