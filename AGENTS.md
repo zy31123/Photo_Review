@@ -10,4 +10,4 @@
 - No sycophantic openers or closing fluff.
 - Keep solutions simple and direct.
 - User instructions always override this file.
-- 
+- 每次在实现新功能时提醒我保存之前的更改和是否新建分支
