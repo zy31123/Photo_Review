@@ -20,13 +20,10 @@ export interface PhotoGroup {
 
 // In-memory store for scanned photos (keyed by folder path)
 const photoStore = new Map<string, PhotoGroup[]>()
+const photoIndex = new Map<string, PhotoGroup>()
 
 export function getPhotoById(id: string): PhotoGroup | undefined {
-  for (const photos of photoStore.values()) {
-    const found = photos.find(p => p.id === id)
-    if (found) return found
-  }
-  return undefined
+  return photoIndex.get(id)
 }
 
 export function getPhotosForFolder(folder: string): PhotoGroup[] {
@@ -123,7 +120,14 @@ export function scanFolder(folderPath: string): {
 
   photos.sort((a, b) => (a.date || '').localeCompare(b.date || ''))
 
+  // Clean up old index entries for this folder
+  const oldPhotos = photoStore.get(folderPath)
+  if (oldPhotos) {
+    for (const p of oldPhotos) photoIndex.delete(p.id)
+  }
+
   photoStore.set(folderPath, photos)
+  for (const p of photos) photoIndex.set(p.id, p)
 
   return { photos, total: photos.length, paired, orphanJpg, orphanRaw }
 }

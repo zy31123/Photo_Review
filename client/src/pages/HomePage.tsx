@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { api } from '../api'
+import { api, setActiveFolder } from '../api'
 import FolderPicker from '../components/FolderPicker'
 
 export default function HomePage() {
@@ -16,6 +16,7 @@ export default function HomePage() {
     setError('')
     try {
       await api.scanFolder(folderPath.trim())
+      setActiveFolder(folderPath.trim())
       navigate('/review')
     } catch (e: any) {
       setError(e.message || '扫描失败')

@@ -8,12 +8,13 @@ export default function ReviewPage() {
   const [currentIndex, setCurrentIndex] = useState(0)
   const [loading, setLoading] = useState(true)
   const [transition, setTransition] = useState<'none' | 'in'>('none')
+  const [error, setError] = useState('')
 
   const currentPhoto = photos[currentIndex]
 
   const loadPhotos = async () => {
     try {
-      const result = await api.getPhotos({ sort: 'time', limit: 2000 })
+      const result = await api.getPhotos({ limit: 2000 })
       setPhotos(result.photos)
     } catch {
       // will show empty state
@@ -33,14 +34,15 @@ export default function ReviewPage() {
 
   const handleAction = async (action: 'keep' | 'deleted') => {
     if (!currentPhoto) return
+    setError('')
     try {
       if (action === 'deleted') {
         await api.deletePhoto(currentPhoto.id)
       }
       await api.submitReview(currentPhoto.id, action, 'sequential')
       goTo(currentIndex + 1)
-    } catch {
-      // handle error silently for now
+    } catch (e: any) {
+      setError(e.message || '操作失败')
     }
   }
 
@@ -89,13 +91,20 @@ export default function ReviewPage() {
         </span>
       </div>
 
+      {/* Error Toast */}
+      {error && (
+        <div className="mx-5 mt-2 px-4 py-2 rounded-lg bg-danger/20 border border-danger/40 text-danger text-sm text-center">
+          {error}
+        </div>
+      )}
+
       {/* Main Image */}
       <div className="flex-1 flex items-center justify-center px-6 py-4 overflow-hidden">
         {currentPhoto?.hasJpg ? (
           <img
             src={api.fullUrl(currentPhoto.id)}
             alt={currentPhoto.name}
-            className={`max-h-full max-w-full object-contain rounded shadow-2xl transition-opacity duration-300 ${transition === 'in' ? 'opacity-100' : 'opacity-100'}`}
+            className={`max-h-full max-w-full object-contain rounded shadow-2xl transition-opacity duration-300 ${transition === 'in' ? 'opacity-100' : 'opacity-0'}`}
           />
         ) : (
           <div className="text-text-muted">无预览 (仅 RAW)</div>

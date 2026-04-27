@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { api, type PhotoGroup } from '../api'
 
@@ -8,6 +8,9 @@ export default function RandomPage() {
   const [loading, setLoading] = useState(true)
   const [reviewedCount, setReviewedCount] = useState(0)
   const [cacheDays, setCacheDays] = useState(7)
+  const [error, setError] = useState('')
+  const photoRef = useRef(photo)
+  photoRef.current = photo
 
   const loadNext = useCallback(async () => {
     setLoading(true)
@@ -26,24 +29,26 @@ export default function RandomPage() {
     loadNext()
   }, [loadNext])
 
-  const handleAction = async (action: 'keep' | 'deleted' | 'skip') => {
+  const handleAction = useCallback(async (action: 'keep' | 'deleted' | 'skip') => {
     if (action === 'skip') {
       loadNext()
       return
     }
 
-    if (!photo) return
+    const current = photoRef.current
+    if (!current) return
+    setError('')
     try {
       if (action === 'deleted') {
-        await api.deletePhoto(photo.id)
+        await api.deletePhoto(current.id)
       }
-      await api.submitReview(photo.id, action, 'random')
+      await api.submitReview(current.id, action, 'random')
       setReviewedCount(prev => prev + 1)
       loadNext()
-    } catch {
-      // silently handle
+    } catch (e: any) {
+      setError(e.message || '操作失败')
     }
-  }
+  }, [loadNext])
 
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
@@ -53,7 +58,7 @@ export default function RandomPage() {
     }
     window.addEventListener('keydown', handleKey)
     return () => window.removeEventListener('keydown', handleKey)
-  })
+  }, [handleAction])
 
   return (
     <div className="h-screen flex flex-col bg-bg">
@@ -78,6 +83,13 @@ export default function RandomPage() {
           </select>
         </div>
       </div>
+
+      {/* Error Toast */}
+      {error && (
+        <div className="mx-5 mt-2 px-4 py-2 rounded-lg bg-danger/20 border border-danger/40 text-danger text-sm text-center">
+          {error}
+        </div>
+      )}
 
       {/* Main */}
       <div className="flex-1 flex items-center justify-center px-6 py-4">

@@ -1,16 +1,6 @@
 import { getDb } from '../db/index.js'
 import { type PhotoGroup, getPhotosForFolder } from './scanner.js'
 
-let currentFolder = ''
-
-export function setCurrentFolder(folder: string) {
-  currentFolder = folder
-}
-
-export function getCurrentFolder(): string {
-  return currentFolder
-}
-
 export function recordReview(filePath: string, fileName: string, action: 'keep' | 'deleted', mode: 'sequential' | 'random', cacheDays?: number) {
   const db = getDb()
   let cacheUntil: string | null = null
@@ -26,9 +16,9 @@ export function recordReview(filePath: string, fileName: string, action: 'keep' 
   `).run(filePath, fileName, action, mode, cacheUntil)
 }
 
-export function getRandomUnreviewedPhoto(): PhotoGroup | null {
+export function getRandomUnreviewedPhoto(folder: string): PhotoGroup | null {
   const db = getDb()
-  const photos = getPhotosForFolder(currentFolder).filter(p => !p.isOrphan)
+  const photos = getPhotosForFolder(folder).filter(p => !p.isOrphan)
   if (photos.length === 0) return null
 
   const now = new Date().toISOString()
@@ -64,22 +54,23 @@ export function setCacheDays(days: number) {
   db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('random_cache_days', ?)").run(String(days))
 }
 
-export function getStats() {
+export function getStats(folder: string) {
   const db = getDb()
-  const photos = getPhotosForFolder(currentFolder)
+  const photos = getPhotosForFolder(folder)
 
   const total = photos.filter(p => !p.isOrphan).length
-  const reviewed = db.prepare(`
-    SELECT COUNT(*) as count FROM review_records
-  `).get() as { count: number }
+
+  const filePaths = new Set(photos.map(p => p.jpgPath || p.rawPaths[0] || ''))
+  const allReviewed = db.prepare(`SELECT file_path FROM review_records`).all() as { file_path: string }[]
+  const reviewedCount = allReviewed.filter(r => filePaths.has(r.file_path)).length
 
   const orphanJpg = photos.filter(p => p.orphanType === 'jpg').length
   const orphanRaw = photos.filter(p => p.orphanType === 'raw').length
 
   return {
     total,
-    reviewed: reviewed.count,
-    pending: total - reviewed.count,
+    reviewed: reviewedCount,
+    pending: Math.max(0, total - reviewedCount),
     orphanJpg,
     orphanRaw,
   }

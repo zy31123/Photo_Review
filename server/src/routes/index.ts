@@ -3,7 +3,7 @@ import fs from 'fs'
 import path from 'path'
 import os from 'os'
 import { scanFolder, getPhotoById, getPhotosForFolder } from '../services/scanner.js'
-import { setCurrentFolder, getCurrentFolder, recordReview, getRandomUnreviewedPhoto, getCacheDays, setCacheDays, getStats } from '../services/review.js'
+import { recordReview, getRandomUnreviewedPhoto, getCacheDays, setCacheDays, getStats } from '../services/review.js'
 import { getThumbnail, getFullImageStream, getImageMimeType } from '../services/image.js'
 import { deletePhoto, deleteOrphanedFiles } from '../services/deleter.js'
 
@@ -46,7 +46,6 @@ router.post('/folders/scan', (req, res) => {
     if (!folderPath) return res.status(400).json({ message: '缺少文件夹路径' })
 
     const result = scanFolder(folderPath)
-    setCurrentFolder(folderPath)
     res.json({
       total: result.total,
       paired: result.paired,
@@ -60,7 +59,8 @@ router.post('/folders/scan', (req, res) => {
 
 // Get photos list
 router.get('/photos', (req, res) => {
-  const folder = getCurrentFolder()
+  const folder = req.query.folder as string
+  if (!folder) return res.status(400).json({ message: '缺少 folder 参数' })
   const photos = getPhotosForFolder(folder).filter(p => !p.isOrphan)
 
   const page = Number(req.query.page) || 1
@@ -115,7 +115,8 @@ router.delete('/photos/:id', async (req, res) => {
 
 // Get orphaned files
 router.get('/batch/orphaned', (req, res) => {
-  const folder = getCurrentFolder()
+  const folder = req.query.folder as string
+  if (!folder) return res.status(400).json({ message: '缺少 folder 参数' })
   const photos = getPhotosForFolder(folder)
   const jpg = photos.filter(p => p.orphanType === 'jpg')
   const raw = photos.filter(p => p.orphanType === 'raw')
@@ -124,12 +125,12 @@ router.get('/batch/orphaned', (req, res) => {
 
 // Delete orphaned files
 router.post('/batch/orphaned', async (req, res) => {
-  const { type } = req.body
+  const { type, folder } = req.body
   if (!type || !['jpg', 'raw'].includes(type)) {
     return res.status(400).json({ message: '无效类型' })
   }
+  if (!folder) return res.status(400).json({ message: '缺少 folder 参数' })
 
-  const folder = getCurrentFolder()
   const photos = getPhotosForFolder(folder)
   const orphaned = photos.filter(p => p.orphanType === type)
 
@@ -159,13 +160,17 @@ router.post('/reviews', (req, res) => {
 
 // Get random photo
 router.get('/reviews/random', (req, res) => {
-  const photo = getRandomUnreviewedPhoto()
+  const folder = req.query.folder as string
+  if (!folder) return res.status(400).json({ message: '缺少 folder 参数' })
+  const photo = getRandomUnreviewedPhoto(folder)
   res.json(photo)
 })
 
 // Get stats
 router.get('/stats', (req, res) => {
-  res.json(getStats())
+  const folder = req.query.folder as string
+  if (!folder) return res.status(400).json({ message: '缺少 folder 参数' })
+  res.json(getStats(folder))
 })
 
 // Get settings

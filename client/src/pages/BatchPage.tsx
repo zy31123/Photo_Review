@@ -7,6 +7,7 @@ export default function BatchPage() {
   const [orphaned, setOrphaned] = useState<{ jpg: PhotoGroup[]; raw: PhotoGroup[] }>({ jpg: [], raw: [] })
   const [loading, setLoading] = useState(true)
   const [processing, setProcessing] = useState(false)
+  const [confirmDelete, setConfirmDelete] = useState<'jpg' | 'raw' | null>(null)
 
   useEffect(() => {
     api.getOrphaned()
@@ -16,6 +17,7 @@ export default function BatchPage() {
   }, [])
 
   const handleDelete = async (type: 'jpg' | 'raw') => {
+    setConfirmDelete(null)
     setProcessing(true)
     try {
       const result = await api.deleteOrphaned(type)
@@ -66,7 +68,7 @@ export default function BatchPage() {
                 <p className="text-text-muted text-sm mt-1">{orphaned.jpg.length} 张文件</p>
               </div>
               <button
-                onClick={() => handleDelete('jpg')}
+                onClick={() => setConfirmDelete('jpg')}
                 disabled={processing}
                 className="px-4 py-2 rounded-lg bg-danger-dim text-text text-sm font-semibold hover:bg-danger transition-colors disabled:opacity-50"
               >
@@ -94,7 +96,7 @@ export default function BatchPage() {
                 <p className="text-text-muted text-sm mt-1">{orphaned.raw.length} 张文件</p>
               </div>
               <button
-                onClick={() => handleDelete('raw')}
+                onClick={() => setConfirmDelete('raw')}
                 disabled={processing}
                 className="px-4 py-2 rounded-lg bg-danger-dim text-text text-sm font-semibold hover:bg-danger transition-colors disabled:opacity-50"
               >
@@ -111,6 +113,31 @@ export default function BatchPage() {
           </section>
         )}
       </div>
+
+      {confirmDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
+          <div className="bg-bg-card border border-border rounded-xl p-6 w-[360px] shadow-2xl">
+            <h3 className="text-text font-semibold text-base mb-2">确认删除</h3>
+            <p className="text-text-secondary text-sm mb-5">
+              确定要删除全部 {confirmDelete.toUpperCase()} 孤立文件吗？文件将移至回收站。
+            </p>
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setConfirmDelete(null)}
+                className="px-4 py-2 rounded-lg border border-border text-text-secondary hover:bg-bg-hover text-sm transition-colors"
+              >
+                取消
+              </button>
+              <button
+                onClick={() => handleDelete(confirmDelete)}
+                className="px-4 py-2 rounded-lg bg-danger text-white text-sm font-semibold hover:bg-danger-dim transition-colors"
+              >
+                确认删除
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

@@ -1,5 +1,15 @@
 const BASE = '/api'
 
+let activeFolder = ''
+
+export function setActiveFolder(folder: string) {
+  activeFolder = folder
+}
+
+export function getActiveFolder(): string {
+  return activeFolder
+}
+
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
   const res = await fetch(`${BASE}${path}`, options)
   if (!res.ok) {
@@ -55,24 +65,24 @@ export const api = {
 
   getPhotos: (params?: { sort?: string; page?: number; limit?: number }) => {
     const qs = new URLSearchParams()
+    qs.set('folder', activeFolder)
     if (params?.sort) qs.set('sort', params.sort)
     if (params?.page) qs.set('page', String(params.page))
     if (params?.limit) qs.set('limit', String(params.limit))
-    const query = qs.toString()
-    return request<{ photos: PhotoGroup[]; total: number }>(`/photos${query ? `?${query}` : ''}`)
+    return request<{ photos: PhotoGroup[]; total: number }>(`/photos?${qs.toString()}`)
   },
 
   deletePhoto: (id: string) =>
     request<{ success: boolean }>(`/photos/${encodeURIComponent(id)}`, { method: 'DELETE' }),
 
   getOrphaned: () =>
-    request<{ jpg: PhotoGroup[]; raw: PhotoGroup[] }>('/batch/orphaned'),
+    request<{ jpg: PhotoGroup[]; raw: PhotoGroup[] }>(`/batch/orphaned?folder=${encodeURIComponent(activeFolder)}`),
 
   deleteOrphaned: (type: 'jpg' | 'raw') =>
     request<{ success: boolean; deleted: number }>('/batch/orphaned', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ type }),
+      body: JSON.stringify({ type, folder: activeFolder }),
     }),
 
   submitReview: (photoId: string, action: 'keep' | 'deleted', mode: 'sequential' | 'random') =>
@@ -83,10 +93,10 @@ export const api = {
     }),
 
   getRandomPhoto: () =>
-    request<PhotoGroup | null>('/reviews/random'),
+    request<PhotoGroup | null>(`/reviews/random?folder=${encodeURIComponent(activeFolder)}`),
 
   getStats: () =>
-    request<Stats>('/stats'),
+    request<Stats>(`/stats?folder=${encodeURIComponent(activeFolder)}`),
 
   getSettings: () =>
     request<Record<string, string>>('/settings'),
