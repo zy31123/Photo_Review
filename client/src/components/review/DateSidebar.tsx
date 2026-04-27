@@ -30,11 +30,11 @@ export default function DateSidebar() {
   }
 
   return (
-    <div className="h-full bg-bg-deep border-r border-border/30 flex flex-col overflow-hidden">
-      <div className="px-4 pt-4 pb-2">
+    <div className="h-full bg-bg-deep border-r border-border/30 flex flex-col overflow-hidden" style={{ paddingLeft: 12 }}>
+      <div className="px-5 pt-4 pb-2">
         <button
           onClick={() => setDateFilter(null)}
-          className={`w-full text-left px-3 py-3 rounded-r text-lg transition-all duration-200 ${
+          className={`w-full text-left px-4 py-3 rounded-r text-lg transition-all duration-200 ${
             selectedDate === null
               ? 'text-accent border-l-2 border-accent bg-accent-subtle'
               : 'text-text-secondary hover:text-text hover:bg-bg-raised'
@@ -122,7 +122,7 @@ const DateRow = memo(function DateRow({
   return (
     <button
       onClick={() => onSelect(active ? null : date)}
-      className={`date-item w-full flex items-center justify-between pl-4 pr-3 py-3 text-base rounded-r transition-all duration-200 ${
+      className={`date-item w-full flex items-center justify-between pl-5 pr-3 py-3 text-base rounded-r transition-all duration-200 ${
         active
           ? 'border-l-2 border-accent bg-accent-subtle text-accent'
           : isCurrent

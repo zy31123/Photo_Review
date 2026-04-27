@@ -22,19 +22,18 @@ export default function DetailsPanel() {
   const formattedDate = formatChineseDate(currentPhoto.date)
 
   return (
-    <div className="h-full bg-bg-deep border-l border-border/30 overflow-y-auto">
+    <div className="h-full bg-bg-deep border-l border-border/30 overflow-y-auto" style={{ paddingRight: 12 }}>
       <SectionHeader title="文件信息" />
-      <div className="px-4 py-3 space-y-3">
+      <div className="px-5 py-3 space-y-3">
         <MetaRow label="文件名" value={currentPhoto.name} mono />
         <MetaRow label="日期" value={formattedDate} />
         <MetaRow label="文件夹" value={folderName} />
-        <MetaRow label="ID" value={currentPhoto.id} mono />
       </div>
 
       {exif && (
         <>
           <SectionHeader title="拍摄参数" />
-          <div className="px-4 py-3 space-y-3">
+          <div className="px-5 py-3 space-y-3">
             <MetaRow label="相机" value={exif.camera} />
             <MetaRow label="镜头" value={exif.lens} />
             <MetaRow label="焦距" value={exif.focalLength} />
@@ -53,7 +52,7 @@ export default function DetailsPanel() {
       )}
 
       <SectionHeader title="文件状态" />
-      <div className="px-4 py-3 space-y-2">
+      <div className="px-5 py-3 space-y-2">
         <div className="flex items-center gap-2">
           <span className={`w-2.5 h-2.5 rounded-full ${currentPhoto.hasJpg ? 'bg-success' : 'bg-danger'}`} />
           <span className={`text-base ${currentPhoto.hasJpg ? 'text-success' : 'text-danger'}`}>
@@ -69,7 +68,7 @@ export default function DetailsPanel() {
       </div>
 
       <SectionHeader title="文件路径" />
-      <div className="px-4 py-3 space-y-2">
+      <div className="px-5 py-3 space-y-2">
         {currentPhoto.jpgPath && (
           <div>
             <p className="text-sm text-text-muted mb-0.5">JPG</p>
@@ -89,7 +88,7 @@ export default function DetailsPanel() {
       </div>
 
       <SectionHeader title="审阅状态" />
-      <div className="px-4 py-3">
+      <div className="px-5 py-3">
         <StatusBadge reviewed={reviewedIds.has(currentPhoto.id)} />
       </div>
     </div>
