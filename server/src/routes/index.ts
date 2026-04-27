@@ -7,14 +7,16 @@ import { recordReview, getRandomUnreviewedPhoto, getCacheDays, setCacheDays, get
 import { getThumbnail, getFullImage, getImageMimeType } from '../services/image.js'
 import { deletePhoto, deleteOrphanedFiles } from '../services/deleter.js'
 import { extractExif } from '../services/exif.js'
+import { resolveNormalized } from '../utils/path.js'
 
 const BLOCKED_PREFIXES = [
   '/etc', '/usr', '/bin', '/sbin', '/var', '/System', '/Library',
   '/private/etc', '/private/var', '/dev', '/proc', '/sys',
+  'C:/Windows', 'C:/Program Files', 'C:/Program Files (x86)', 'C:/ProgramData',
 ]
 
 function isPathAllowed(p: string): boolean {
-  const resolved = path.resolve(p)
+  const resolved = resolveNormalized(p)
   return !BLOCKED_PREFIXES.some(prefix => resolved === prefix || resolved.startsWith(prefix + '/'))
 }
 

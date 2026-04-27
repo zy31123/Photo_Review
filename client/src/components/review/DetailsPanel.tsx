@@ -18,7 +18,7 @@ export default function DetailsPanel() {
 
   if (!rightPanelOpen || !currentPhoto) return <div />
 
-  const folderName = currentPhoto.folder ? currentPhoto.folder.split('/').pop() || currentPhoto.folder : ''
+  const folderName = currentPhoto.folder ? currentPhoto.folder.split(/[/\\]/).pop() || currentPhoto.folder : ''
   const formattedDate = formatChineseDate(currentPhoto.date)
 
   return (

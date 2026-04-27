@@ -1,6 +1,7 @@
 import fs from 'fs'
 import path from 'path'
 import crypto from 'crypto'
+import { resolveNormalized } from '../utils/path.js'
 
 const JPG_EXTS = new Set(['.jpg', '.jpeg'])
 const RAW_EXTS = new Set(['.cr2', '.cr3', '.nef'])
@@ -28,7 +29,7 @@ export function getPhotoById(id: string): PhotoGroup | undefined {
 }
 
 export function getPhotosForFolder(folder: string): PhotoGroup[] {
-  return photoStore.get(folder) || []
+  return photoStore.get(resolveNormalized(folder)) || []
 }
 
 export function scanFolder(folderPath: string): {
@@ -38,11 +39,13 @@ export function scanFolder(folderPath: string): {
   orphanJpg: number
   orphanRaw: number
 } {
-  if (!fs.existsSync(folderPath)) {
-    throw new Error(`文件夹不存在: ${folderPath}`)
+  const normalized = resolveNormalized(folderPath)
+
+  if (!fs.existsSync(normalized)) {
+    throw new Error(`文件夹不存在: ${normalized}`)
   }
 
-  const stat = fs.statSync(folderPath)
+  const stat = fs.statSync(normalized)
   if (!stat.isDirectory()) {
     throw new Error('路径不是一个文件夹')
   }
@@ -75,7 +78,7 @@ export function scanFolder(folderPath: string): {
     }
   }
 
-  walkDir(folderPath)
+  walkDir(normalized)
 
   const photos: PhotoGroup[] = []
   let paired = 0
@@ -107,7 +110,7 @@ export function scanFolder(folderPath: string): {
       isOrphan,
       orphanType,
       date,
-      folder: folderPath,
+      folder: normalized,
     }
 
     photos.push(photo)
@@ -122,13 +125,13 @@ export function scanFolder(folderPath: string): {
   photos.sort((a, b) => (a.date || '').localeCompare(b.date || ''))
 
   // Clean up old index entries for this folder
-  const oldPhotos = photoStore.get(folderPath)
+  const oldPhotos = photoStore.get(normalized)
   if (oldPhotos) {
     for (const p of oldPhotos) photoIndex.delete(p.id)
   }
 
   // Evict oldest folder if at capacity
-  if (!photoStore.has(folderPath) && photoStore.size >= MAX_FOLDERS) {
+  if (!photoStore.has(normalized) && photoStore.size >= MAX_FOLDERS) {
     const oldestKey = photoStore.keys().next().value
     if (oldestKey !== undefined) {
       const oldest = photoStore.get(oldestKey)!
@@ -137,7 +140,7 @@ export function scanFolder(folderPath: string): {
     }
   }
 
-  photoStore.set(folderPath, photos)
+  photoStore.set(normalized, photos)
   for (const p of photos) photoIndex.set(p.id, p)
 
   return { photos, total: photos.length, paired, orphanJpg, orphanRaw }
