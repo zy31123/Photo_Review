@@ -1,21 +1,28 @@
 @import "tailwindcss";
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@700&display=swap');
 
 @theme {
   --color-bg: #0A0A0A;
+  --color-bg-deep: #060606;
   --color-bg-card: #141414;
+  --color-bg-raised: #111111;
+  --color-bg-overlay: #181818;
   --color-bg-hover: #1C1C1C;
   --color-border: #222222;
   --color-border-light: #333333;
+  --color-border-faint: rgba(255, 255, 255, 0.04);
   --color-accent: #E8A838;
   --color-accent-dim: #B8842A;
+  --color-accent-glow: rgba(232, 168, 56, 0.15);
+  --color-accent-subtle: rgba(232, 168, 56, 0.08);
   --color-danger: #E84855;
   --color-danger-dim: #C13A45;
   --color-success: #4ECB71;
   --color-success-dim: #3DA55C;
   --color-text: #E8E6E3;
+  --color-text-heading: #F0EDE8;
   --color-text-secondary: #9B9B9B;
   --color-text-muted: #6B6B6B;
+  --color-text-caption: #7A7A7A;
 
   --font-display: "Playfair Display", serif;
   --font-body: "DM Sans", sans-serif;
@@ -62,4 +69,54 @@ body {
 ::selection {
   background: var(--color-accent);
   color: var(--color-bg);
+}
+
+/* Image viewport vignette overlay */
+.image-viewport {
+  position: relative;
+}
+.image-viewport::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.25) 100%);
+  pointer-events: none;
+}
+
+/* Date item hover animation */
+.date-item {
+  position: relative;
+  overflow: hidden;
+}
+.date-item::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 0;
+  background: var(--color-accent-subtle);
+  transition: width 200ms ease;
+}
+.date-item:hover::before {
+  width: 100%;
+}
+
+/* Filmstrip active indicator */
+.filmstrip-item-active::before {
+  content: '';
+  position: absolute;
+  top: -6px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 4px solid transparent;
+  border-right: 4px solid transparent;
+  border-bottom: 4px solid var(--color-accent);
+}
+
+/* Grid transition for sidebar collapse */
+.review-grid {
+  transition: grid-template-columns 250ms ease-in-out;
 }

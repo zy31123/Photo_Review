@@ -5,6 +5,7 @@ import { type PhotoGroup } from './scanner.js'
 
 const THUMBNAIL_SIZE = 200
 const MAX_CACHE_SIZE = 500
+const RAW_EXTS = new Set(['.cr2', '.cr3', '.nef'])
 
 // LRU thumbnail cache
 const thumbCache = new Map<string, Buffer>()
@@ -38,9 +39,18 @@ export async function getThumbnail(photo: PhotoGroup): Promise<Buffer | null> {
   }
 }
 
-export function getFullImageStream(photo: PhotoGroup): NodeJS.ReadableStream | null {
+export async function getFullImage(photo: PhotoGroup): Promise<Buffer | NodeJS.ReadableStream | null> {
   const sourcePath = photo.jpgPath || photo.rawPaths[0]
   if (!sourcePath || !fs.existsSync(sourcePath)) return null
+
+  const ext = path.extname(sourcePath).toLowerCase()
+  if (RAW_EXTS.has(ext)) {
+    try {
+      return await sharp(sourcePath, { failOn: 'none' }).rotate().jpeg({ quality: 90 }).toBuffer()
+    } catch {
+      return null
+    }
+  }
 
   return fs.createReadStream(sourcePath)
 }
@@ -49,12 +59,10 @@ export function getImageMimeType(photo: PhotoGroup): string {
   const sourcePath = photo.jpgPath || photo.rawPaths[0]
   if (!sourcePath) return 'image/jpeg'
   const ext = path.extname(sourcePath).toLowerCase()
+  if (RAW_EXTS.has(ext)) return 'image/jpeg'
   const mimeMap: Record<string, string> = {
     '.jpg': 'image/jpeg',
     '.jpeg': 'image/jpeg',
-    '.cr2': 'image/x-canon-cr2',
-    '.cr3': 'image/x-canon-cr3',
-    '.nef': 'image/x-nikon-nef',
   }
   return mimeMap[ext] || 'application/octet-stream'
 }

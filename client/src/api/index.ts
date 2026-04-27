@@ -29,6 +29,7 @@ export interface PhotoGroup {
   isOrphan: boolean
   orphanType?: 'jpg' | 'raw'
   date?: string
+  folder: string
 }
 
 export interface ScanResult {

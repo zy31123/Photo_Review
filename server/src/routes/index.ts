@@ -4,7 +4,7 @@ import path from 'path'
 import os from 'os'
 import { scanFolder, getPhotoById, getPhotosForFolder } from '../services/scanner.js'
 import { recordReview, getRandomUnreviewedPhoto, getCacheDays, setCacheDays, getStats } from '../services/review.js'
-import { getThumbnail, getFullImageStream, getImageMimeType } from '../services/image.js'
+import { getThumbnail, getFullImage, getImageMimeType } from '../services/image.js'
 import { deletePhoto, deleteOrphanedFiles } from '../services/deleter.js'
 
 const BLOCKED_PREFIXES = [
@@ -76,7 +76,7 @@ router.post('/folders/scan', (req, res) => {
 router.get('/photos', (req, res) => {
   const folder = req.query.folder as string
   if (!folder) return res.status(400).json({ message: '缺少 folder 参数' })
-  const photos = getPhotosForFolder(folder).filter(p => !p.isOrphan)
+  const photos = getPhotosForFolder(folder)
 
   const page = Number(req.query.page) || 1
   const limit = Number(req.query.limit) || 2000
@@ -103,16 +103,20 @@ router.get('/photos/:id/thumbnail', async (req, res) => {
 })
 
 // Get full image
-router.get('/photos/:id/full', (req, res) => {
+router.get('/photos/:id/full', async (req, res) => {
   const photo = getPhotoById(req.params.id)
   if (!photo) return res.status(404).json({ message: '照片不存在' })
 
-  const stream = getFullImageStream(photo)
-  if (!stream) return res.status(404).json({ message: '无法读取图片' })
+  const data = await getFullImage(photo)
+  if (!data) return res.status(404).json({ message: '无法读取图片' })
 
   res.set('Content-Type', getImageMimeType(photo))
   res.set('Cache-Control', 'public, max-age=86400')
-  stream.pipe(res)
+  if (Buffer.isBuffer(data)) {
+    res.send(data)
+  } else {
+    data.pipe(res)
+  }
 })
 
 // Delete photo (JPG + RAW)

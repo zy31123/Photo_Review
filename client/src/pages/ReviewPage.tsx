@@ -1,78 +1,47 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { api, getActiveFolder, type PhotoGroup } from '../api'
+import { getActiveFolder } from '../api'
+import { ReviewProvider, useReview } from '../context/ReviewContext'
+import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts'
+import ReviewToolbar from '../components/review/ReviewToolbar'
+import DateSidebar from '../components/review/DateSidebar'
+import ImageViewport from '../components/review/ImageViewport'
+import DetailsPanel from '../components/review/DetailsPanel'
+import Filmstrip from '../components/review/Filmstrip'
 
-export default function ReviewPage() {
+function ReviewLayout() {
   const navigate = useNavigate()
-  const [photos, setPhotos] = useState<PhotoGroup[]>([])
+  const {
+    filteredPhotos, currentIndex, loading, leftSidebarOpen, rightPanelOpen,
+    goTo, handleAction, toggleLeftSidebar, toggleRightPanel,
+  } = useReview()
 
-  useEffect(() => {
-    if (!getActiveFolder()) navigate('/')
-  }, [navigate])
-  const [currentIndex, setCurrentIndex] = useState(0)
-  const [loading, setLoading] = useState(true)
-  const [transition, setTransition] = useState<'none' | 'in'>('none')
-  const [error, setError] = useState('')
+  const shortcuts = useMemo(() => ({
+    onPrev: () => goTo(currentIndex - 1),
+    onNext: () => goTo(currentIndex + 1),
+    onKeep: () => handleAction('keep'),
+    onDelete: () => handleAction('deleted'),
+    onToggleLeft: toggleLeftSidebar,
+    onToggleRight: toggleRightPanel,
+  }), [currentIndex, goTo, handleAction, toggleLeftSidebar, toggleRightPanel])
 
-  const currentPhoto = photos[currentIndex]
-
-  const loadPhotos = async () => {
-    try {
-      const result = await api.getPhotos({ limit: 2000 })
-      setPhotos(result.photos)
-    } catch {
-      // will show empty state
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  useEffect(() => { loadPhotos() }, [])
-
-  const goTo = useCallback((index: number) => {
-    if (index < 0 || index >= photos.length) return
-    setTransition('none')
-    setCurrentIndex(index)
-    requestAnimationFrame(() => setTransition('in'))
-  }, [photos.length])
-
-  const handleAction = async (action: 'keep' | 'deleted') => {
-    if (!currentPhoto) return
-    setError('')
-    try {
-      if (action === 'deleted') {
-        await api.deletePhoto(currentPhoto.id)
-      }
-      await api.submitReview(currentPhoto.id, action, 'sequential')
-      goTo(currentIndex + 1)
-    } catch (e: any) {
-      setError(e.message || '操作失败')
-    }
-  }
-
-  useEffect(() => {
-    const handleKey = (e: KeyboardEvent) => {
-      if (e.key === 'ArrowLeft') goTo(currentIndex - 1)
-      else if (e.key === 'ArrowRight') goTo(currentIndex + 1)
-      else if (e.key === ' ') { e.preventDefault(); handleAction('keep') }
-      else if (e.key === 'd' || e.key === 'D') handleAction('deleted')
-    }
-    window.addEventListener('keydown', handleKey)
-    return () => window.removeEventListener('keydown', handleKey)
-  }, [currentIndex, currentPhoto, photos.length])
+  useKeyboardShortcuts(shortcuts)
 
   if (loading) {
     return (
-      <div className="h-screen flex items-center justify-center text-text-secondary">
-        加载中...
+      <div className="h-screen flex items-center justify-center bg-bg">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-8 h-8 border-2 border-accent border-t-transparent rounded-full animate-spin" />
+          <span className="text-text-muted text-sm tracking-wide">加载中...</span>
+        </div>
       </div>
     )
   }
 
-  if (!photos.length) {
+  if (!filteredPhotos.length) {
     return (
-      <div className="h-screen flex flex-col items-center justify-center text-text-secondary">
-        <p className="text-lg mb-4">暂无照片</p>
+      <div className="h-screen flex flex-col items-center justify-center bg-bg">
+        <p className="text-text-secondary text-lg mb-4">暂无照片</p>
         <button onClick={() => navigate('/')} className="text-accent hover:underline">
           返回首页
         </button>
@@ -80,101 +49,48 @@ export default function ReviewPage() {
     )
   }
 
+  const gridCols = leftSidebarOpen
+    ? rightPanelOpen
+      ? '220px 1fr 280px'
+      : '220px 1fr 0px'
+    : rightPanelOpen
+      ? '48px 1fr 280px'
+      : '48px 1fr 0px'
+
   return (
-    <div className="h-screen flex flex-col bg-bg">
-      {/* Header */}
-      <div className="flex items-center justify-between px-5 py-3 border-b border-border">
-        <button onClick={() => navigate('/')} className="text-text-muted hover:text-text text-sm">
-          ← 返回
-        </button>
-        <span className="text-text-secondary text-sm font-body">
-          {currentPhoto?.name || ''}
-        </span>
-        <span className="text-text-muted text-sm">
-          {currentIndex + 1} / {photos.length}
-        </span>
+    <div className="h-screen flex flex-col bg-bg overflow-hidden">
+      <ReviewToolbar />
+      <div
+        className="flex-1 min-h-0 review-grid"
+        style={{ display: 'grid', gridTemplateColumns: gridCols }}
+      >
+        <DateSidebar />
+        <ImageViewport />
+        <DetailsPanel />
       </div>
-
-      {/* Error Toast */}
-      {error && (
-        <div className="mx-5 mt-2 px-4 py-2 rounded-lg bg-danger/20 border border-danger/40 text-danger text-sm text-center">
-          {error}
-        </div>
-      )}
-
-      {/* Main Image */}
-      <div className="flex-1 flex items-center justify-center px-6 py-4 overflow-hidden">
-        {currentPhoto?.hasJpg ? (
-          <img
-            src={api.fullUrl(currentPhoto.id)}
-            alt={currentPhoto.name}
-            className={`max-h-full max-w-full object-contain rounded shadow-2xl transition-opacity duration-300 ${transition === 'in' ? 'opacity-100' : 'opacity-0'}`}
-          />
-        ) : (
-          <div className="text-text-muted">无预览 (仅 RAW)</div>
-        )}
-      </div>
-
-      {/* Info Bar */}
-      <div className="flex items-center justify-center gap-6 px-5 py-2 text-sm text-text-secondary">
-        <span className={currentPhoto?.hasRaw ? 'text-success' : 'text-danger'}>
-          RAW {currentPhoto?.hasRaw ? '配对 ✓' : '缺失 ✗'}
-        </span>
-        {currentPhoto?.date && <span>{currentPhoto.date}</span>}
-      </div>
-
-      {/* Controls */}
-      <div className="flex items-center justify-center gap-4 px-5 py-4 border-t border-border">
-        <button
-          onClick={() => goTo(currentIndex - 1)}
-          disabled={currentIndex === 0}
-          className="px-4 py-2 rounded-lg border border-border text-text-secondary hover:bg-bg-hover disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-        >
-          ← 上一张
-        </button>
-        <button
-          onClick={() => handleAction('keep')}
-          className="px-6 py-2 rounded-lg bg-success-dim text-text font-semibold hover:bg-success transition-colors"
-        >
-          保留 ✓
-        </button>
-        <button
-          onClick={() => handleAction('deleted')}
-          className="px-6 py-2 rounded-lg bg-danger-dim text-text font-semibold hover:bg-danger transition-colors"
-        >
-          废片 ✗
-        </button>
-        <button
-          onClick={() => goTo(currentIndex + 1)}
-          disabled={currentIndex >= photos.length - 1}
-          className="px-4 py-2 rounded-lg border border-border text-text-secondary hover:bg-bg-hover disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-        >
-          下一张 →
-        </button>
-      </div>
-
-      {/* Thumbnail Strip */}
-      <div className="flex gap-1 px-4 py-2 border-t border-border overflow-x-auto">
-        {photos.map((photo, i) => (
-          <button
-            key={photo.id}
-            onClick={() => goTo(i)}
-            className={`flex-shrink-0 w-12 h-12 rounded overflow-hidden border-2 transition-all ${
-              i === currentIndex
-                ? 'border-accent'
-                : 'border-transparent opacity-50 hover:opacity-80'
-            }`}
-          >
-            {photo.hasJpg ? (
-              <img src={api.thumbnailUrl(photo.id)} alt="" className="w-full h-full object-cover" />
-            ) : (
-              <div className="w-full h-full bg-bg-card flex items-center justify-center text-text-muted text-xs">
-                RAW
-              </div>
-            )}
-          </button>
-        ))}
-      </div>
+      <Filmstrip />
     </div>
   )
+}
+
+export default function ReviewPage() {
+  const navigate = useNavigate()
+
+  useEffect(() => {
+    if (!getActiveFolder()) navigate('/')
+  }, [navigate])
+
+  return (
+    <ReviewProvider>
+      <ReviewInner />
+    </ReviewProvider>
+  )
+}
+
+function ReviewInner() {
+  const { refresh } = useReview()
+
+  useEffect(() => { refresh() }, [refresh])
+
+  return <ReviewLayout />
 }
