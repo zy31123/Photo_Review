@@ -22,16 +22,15 @@ export function getRandomUnreviewedPhoto(folder: string): PhotoGroup | null {
   if (photos.length === 0) return null
 
   const now = new Date().toISOString()
+  const filePaths = photos.map(p => p.jpgPath || p.rawPaths[0] || '')
+  const placeholders = filePaths.map(() => '?').join(',')
 
-  // Get file paths that have been recently reviewed and are still in cache
-  const cached = db.prepare(`
-    SELECT file_path FROM review_records
-    WHERE cache_until IS NOT NULL AND cache_until > ?
-  `).all(now) as { file_path: string }[]
+  const cached = filePaths.length > 0
+    ? (db.prepare(`SELECT file_path FROM review_records WHERE cache_until IS NOT NULL AND cache_until > ? AND file_path IN (${placeholders})`).all(now, ...filePaths) as { file_path: string }[])
+    : []
 
   const cachedPaths = new Set(cached.map(r => r.file_path))
 
-  // Filter out cached photos
   const candidates = photos.filter(p => {
     const filePath = p.jpgPath || p.rawPaths[0] || ''
     return !cachedPaths.has(filePath)
@@ -60,9 +59,11 @@ export function getStats(folder: string) {
 
   const total = photos.filter(p => !p.isOrphan).length
 
-  const filePaths = new Set(photos.map(p => p.jpgPath || p.rawPaths[0] || ''))
-  const allReviewed = db.prepare(`SELECT file_path FROM review_records`).all() as { file_path: string }[]
-  const reviewedCount = allReviewed.filter(r => filePaths.has(r.file_path)).length
+  const filePaths = photos.map(p => p.jpgPath || p.rawPaths[0] || '')
+  const placeholders = filePaths.map(() => '?').join(',')
+  const reviewedCount = filePaths.length > 0
+    ? (db.prepare(`SELECT COUNT(*) as count FROM review_records WHERE file_path IN (${placeholders})`).get(...filePaths) as { count: number }).count
+    : 0
 
   const orphanJpg = photos.filter(p => p.orphanType === 'jpg').length
   const orphanRaw = photos.filter(p => p.orphanType === 'raw').length

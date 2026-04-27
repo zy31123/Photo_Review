@@ -1,10 +1,14 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { api, type PhotoGroup } from '../api'
+import { api, getActiveFolder, type PhotoGroup } from '../api'
 
 export default function BatchPage() {
   const navigate = useNavigate()
   const [orphaned, setOrphaned] = useState<{ jpg: PhotoGroup[]; raw: PhotoGroup[] }>({ jpg: [], raw: [] })
+
+  useEffect(() => {
+    if (!getActiveFolder()) navigate('/')
+  }, [navigate])
   const [loading, setLoading] = useState(true)
   const [processing, setProcessing] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState<'jpg' | 'raw' | null>(null)

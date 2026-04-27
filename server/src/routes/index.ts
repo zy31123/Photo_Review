@@ -7,11 +7,25 @@ import { recordReview, getRandomUnreviewedPhoto, getCacheDays, setCacheDays, get
 import { getThumbnail, getFullImageStream, getImageMimeType } from '../services/image.js'
 import { deletePhoto, deleteOrphanedFiles } from '../services/deleter.js'
 
+const BLOCKED_PREFIXES = [
+  '/etc', '/usr', '/bin', '/sbin', '/var', '/System', '/Library',
+  '/private/etc', '/private/var', '/dev', '/proc', '/sys',
+]
+
+function isPathAllowed(p: string): boolean {
+  const resolved = path.resolve(p)
+  return !BLOCKED_PREFIXES.some(prefix => resolved === prefix || resolved.startsWith(prefix + '/'))
+}
+
 const router = Router()
 
 // Browse directories
 router.get('/folders/browse', (req, res) => {
   const dir = (req.query.path as string) || os.homedir()
+
+  if (!isPathAllowed(dir)) {
+    return res.status(403).json({ message: '不允许访问此路径' })
+  }
 
   try {
     const stat = fs.statSync(dir)
@@ -44,6 +58,7 @@ router.post('/folders/scan', (req, res) => {
   try {
     const { path: folderPath } = req.body
     if (!folderPath) return res.status(400).json({ message: '缺少文件夹路径' })
+    if (!isPathAllowed(folderPath)) return res.status(403).json({ message: '不允许访问此路径' })
 
     const result = scanFolder(folderPath)
     res.json({
@@ -183,7 +198,9 @@ router.get('/settings', (req, res) => {
 router.put('/settings', (req, res) => {
   const { random_cache_days } = req.body
   if (random_cache_days) {
-    setCacheDays(Number(random_cache_days))
+    const days = Number(random_cache_days)
+    if (isNaN(days) || days < 1) return res.status(400).json({ message: '缓存天数必须为正整数' })
+    setCacheDays(days)
   }
   res.json({ success: true })
 })

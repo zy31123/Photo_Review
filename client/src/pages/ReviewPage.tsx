@@ -1,10 +1,14 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { api, type PhotoGroup } from '../api'
+import { api, getActiveFolder, type PhotoGroup } from '../api'
 
 export default function ReviewPage() {
   const navigate = useNavigate()
   const [photos, setPhotos] = useState<PhotoGroup[]>([])
+
+  useEffect(() => {
+    if (!getActiveFolder()) navigate('/')
+  }, [navigate])
   const [currentIndex, setCurrentIndex] = useState(0)
   const [loading, setLoading] = useState(true)
   const [transition, setTransition] = useState<'none' | 'in'>('none')

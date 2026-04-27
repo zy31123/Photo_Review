@@ -19,6 +19,7 @@ export interface PhotoGroup {
 }
 
 // In-memory store for scanned photos (keyed by folder path)
+const MAX_FOLDERS = 10
 const photoStore = new Map<string, PhotoGroup[]>()
 const photoIndex = new Map<string, PhotoGroup>()
 
@@ -97,7 +98,7 @@ export function scanFolder(folderPath: string): {
     } catch {}
 
     const photo: PhotoGroup = {
-      id: crypto.createHash('md5').update(key).digest('hex').slice(0, 12),
+      id: crypto.createHash('md5').update(key).digest('hex'),
       name: path.basename(key) + (hasJpg ? '.JPG' : path.extname(group.raw[0]).toUpperCase()),
       jpgPath: hasJpg ? group.jpg[0] : null,
       rawPaths: group.raw,
@@ -124,6 +125,16 @@ export function scanFolder(folderPath: string): {
   const oldPhotos = photoStore.get(folderPath)
   if (oldPhotos) {
     for (const p of oldPhotos) photoIndex.delete(p.id)
+  }
+
+  // Evict oldest folder if at capacity
+  if (!photoStore.has(folderPath) && photoStore.size >= MAX_FOLDERS) {
+    const oldestKey = photoStore.keys().next().value
+    if (oldestKey !== undefined) {
+      const oldest = photoStore.get(oldestKey)!
+      for (const p of oldest) photoIndex.delete(p.id)
+      photoStore.delete(oldestKey)
+    }
   }
 
   photoStore.set(folderPath, photos)

@@ -1,10 +1,14 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { api, type PhotoGroup } from '../api'
+import { api, getActiveFolder, type PhotoGroup } from '../api'
 
 export default function RandomPage() {
   const navigate = useNavigate()
   const [photo, setPhoto] = useState<PhotoGroup | null>(null)
+
+  useEffect(() => {
+    if (!getActiveFolder()) navigate('/')
+  }, [navigate])
   const [loading, setLoading] = useState(true)
   const [reviewedCount, setReviewedCount] = useState(0)
   const [cacheDays, setCacheDays] = useState(7)
