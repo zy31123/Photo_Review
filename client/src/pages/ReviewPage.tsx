@@ -49,12 +49,15 @@ function ReviewLayout() {
     )
   }
 
+  const leftW = 'clamp(260px, 14vw, 380px)'
+  const rightW = 'clamp(300px, 18vw, 440px)'
+
   const gridCols = leftSidebarOpen
     ? rightPanelOpen
-      ? '220px 1fr 280px'
-      : '220px 1fr 0px'
+      ? `${leftW} 1fr ${rightW}`
+      : `${leftW} 1fr 0px`
     : rightPanelOpen
-      ? '48px 1fr 280px'
+      ? `48px 1fr ${rightW}`
       : '48px 1fr 0px'
 
   return (

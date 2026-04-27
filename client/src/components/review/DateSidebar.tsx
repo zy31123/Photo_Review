@@ -34,14 +34,14 @@ export default function DateSidebar() {
       <div className="px-4 pt-4 pb-2">
         <button
           onClick={() => setDateFilter(null)}
-          className={`w-full text-left px-3 py-2 rounded-r text-sm transition-all duration-200 ${
+          className={`w-full text-left px-3 py-3 rounded-r text-lg transition-all duration-200 ${
             selectedDate === null
               ? 'text-accent border-l-2 border-accent bg-accent-subtle'
               : 'text-text-secondary hover:text-text hover:bg-bg-raised'
           }`}
         >
           全部照片
-          <span className="ml-2 text-xs text-text-muted">{photos.length}</span>
+          <span className="ml-2 text-sm text-text-muted">{photos.length}</span>
         </button>
       </div>
 
@@ -76,18 +76,18 @@ const MonthBlock = memo(function MonthBlock({
     <div>
       <button
         onClick={() => onToggleMonth(month.yearMonth)}
-        className="w-full flex items-center justify-between px-3 py-2 text-[11px] font-semibold tracking-[0.08em] uppercase text-text-muted hover:text-text-secondary transition-colors"
+        className="w-full flex items-center justify-between px-3 py-2.5 text-sm font-semibold tracking-[0.08em] uppercase text-text-muted hover:text-text-secondary transition-colors"
       >
         <span className="flex items-center gap-1.5">
           <svg
-            className={`w-3 h-3 transition-transform duration-200 ${collapsed ? '' : 'rotate-90'}`}
+            className={`w-4 h-4 transition-transform duration-200 ${collapsed ? '' : 'rotate-90'}`}
             fill="currentColor" viewBox="0 0 20 20"
           >
             <path d="M6 4l8 6-8 6V4z" />
           </svg>
           {month.label}
         </span>
-        <span className="text-text-muted font-normal">{month.count}</span>
+        <span className="text-text-muted font-normal text-sm">{month.count}</span>
       </button>
 
       {!collapsed && (
@@ -122,7 +122,7 @@ const DateRow = memo(function DateRow({
   return (
     <button
       onClick={() => onSelect(active ? null : date)}
-      className={`date-item w-full flex items-center justify-between pl-4 pr-3 py-1.5 text-[13px] rounded-r transition-all duration-200 ${
+      className={`date-item w-full flex items-center justify-between pl-4 pr-3 py-3 text-base rounded-r transition-all duration-200 ${
         active
           ? 'border-l-2 border-accent bg-accent-subtle text-accent'
           : isCurrent
@@ -131,7 +131,7 @@ const DateRow = memo(function DateRow({
       }`}
     >
       <span className="relative z-10">{label}</span>
-      <span className={`relative z-10 text-[11px] tabular-nums ${active ? 'text-accent/70' : 'text-text-muted'}`}>
+      <span className={`relative z-10 text-sm tabular-nums ${active ? 'text-accent/70' : 'text-text-muted'}`}>
         {count}
       </span>
     </button>
