@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useRef } from 'react'
 import { api } from '../../api'
 import { useReview } from '../../context/ReviewContext'
 import ReviewControls from './ReviewControls'
@@ -8,16 +8,29 @@ export default function ImageViewport() {
   const [loaded, setLoaded] = useState(false)
   const [hoveringLeft, setHoveringLeft] = useState(false)
   const [hoveringRight, setHoveringRight] = useState(false)
+  const wheelTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const handleImageLoad = useCallback(() => setLoaded(true), [])
 
   const handlePrev = useCallback(() => goTo(currentIndex - 1), [currentIndex, goTo])
   const handleNext = useCallback(() => goTo(currentIndex + 1), [currentIndex, goTo])
 
+  const handleWheel = useCallback((e: React.WheelEvent) => {
+    if (wheelTimerRef.current) return
+    if (e.deltaY > 0) {
+      goTo(currentIndex + 1)
+    } else if (e.deltaY < 0) {
+      goTo(currentIndex - 1)
+    }
+    wheelTimerRef.current = setTimeout(() => {
+      wheelTimerRef.current = null
+    }, 150)
+  }, [currentIndex, goTo])
+
   if (!currentPhoto) return null
 
   return (
-    <div className="image-viewport relative flex items-center justify-center bg-bg overflow-hidden">
+    <div className="image-viewport relative flex items-center justify-center bg-bg overflow-hidden" onWheel={handleWheel}>
       {/* Prev overlay */}
       <div
         className="absolute left-0 top-0 bottom-0 w-24 z-10 flex items-center justify-start pl-4 cursor-pointer opacity-0 hover:opacity-100 transition-opacity duration-200"
