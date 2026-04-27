@@ -1,0 +1,129 @@
+import fs from 'fs'
+import path from 'path'
+import crypto from 'crypto'
+
+const JPG_EXTS = new Set(['.jpg', '.jpeg'])
+const RAW_EXTS = new Set(['.cr2', '.cr3', '.nef'])
+
+export interface PhotoGroup {
+  id: string
+  name: string
+  jpgPath: string | null
+  rawPaths: string[]
+  hasJpg: boolean
+  hasRaw: boolean
+  isOrphan: boolean
+  orphanType?: 'jpg' | 'raw'
+  date?: string
+  folder: string
+}
+
+// In-memory store for scanned photos (keyed by folder path)
+const photoStore = new Map<string, PhotoGroup[]>()
+
+export function getPhotoById(id: string): PhotoGroup | undefined {
+  for (const photos of photoStore.values()) {
+    const found = photos.find(p => p.id === id)
+    if (found) return found
+  }
+  return undefined
+}
+
+export function getPhotosForFolder(folder: string): PhotoGroup[] {
+  return photoStore.get(folder) || []
+}
+
+export function scanFolder(folderPath: string): {
+  photos: PhotoGroup[]
+  total: number
+  paired: number
+  orphanJpg: number
+  orphanRaw: number
+} {
+  if (!fs.existsSync(folderPath)) {
+    throw new Error(`文件夹不存在: ${folderPath}`)
+  }
+
+  const stat = fs.statSync(folderPath)
+  if (!stat.isDirectory()) {
+    throw new Error('路径不是一个文件夹')
+  }
+
+  const groups = new Map<string, { jpg: string[]; raw: string[] }>()
+
+  const walkDir = (dir: string) => {
+    const entries = fs.readdirSync(dir, { withFileTypes: true })
+    for (const entry of entries) {
+      const fullPath = path.join(dir, entry.name)
+      if (entry.isDirectory()) {
+        walkDir(fullPath)
+      } else if (entry.isFile()) {
+        const ext = path.extname(entry.name).toLowerCase()
+        const baseName = path.basename(entry.name, path.extname(entry.name))
+
+        if (JPG_EXTS.has(ext) || RAW_EXTS.has(ext)) {
+          const key = path.join(dir, baseName)
+          if (!groups.has(key)) {
+            groups.set(key, { jpg: [], raw: [] })
+          }
+          const group = groups.get(key)!
+          if (JPG_EXTS.has(ext)) {
+            group.jpg.push(fullPath)
+          } else {
+            group.raw.push(fullPath)
+          }
+        }
+      }
+    }
+  }
+
+  walkDir(folderPath)
+
+  const photos: PhotoGroup[] = []
+  let paired = 0
+  let orphanJpg = 0
+  let orphanRaw = 0
+
+  for (const [key, group] of groups) {
+    const hasJpg = group.jpg.length > 0
+    const hasRaw = group.raw.length > 0
+    const isOrphan = !hasJpg || !hasRaw
+    let orphanType: 'jpg' | 'raw' | undefined
+    if (isOrphan) {
+      orphanType = hasJpg ? 'jpg' : 'raw'
+    }
+
+    let date: string | undefined
+    try {
+      const stat = fs.statSync(group.jpg[0] || group.raw[0])
+      date = stat.mtime.toISOString().slice(0, 10)
+    } catch {}
+
+    const photo: PhotoGroup = {
+      id: crypto.createHash('md5').update(key).digest('hex').slice(0, 12),
+      name: path.basename(key) + (hasJpg ? '.JPG' : path.extname(group.raw[0]).toUpperCase()),
+      jpgPath: hasJpg ? group.jpg[0] : null,
+      rawPaths: group.raw,
+      hasJpg,
+      hasRaw,
+      isOrphan,
+      orphanType,
+      date,
+      folder: folderPath,
+    }
+
+    photos.push(photo)
+    if (isOrphan) {
+      if (orphanType === 'jpg') orphanJpg++
+      else orphanRaw++
+    } else {
+      paired++
+    }
+  }
+
+  photos.sort((a, b) => (a.date || '').localeCompare(b.date || ''))
+
+  photoStore.set(folderPath, photos)
+
+  return { photos, total: photos.length, paired, orphanJpg, orphanRaw }
+}
