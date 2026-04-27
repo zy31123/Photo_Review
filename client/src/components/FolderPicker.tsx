@@ -1,0 +1,112 @@
+import { useState, useEffect, useCallback } from 'react'
+import { api, type BrowseResult } from '../api'
+
+interface FolderPickerProps {
+  open: boolean
+  onClose: () => void
+  onSelect: (path: string) => void
+}
+
+export default function FolderPicker({ open, onClose, onSelect }: FolderPickerProps) {
+  const [browse, setBrowse] = useState<BrowseResult | null>(null)
+  const [loading, setLoading] = useState(false)
+
+  const loadDir = useCallback(async (dirPath?: string) => {
+    setLoading(true)
+    try {
+      const result = await api.browseFolders(dirPath)
+      setBrowse(result)
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (open) loadDir()
+  }, [open, loadDir])
+
+  if (!open) return null
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
+      <div className="w-[520px] max-h-[70vh] bg-bg-card border border-border rounded-xl shadow-2xl flex flex-col">
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 py-4 border-b border-border">
+          <h2 className="text-base font-semibold text-text">选择文件夹</h2>
+          <button
+            onClick={onClose}
+            className="text-text-muted hover:text-text text-xl leading-none"
+          >
+            ✕
+          </button>
+        </div>
+
+        {/* Current path */}
+        <div className="px-5 py-3 border-b border-border">
+          <div className="text-xs text-text-muted mb-1">当前路径</div>
+          <div className="text-sm text-text-secondary font-mono truncate">
+            {browse?.current || '...'}
+          </div>
+        </div>
+
+        {/* Directory list */}
+        <div className="flex-1 overflow-y-auto px-3 py-2 min-h-[200px]">
+          {loading ? (
+            <div className="flex items-center justify-center h-full text-text-muted text-sm">
+              加载中...
+            </div>
+          ) : (
+            <>
+              {browse?.parent !== null && (
+                <button
+                  onClick={() => loadDir(browse!.parent!)}
+                  className="w-full text-left px-3 py-2.5 rounded-lg text-sm text-text-secondary hover:bg-bg-hover transition-colors flex items-center gap-2"
+                >
+                  <span className="text-accent">↑</span>
+                  <span>..</span>
+                  <span className="text-text-muted text-xs ml-auto">上级目录</span>
+                </button>
+              )}
+              {browse?.children.length === 0 && (
+                <div className="text-center text-text-muted text-sm py-8">
+                  此文件夹没有子目录
+                </div>
+              )}
+              {browse?.children.map(child => (
+                <button
+                  key={child.path}
+                  onClick={() => loadDir(child.path)}
+                  className="w-full text-left px-3 py-2.5 rounded-lg text-sm text-text-secondary hover:bg-bg-hover transition-colors flex items-center gap-2"
+                >
+                  <span className="text-accent text-xs">📁</span>
+                  <span className="truncate">{child.name}</span>
+                </button>
+              ))}
+            </>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="flex items-center justify-between px-5 py-3 border-t border-border">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 rounded-lg border border-border text-text-secondary hover:bg-bg-hover text-sm transition-colors"
+          >
+            取消
+          </button>
+          <button
+            onClick={() => {
+              if (browse?.current) {
+                onSelect(browse.current)
+                onClose()
+              }
+            }}
+            className="px-5 py-2 rounded-lg bg-accent text-bg font-semibold text-sm hover:bg-accent-dim transition-colors"
+          >
+            选择此文件夹
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
