@@ -4,7 +4,7 @@ import path from 'path'
 import os from 'os'
 import { execSync } from 'child_process'
 import { scanFolder, getPhotoById, getPhotosForFolder } from '../services/scanner.js'
-import { recordReview, getRandomUnreviewedPhoto, getCacheDays, setCacheDays, getStats } from '../services/review.js'
+import { recordReview, getRandomUnreviewedPhoto, getRandomUnreviewedPhotos, getCacheDays, setCacheDays, getStats } from '../services/review.js'
 import { getThumbnail, getFullImage, getImageMimeType } from '../services/image.js'
 import { deletePhoto, deleteOrphanedFiles } from '../services/deleter.js'
 import { extractExif } from '../services/exif.js'
@@ -264,6 +264,15 @@ router.get('/reviews/random', (req, res) => {
   if (!folder) return res.status(400).json({ message: '缺少 folder 参数' })
   const photo = getRandomUnreviewedPhoto(folder)
   res.json(photo)
+})
+
+// Get batch of random photos
+router.get('/reviews/random/batch', (req, res) => {
+  const folder = req.query.folder as string
+  if (!folder) return res.status(400).json({ message: '缺少 folder 参数' })
+  const count = Math.min(Math.max(Number(req.query.count) || 20, 1), 100)
+  const photos = getRandomUnreviewedPhotos(folder, count)
+  res.json({ photos, total: photos.length })
 })
 
 // Get stats

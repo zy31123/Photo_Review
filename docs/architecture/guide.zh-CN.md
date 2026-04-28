@@ -43,21 +43,26 @@ Photo_Review/
 │       │   └── ReviewContext.tsx    # 审阅页状态管理 (ReviewProvider + useReview)
 │       ├── hooks/
 │       │   ├── useDateGroups.ts    # 日期分组计算 (月→日二级分组)
-│       │   └── useKeyboardShortcuts.ts # 全局快捷键
+│       │   ├── useKeyboardShortcuts.ts # 全局快捷键
+│       │   └── useRandomBatch.ts   # 随机批次状态管理
 │       ├── pages/
 │       │   ├── HomePage.tsx        # 首页：文件夹选择 + 扫描触发
 │       │   ├── ReviewPage.tsx      # 审阅页：三栏布局，核心页面
 │       │   ├── BatchPage.tsx       # 批量处理：孤立文件展示 + 批量删除
-│       │   └── RandomPage.tsx      # 随机审阅：单张随机展示
-│       ├── components/
+│       │   └── RandomPage.tsx      # 随机浏览：批次随机 + 详情面板
 │       │   ├── FolderPicker.tsx    # 文件夹浏览器 (模态框)
 │       │   ├── review/
 │       │   │   ├── DateSidebar.tsx       # 左侧日期导航
 │       │   │   ├── ImageViewport.tsx     # 中央图片视口
 │       │   │   ├── ReviewControls.tsx    # 底部悬浮操作按钮
 │       │   │   ├── ReviewToolbar.tsx     # 顶部工具栏
-│       │   │   ├── DetailsPanel.tsx      # 右侧详情面板
+│       │   │   ├── DetailsPanel.tsx      # 右侧详情面板 (ReviewContext wrapper)
+│       │   │   ├── PhotoDetailsView.tsx  # 纯展示照片详情组件 (可复用)
 │       │   │   └── Filmstrip.tsx         # 底部胶片条
+│       │   ├── random/
+│       │   │   ├── RandomToolbar.tsx     # 随机模式顶部工具栏
+│       │   │   ├── RandomControls.tsx    # 随机模式浮动操作按钮
+│       │   │   └── BatchSelector.tsx     # 批次大小选择器
 │       │   └── ui/
 │       │       └── SectionHeader.tsx     # 通用分区标题
 │       └── styles/
@@ -67,7 +72,7 @@ Photo_Review/
 │   └── src/
 │       ├── index.ts                # Express 入口，CORS，端口 127.0.0.1:3001
 │       ├── db/index.ts             # SQLite 连接 (WAL)，建表逻辑
-│       ├── routes/index.ts         # 14 个 API 端点 + 路径安全白名单
+│       ├── routes/index.ts         # 15 个 API 端点 + 路径安全白名单
 │       ├── services/
 │       │   ├── scanner.ts          # 文件扫描 + JPG/RAW 配对
 │       │   ├── image.ts            # 缩略图生成 + LRU 缓存
@@ -191,6 +196,7 @@ CREATE TABLE settings (
 |------|------|------|
 | POST | `/reviews` | 提交审阅。Body: `{ photoId, action: 'keep'\|'deleted', mode: 'sequential'\|'random' }` |
 | GET | `/reviews/random?folder=` | 获取一张未审阅照片（排除已缓存的） |
+| GET | `/reviews/random/batch?folder=&count=N` | 获取 N 张不重复未审阅照片 (count 1-100, Fisher-Yates 洗牌) |
 
 ### 5.5 统计与设置
 
@@ -247,18 +253,43 @@ CREATE TABLE settings (
 | ArrowRight | 下一张 |
 | Space | 保留 |
 | D | 删除 |
+| R | 跳过（随机浏览模式） |
 | [ | 切换左侧日期栏 |
 | ] | 切换右侧详情面板 |
 
-仅在非输入框焦点时生效。ReviewPage 使用此 hook，RandomPage 自行注册内联事件监听器。
+仅在非输入框焦点时生效。ReviewPage 和 RandomPage 均使用此 hook。
 
-### 6.4 其他页面状态
+### 6.4 随机浏览页 — useRandomBatch
+
+`useRandomBatch` 是随机浏览页 (`/random`) 的自定义 hook，封装批次状态和操作逻辑。
+
+**状态**：
+- `photos: PhotoGroup[]` — 当前批次照片
+- `currentIndex: number` — 当前浏览位置
+- `currentPhoto: PhotoGroup | null` — 当前照片
+- `batchSize: number` — 批次大小 (默认 20, 可选 10/20/50/100)
+- `actionedSet: Set<number>` — 当前批次已操作的索引集合
+- `sessionReviewed: number` — 本次会话累计审阅数
+- `loading: boolean` — 加载状态
+- `error: string` — 错误信息
+- `exhausted: boolean` — 无更多未审阅照片
+- `rightPanelOpen: boolean` — 右侧面板开关
+
+**操作**：
+- `loadBatch(size?)` — 加载一批随机照片（调用 `api.getRandomPhotos`）
+- `goTo(index)` / `goNext()` / `goPrev()` — 批次内导航
+- `handleAction('keep' | 'deleted' | 'skip')` — 执行操作后自动前进，批次末尾自动加载下一批
+- `changeBatchSize(size)` — 更改批次大小
+- `toggleRightPanel()` — 切换详情面板
+
+**批次耗尽处理**：当前批次最后一张操作完成后自动调用 `loadBatch()`，
+服务端返回空数组时设置 `exhausted=true` 显示完成界面。
+
+### 6.5 其他页面状态
 
 - **BatchPage** — 页面级 useState，管理孤立文件列表、删除确认弹窗、处理状态。
-- **RandomPage** — 页面级 useState + useCallback，管理当前随机照片、已审阅计数、缓存天数设置。
-  内联 keydown 事件监听器（Space 保留，D 删除，R 跳过）。
 
-### 6.5 activeFolder 模块级状态
+### 6.6 activeFolder 模块级状态
 
 `client/src/api/index.ts` 中维护一个模块级变量 `activeFolder`。
 HomePage 设置此值后跳转到审阅页，API 层自动在请求中附加 `folder` 参数。

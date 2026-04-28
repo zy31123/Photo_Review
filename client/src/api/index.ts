@@ -122,6 +122,9 @@ export const api = {
   getRandomPhoto: () =>
     request<PhotoGroup | null>(`/reviews/random?folder=${encodeURIComponent(activeFolder)}`),
 
+  getRandomPhotos: (count: number) =>
+    request<{ photos: PhotoGroup[]; total: number }>(`/reviews/random/batch?folder=${encodeURIComponent(activeFolder)}&count=${count}`),
+
   getStats: () =>
     request<Stats>(`/stats?folder=${encodeURIComponent(activeFolder)}`),
 

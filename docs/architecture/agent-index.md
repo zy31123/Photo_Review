@@ -24,8 +24,9 @@
   - 使用 trash 库 (移至回收站), 批量删除
 
 ### 审阅记录
-- `server/src/services/review.ts` — `recordReview()`, `getRandomUnreviewedPhoto()`, `getCacheDays()`, `setCacheDays()`, `getStats()`
+- `server/src/services/review.ts` — `recordReview()`, `getRandomUnreviewedPhoto()`, `getRandomUnreviewedPhotos()`, `getCacheDays()`, `setCacheDays()`, `getStats()`
   - review_records 表, cache_until 随机缓存, settings 表
+  - `getCandidates()` 私有辅助函数提取未缓存候选, Fisher-Yates 部分洗牌
 
 ### 数据库
 - `server/src/db/index.ts` — `getDb()`
@@ -34,7 +35,7 @@
 ### 路径工具
 - `server/src/utils/path.ts` — `normalizePath()`, `resolveNormalized()`
 
-### API 路由 (14 端点)
+### API 路由 (15 端点)
 - `server/src/routes/index.ts` — 所有 REST 端点定义
   - 路径白名单 `isPathAllowed()`, `BLOCKED_PREFIXES`
   - Windows 盘符探测 `getWindowsDrives()`, Mac 卷探测 `getMacVolumes()`
@@ -57,14 +58,19 @@
 - `client/src/components/review/ImageViewport.tsx` — 中央图片视口 + 滚轮翻页
 - `client/src/components/review/ReviewControls.tsx` — 底部悬浮操作按钮
 - `client/src/components/review/ReviewToolbar.tsx` — 顶部工具栏 (文件名/计数/侧栏开关)
-- `client/src/components/review/DetailsPanel.tsx` — 右侧 EXIF + 文件信息面板
+- `client/src/components/review/DetailsPanel.tsx` — 右侧 EXIF + 文件信息面板 (ReviewContext wrapper)
+- `client/src/components/review/PhotoDetailsView.tsx` — 纯展示照片详情组件 (props 驱动, 可复用)
 - `client/src/components/review/Filmstrip.tsx` — 底部胶片条 (窗口化 150+150)
 
 ### 批量处理页
 - `client/src/pages/BatchPage.tsx` — 孤立文件列表 + 批量删除
 
-### 随机审阅页
-- `client/src/pages/RandomPage.tsx` — 单张随机展示 + 内联快捷键
+### 随机浏览页
+- `client/src/pages/RandomPage.tsx` — 批次随机浏览 + 详情面板
+- `client/src/hooks/useRandomBatch.ts` — 随机批次状态管理 (批次加载/导航/操作)
+- `client/src/components/random/RandomToolbar.tsx` — 随机模式顶部工具栏
+- `client/src/components/random/RandomControls.tsx` — 随机模式浮动操作按钮
+- `client/src/components/random/BatchSelector.tsx` — 批次大小选择器
 
 ### 通用组件
 - `client/src/components/ui/SectionHeader.tsx` — 分区标题
@@ -87,6 +93,7 @@
 | 修改扫描逻辑 | scanner.ts | routes/index.ts, api/index.ts |
 | 添加图片格式 | scanner.ts (JPG_EXTS/RAW_EXTS) | image.ts, exif.ts |
 | 修改审阅流程 | ReviewContext.tsx | ReviewPage.tsx, ReviewControls.tsx, review.ts |
+| 修改随机浏览 | useRandomBatch.ts | RandomPage.tsx, RandomToolbar.tsx, RandomControls.tsx, review.ts |
 | 修改 API 端点 | routes/index.ts | 对应 service 文件, api/index.ts |
 | 修改 UI 样式 | index.css | 对应组件 |
 | 修改快捷键 | useKeyboardShortcuts.ts | ReviewPage.tsx |

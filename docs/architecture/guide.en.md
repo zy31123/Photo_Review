@@ -43,12 +43,13 @@ Photo_Review/
 │       │   └── ReviewContext.tsx    # Review page state management (ReviewProvider + useReview)
 │       ├── hooks/
 │       │   ├── useDateGroups.ts    # Date grouping calculation (month→day two-level)
-│       │   └── useKeyboardShortcuts.ts # Global keyboard shortcuts
+│       │   ├── useKeyboardShortcuts.ts # Global keyboard shortcuts
+│       │   └── useRandomBatch.ts   # Random batch state management
 │       ├── pages/
 │       │   ├── HomePage.tsx        # Home: folder selection + scan trigger
 │       │   ├── ReviewPage.tsx      # Review: three-column layout, core page
 │       │   ├── BatchPage.tsx       # Batch: orphaned files display + batch delete
-│       │   └── RandomPage.tsx      # Random review: single random photo display
+│       │   └── RandomPage.tsx      # Random browse: batch random + details panel
 │       ├── components/
 │       │   ├── FolderPicker.tsx    # Folder browser (modal)
 │       │   ├── review/
@@ -56,8 +57,13 @@ Photo_Review/
 │       │   │   ├── ImageViewport.tsx     # Center image viewport
 │       │   │   ├── ReviewControls.tsx    # Bottom floating action buttons
 │       │   │   ├── ReviewToolbar.tsx     # Top toolbar
-│       │   │   ├── DetailsPanel.tsx      # Right details panel
+│       │   │   ├── DetailsPanel.tsx      # Right details panel (ReviewContext wrapper)
+│       │   │   ├── PhotoDetailsView.tsx  # Pure presentational photo details (reusable)
 │       │   │   └── Filmstrip.tsx         # Bottom filmstrip
+│       │   ├── random/
+│       │   │   ├── RandomToolbar.tsx     # Random mode top toolbar
+│       │   │   ├── RandomControls.tsx    # Random mode floating action buttons
+│       │   │   └── BatchSelector.tsx     # Batch size selector
 │       │   └── ui/
 │       │       └── SectionHeader.tsx     # Generic section title
 │       └── styles/
@@ -67,12 +73,12 @@ Photo_Review/
 │   └── src/
 │       ├── index.ts                # Express entry, CORS, port 127.0.0.1:3001
 │       ├── db/index.ts             # SQLite connection (WAL), schema initialization
-│       ├── routes/index.ts         # 14 API endpoints + path security whitelist
+│       ├── routes/index.ts         # 15 API endpoints + path security whitelist
 │       ├── services/
 │       │   ├── scanner.ts          # File scanning + JPG/RAW pairing
 │       │   ├── image.ts            # Thumbnail generation + LRU cache
 │       │   ├── exif.ts             # EXIF metadata extraction
-│       │   ├── review.ts           # Review records + random selection + stats
+│       │   ├── review.ts           # Review records + random selection + batch + stats
 │       │   └── deleter.ts          # Delete to system trash
 │       └── utils/
 │           └── path.ts             # Path normalization utilities
@@ -191,6 +197,7 @@ All endpoints prefixed with `/api`. Vite dev proxy forwards to `http://127.0.0.1
 |--------|------|-------------|
 | POST | `/reviews` | Submit review. Body: `{ photoId, action: 'keep'\|'deleted', mode: 'sequential'\|'random' }` |
 | GET | `/reviews/random?folder=` | Get one unreviewed photo (excluding cached) |
+| GET | `/reviews/random/batch?folder=&count=N` | Get N unreviewed photos (count 1-100, Fisher-Yates) |
 
 ### 5.5 Stats & Settings
 
@@ -247,18 +254,43 @@ Groups photos by month→day (two-level), returns:
 | ArrowRight | Next |
 | Space | Keep |
 | D | Delete |
+| R | Skip (random browse mode) |
 | [ | Toggle left date sidebar |
 | ] | Toggle right details panel |
 
-Only active when focus is not in an input field. ReviewPage uses this hook; RandomPage registers inline event listeners.
+Only active when focus is not in an input field. Both ReviewPage and RandomPage use this hook.
 
-### 6.4 Other Page State
+### 6.4 Random Browse — useRandomBatch
+
+`useRandomBatch` is a custom hook for the random browse page (`/random`), encapsulating batch state and action logic.
+
+**State**:
+- `photos: PhotoGroup[]` — current batch of photos
+- `currentIndex: number` — current browse position
+- `currentPhoto: PhotoGroup | null` — current photo
+- `batchSize: number` — batch size (default 20, options: 10/20/50/100)
+- `actionedSet: Set<number>` — indices actioned in current batch
+- `sessionReviewed: number` — total reviewed count this session
+- `loading: boolean` — loading state
+- `error: string` — error message
+- `exhausted: boolean` — no more unreviewed photos
+- `rightPanelOpen: boolean` — right panel toggle
+
+**Actions**:
+- `loadBatch(size?)` — load a batch of random photos (calls `api.getRandomPhotos`)
+- `goTo(index)` / `goNext()` / `goPrev()` — navigate within batch
+- `handleAction('keep' | 'deleted' | 'skip')` — execute action, auto-advance, auto-load next batch at end
+- `changeBatchSize(size)` — change batch size
+- `toggleRightPanel()` — toggle details panel
+
+**Batch exhaustion**: When the last photo in a batch is actioned, `loadBatch()` is called automatically.
+If the server returns an empty array, `exhausted=true` is set and a completion screen is shown.
+
+### 6.5 Other Page State
 
 - **BatchPage** — page-level useState, manages orphaned files list, delete confirmation dialog, processing state.
-- **RandomPage** — page-level useState + useCallback, manages current random photo, reviewed count, cache days setting.
-  Inline keydown event listeners (Space = keep, D = delete, R = skip).
 
-### 6.5 activeFolder Module-level State
+### 6.6 activeFolder Module-level State
 
 `client/src/api/index.ts` maintains a module-level variable `activeFolder`.
 HomePage sets this value before navigating to the review page; the API layer automatically appends the `folder` parameter to requests.

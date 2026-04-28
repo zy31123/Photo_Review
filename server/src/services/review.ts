@@ -16,10 +16,10 @@ export function recordReview(filePath: string, fileName: string, action: 'keep' 
   `).run(filePath, fileName, action, mode, cacheUntil)
 }
 
-export function getRandomUnreviewedPhoto(folder: string): PhotoGroup | null {
+function getCandidates(folder: string): PhotoGroup[] {
   const db = getDb()
   const photos = getPhotosForFolder(folder).filter(p => !p.isOrphan)
-  if (photos.length === 0) return null
+  if (photos.length === 0) return []
 
   const now = new Date().toISOString()
   const filePaths = photos.map(p => p.jpgPath || p.rawPaths[0] || '')
@@ -31,15 +31,27 @@ export function getRandomUnreviewedPhoto(folder: string): PhotoGroup | null {
 
   const cachedPaths = new Set(cached.map(r => r.file_path))
 
-  const candidates = photos.filter(p => {
+  return photos.filter(p => {
     const filePath = p.jpgPath || p.rawPaths[0] || ''
     return !cachedPaths.has(filePath)
   })
+}
 
+export function getRandomUnreviewedPhoto(folder: string): PhotoGroup | null {
+  const candidates = getCandidates(folder)
   if (candidates.length === 0) return null
+  return candidates[Math.floor(Math.random() * candidates.length)]
+}
 
-  const idx = Math.floor(Math.random() * candidates.length)
-  return candidates[idx]
+export function getRandomUnreviewedPhotos(folder: string, count: number): PhotoGroup[] {
+  const candidates = getCandidates(folder)
+  const result = [...candidates]
+  const n = Math.min(count, result.length)
+  for (let i = 0; i < n; i++) {
+    const j = i + Math.floor(Math.random() * (result.length - i))
+    ;[result[i], result[j]] = [result[j], result[i]]
+  }
+  return result.slice(0, n)
 }
 
 export function getCacheDays(): number {

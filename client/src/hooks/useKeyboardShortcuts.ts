@@ -5,6 +5,7 @@ interface ShortcutMap {
   onNext?: () => void
   onKeep?: () => void
   onDelete?: () => void
+  onSkip?: () => void
   onToggleLeft?: () => void
   onToggleRight?: () => void
 }
@@ -29,6 +30,10 @@ export function useKeyboardShortcuts(shortcuts: ShortcutMap) {
         case 'd':
         case 'D':
           shortcuts.onDelete?.()
+          break
+        case 'r':
+        case 'R':
+          shortcuts.onSkip?.()
           break
         case '[':
           shortcuts.onToggleLeft?.()
