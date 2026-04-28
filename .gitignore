@@ -5,7 +5,7 @@ data/
 .DS_Store
 
 # Logs
-.claude
+.claude/
 
 # E2E test outputs
 e2e/reports/screenshots/

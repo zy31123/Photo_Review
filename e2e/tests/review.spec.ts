@@ -1,13 +1,11 @@
 import { test, expect } from '@playwright/test'
 import path from 'path'
 import { addScreenshot } from '../helpers/screenshot-manifest'
-import { TEST_PHOTOS_DIR } from '../helpers/test-setup'
+import { TEST_PHOTOS_DIR, MOCK_PHOTOS } from '../helpers/test-setup'
 
 const SCREENSHOTS_DIR = 'e2e/reports/screenshots'
 
 async function setupReviewPage(page: import('@playwright/test').Page) {
-  await page.goto('/')
-
   await page.route('**/api/folders/browse**', async route => {
     await route.fulfill({
       status: 200,
@@ -19,6 +17,24 @@ async function setupReviewPage(page: import('@playwright/test').Page) {
       }),
     })
   })
+
+  await page.route('**/api/folders/scan', async route => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ total: 3, paired: 3, orphanJpg: 0, orphanRaw: 0 }),
+    })
+  })
+
+  await page.route('**/api/photos**', async route => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ photos: MOCK_PHOTOS, total: MOCK_PHOTOS.length }),
+    })
+  })
+
+  await page.goto('/')
 
   await page.getByText('点击选择文件夹').click()
   await expect(page.getByRole('heading', { name: '选择文件夹' })).toBeVisible()
@@ -39,7 +55,7 @@ test.describe('Review Page', () => {
   test('shows photos after folder scan', async ({ page }) => {
     await setupReviewPage(page)
 
-    await expect(page.locator('.review-grid')).toBeVisible({ timeout: 15000 })
+    await expect(page.getByTestId('review-grid')).toBeVisible({ timeout: 15000 })
 
     const screenshotPath = `${SCREENSHOTS_DIR}/review-with-photos.png`
     await page.screenshot({ path: screenshotPath, fullPage: true })
@@ -48,15 +64,15 @@ test.describe('Review Page', () => {
 
   test('toolbar is visible with back button and counter', async ({ page }) => {
     await setupReviewPage(page)
-    await expect(page.locator('.review-grid')).toBeVisible({ timeout: 15000 })
+    await expect(page.getByTestId('review-grid')).toBeVisible({ timeout: 15000 })
 
-    await expect(page.getByText('返回')).toBeVisible()
-    await expect(page.getByText(/\d+\s*\/\s*\d+/)).toBeVisible()
+    await expect(page.getByTestId('btn-back')).toBeVisible()
+    await expect(page.getByTestId('photo-counter')).toBeVisible()
   })
 
   test('keyboard navigation changes photo', async ({ page }) => {
     await setupReviewPage(page)
-    await expect(page.locator('.review-grid')).toBeVisible({ timeout: 15000 })
+    await expect(page.getByTestId('review-grid')).toBeVisible({ timeout: 15000 })
 
     await page.keyboard.press('ArrowRight')
     await page.waitForTimeout(500)
@@ -68,13 +84,13 @@ test.describe('Review Page', () => {
 
   test('sidebar and panel toggles work', async ({ page }) => {
     await setupReviewPage(page)
-    await expect(page.locator('.review-grid')).toBeVisible({ timeout: 15000 })
+    await expect(page.getByTestId('review-grid')).toBeVisible({ timeout: 15000 })
 
     const screenshotBefore = `${SCREENSHOTS_DIR}/review-before-toggle.png`
     await page.screenshot({ path: screenshotBefore, fullPage: true })
     addScreenshot({ file: 'review-before-toggle.png', page: 'Review', description: '切换前', testName: 'sidebar panel toggles' })
 
-    await page.locator('button[title="日期导航 ( [ )"]').click()
+    await page.getByTestId('btn-toggle-sidebar').click()
     await page.waitForTimeout(300)
 
     const screenshotAfter = `${SCREENSHOTS_DIR}/review-after-toggle.png`

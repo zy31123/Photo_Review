@@ -53,13 +53,8 @@ function collectSpecs(suites: Suite[]): { title: string; ok: boolean }[] {
   return specs
 }
 
-function screenshotToBase64(filePath: string): string {
-  const fullPath = path.join(SCREENSHOTS_DIR, filePath)
-  try {
-    return fs.readFileSync(fullPath).toString('base64')
-  } catch {
-    return ''
-  }
+function escapeHtml(str: string): string {
+  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
 }
 
 function generate() {
@@ -92,28 +87,29 @@ function generate() {
   const specRows = allSpecs.map(s => `
     <tr>
       <td class="status ${s.ok ? 'pass' : 'fail'}">${s.ok ? '✓' : '✗'}</td>
-      <td>${s.title}</td>
+      <td>${escapeHtml(s.title)}</td>
     </tr>`).join('')
 
   const screenshotSections = Array.from(screenshotsByPage.entries()).map(([page, entries]) => `
     <div class="section">
-      <h2>${page} 页面截图</h2>
+      <h2>${escapeHtml(page)} 页面截图</h2>
       ${entries.map(e => {
-        const b64 = screenshotToBase64(e.file)
+        const screenshotFile = path.join('screenshots', e.file)
+        const exists = fs.existsSync(path.join(SCREENSHOTS_DIR, e.file))
         const ai = analysisByFile.get(e.file)
         return `
         <div class="screenshot-card">
           <div class="screenshot-meta">
-            <span class="test-name">${e.testName}</span>
-            <span class="description">${e.description}</span>
+            <span class="test-name">${escapeHtml(e.testName)}</span>
+            <span class="description">${escapeHtml(e.description)}</span>
           </div>
-          ${b64 ? `<img src="data:image/png;base64,${b64}" alt="${e.description}" />` : '<p class="error">截图文件未找到</p>'}
+          ${exists ? `<img src="${screenshotFile}" alt="${escapeHtml(e.description)}" />` : '<p class="error">截图文件未找到</p>'}
           ${ai ? `
             <div class="ai-analysis">
               <h3>AI 分析</h3>
-              <p>${ai.analysis}</p>
+              <p>${escapeHtml(ai.analysis)}</p>
               ${ai.suggestions?.length ? `
-                <ul>${ai.suggestions.map(s => `<li>${s}</li>`).join('')}</ul>
+                <ul>${ai.suggestions.map(s => `<li>${escapeHtml(s)}</li>`).join('')}</ul>
               ` : ''}
             </div>` : ''}
         </div>`
