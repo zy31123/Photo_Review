@@ -10,12 +10,16 @@ interface FolderPickerProps {
 export default function FolderPicker({ open, onClose, onSelect }: FolderPickerProps) {
   const [browse, setBrowse] = useState<BrowseResult | null>(null)
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
 
   const loadDir = useCallback(async (dirPath?: string) => {
     setLoading(true)
+    setError('')
     try {
       const result = await api.browseFolders(dirPath)
       setBrowse(result)
+    } catch (e: any) {
+      setError(e.message || '无法加载文件夹')
     } finally {
       setLoading(false)
     }
@@ -45,7 +49,7 @@ export default function FolderPicker({ open, onClose, onSelect }: FolderPickerPr
         <div className="px-5 py-3 border-b border-border">
           <div className="text-sm text-text-muted mb-1">当前路径</div>
           <div className="text-base text-text-secondary font-mono truncate">
-            {browse?.current || '...'}
+            {browse?.current === '' ? '此电脑 / 所有驱动器' : (browse?.current || '...')}
           </div>
         </div>
 
@@ -57,22 +61,29 @@ export default function FolderPicker({ open, onClose, onSelect }: FolderPickerPr
             </div>
           ) : (
             <>
-              {browse?.parent !== null && (
+              {error && (
+                <div className="text-center text-danger text-sm py-8">{error}</div>
+              )}
+              {!error && browse && (
+                <>
+              {browse.parent !== null && (
                 <button
-                  onClick={() => loadDir(browse!.parent!)}
+                  onClick={() => loadDir(browse.parent!)}
                   className="w-full text-left px-4 py-3.5 rounded-lg text-base text-text-secondary hover:bg-bg-hover transition-colors flex items-center gap-2"
                 >
                   <span className="text-accent">↑</span>
                   <span>..</span>
-                  <span className="text-text-muted text-sm ml-auto">上级目录</span>
+                  <span className="text-text-muted text-sm ml-auto">
+                    {browse.parent === '' ? '所有驱动器' : '上级目录'}
+                  </span>
                 </button>
               )}
-              {browse?.children.length === 0 && (
+              {browse.children.length === 0 && (
                 <div className="text-center text-text-muted text-base py-8">
                   此文件夹没有子目录
                 </div>
               )}
-              {browse?.children.map(child => (
+              {browse.children.map(child => (
                 <button
                   key={child.path}
                   onClick={() => loadDir(child.path)}
@@ -82,6 +93,8 @@ export default function FolderPicker({ open, onClose, onSelect }: FolderPickerPr
                   <span className="truncate">{child.name}</span>
                 </button>
               ))}
+                </>
+              )}
             </>
           )}
         </div>

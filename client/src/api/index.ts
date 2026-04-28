@@ -11,12 +11,25 @@ export function getActiveFolder(): string {
 }
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
-  const res = await fetch(`${BASE}${path}`, options)
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({ message: res.statusText }))
-    throw new Error(err.message || `Request failed: ${res.status}`)
+  const maxRetries = 3
+  for (let i = 0; i <= maxRetries; i++) {
+    try {
+      const res = await fetch(`${BASE}${path}`, options)
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ message: res.statusText }))
+        throw new Error(err.message || `Request failed: ${res.status}`)
+      }
+      return res.json()
+    } catch (e: any) {
+      const isRetryable = !options?.method || options.method === 'GET'
+      if (i < maxRetries && isRetryable) {
+        await new Promise(r => setTimeout(r, 1000 * (i + 1)))
+        continue
+      }
+      throw e
+    }
   }
-  return res.json()
+  throw new Error('请求失败')
 }
 
 export interface PhotoGroup {
@@ -68,7 +81,7 @@ export interface ExifData {
 
 export const api = {
   browseFolders: (dirPath?: string) =>
-    request<BrowseResult>(`/folders/browse${dirPath ? `?path=${encodeURIComponent(dirPath)}` : ''}`),
+    request<BrowseResult>(`/folders/browse${dirPath != null ? `?path=${encodeURIComponent(dirPath)}` : ''}`),
 
   scanFolder: (folderPath: string) =>
     request<ScanResult>(`/folders/scan`, {

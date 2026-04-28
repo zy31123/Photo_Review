@@ -13,6 +13,11 @@ app.use(cors({ origin: ['http://localhost:5173', 'http://127.0.0.1:5173'] }))
 app.use(express.json())
 app.use('/api', routes)
 
+process.on('uncaughtException', (err) => {
+  console.error('[server] 未捕获异常:', err)
+  process.exit(1)
+})
+
 const server = app.listen(Number(PORT), '127.0.0.1', () => {
   console.log(`Photo Review server running at http://127.0.0.1:${PORT}`)
 })

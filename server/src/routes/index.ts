@@ -2,6 +2,7 @@ import { Router } from 'express'
 import fs from 'fs'
 import path from 'path'
 import os from 'os'
+import { execSync } from 'child_process'
 import { scanFolder, getPhotoById, getPhotosForFolder } from '../services/scanner.js'
 import { recordReview, getRandomUnreviewedPhoto, getCacheDays, setCacheDays, getStats } from '../services/review.js'
 import { getThumbnail, getFullImage, getImageMimeType } from '../services/image.js'
@@ -20,35 +21,99 @@ function isPathAllowed(p: string): boolean {
   return !BLOCKED_PREFIXES.some(prefix => resolved === prefix || resolved.startsWith(prefix + '/'))
 }
 
+function isWindowsDriveRoot(p: string): boolean {
+  return process.platform === 'win32' && /^[A-Za-z]:\\$/.test(p)
+}
+
+let cachedDrives: string[] | null = null
+
+function getWindowsDrives(): string[] {
+  if (cachedDrives) return cachedDrives
+  try {
+    const result = execSync(
+      'powershell -Command "Get-PSDrive -PSProvider FileSystem | Select-Object -ExpandProperty Root"',
+      { encoding: 'utf-8', timeout: 5000 }
+    )
+    cachedDrives = result
+      .split(/\r?\n/)
+      .map((line: string) => line.trim())
+      .filter((line: string) => line.length > 0 && /^[A-Za-z]:\\$/i.test(line))
+    return cachedDrives
+  } catch {
+    return ['C:\\']
+  }
+}
+
+function getMacVolumes(): { name: string; path: string }[] {
+  const volumes: { name: string; path: string }[] = [
+    { name: 'Macintosh HD (系统盘)', path: '/' },
+  ]
+  try {
+    const entries = fs.readdirSync('/Volumes', { withFileTypes: true })
+    for (const e of entries) {
+      if (e.isDirectory() && e.name !== 'Macintosh HD') {
+        volumes.push({ name: e.name, path: `/Volumes/${e.name}` })
+      }
+    }
+  } catch {
+    // /Volumes not accessible, return just system disk
+  }
+  return volumes
+}
+
 const router = Router()
 
 // Browse directories
 router.get('/folders/browse', (req, res) => {
-  const dir = (req.query.path as string) || os.homedir()
+  const dir = req.query.path as string
 
-  if (!isPathAllowed(dir)) {
+  // Virtual root: list available drives/volumes
+  if (dir === '') {
+    if (process.platform === 'win32') {
+      const drives = getWindowsDrives()
+      return res.json({
+        current: '',
+        parent: null,
+        children: drives.map(d => ({ name: d, path: d })),
+      })
+    } else {
+      return res.json({
+        current: '',
+        parent: null,
+        children: getMacVolumes(),
+      })
+    }
+  }
+
+  const targetDir = dir || os.homedir()
+
+  if (!isPathAllowed(targetDir)) {
     return res.status(403).json({ message: '不允许访问此路径' })
   }
 
   try {
-    const stat = fs.statSync(dir)
+    const stat = fs.statSync(targetDir)
     if (!stat.isDirectory()) {
       return res.status(400).json({ message: '不是文件夹' })
     }
 
-    const entries = fs.readdirSync(dir, { withFileTypes: true })
+    const entries = fs.readdirSync(targetDir, { withFileTypes: true })
     const children = entries
       .filter(e => e.isDirectory() && !e.name.startsWith('.'))
       .map(e => ({
         name: e.name,
-        path: path.join(dir, e.name),
+        path: path.join(targetDir, e.name),
       }))
       .sort((a, b) => a.name.localeCompare(b.name, 'zh-CN'))
 
-    const parent = path.dirname(dir)
+    const parent = path.dirname(targetDir)
+    const effectiveParent = parent !== targetDir
+      ? parent
+      : (isWindowsDriveRoot(targetDir) || targetDir === '/' ? '' : null)
+
     res.json({
-      current: dir,
-      parent: parent !== dir ? parent : null,
+      current: targetDir,
+      parent: effectiveParent,
       children,
     })
   } catch (e: any) {
