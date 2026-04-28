@@ -262,6 +262,10 @@ router.post('/reviews', (req, res) => {
 router.get('/reviews/random', (req, res) => {
   const folder = req.query.folder as string
   if (!folder) return res.status(400).json({ message: '缺少 folder 参数' })
+  if (!isPathAllowed(folder)) return res.status(403).json({ message: '不允许访问此路径' })
+  if (getPhotosForFolder(folder).length === 0) {
+    try { scanFolder(folder) } catch (e: any) { return res.status(400).json({ message: e.message }) }
+  }
   const photo = getRandomUnreviewedPhoto(folder)
   res.json(photo)
 })
@@ -270,7 +274,11 @@ router.get('/reviews/random', (req, res) => {
 router.get('/reviews/random/batch', (req, res) => {
   const folder = req.query.folder as string
   if (!folder) return res.status(400).json({ message: '缺少 folder 参数' })
+  if (!isPathAllowed(folder)) return res.status(403).json({ message: '不允许访问此路径' })
   const count = Math.min(Math.max(Number(req.query.count) || 20, 1), 100)
+  if (getPhotosForFolder(folder).length === 0) {
+    try { scanFolder(folder) } catch (e: any) { return res.status(400).json({ message: e.message }) }
+  }
   const photos = getRandomUnreviewedPhotos(folder, count)
   res.json({ photos, total: photos.length })
 })

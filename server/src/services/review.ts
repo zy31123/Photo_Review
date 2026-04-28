@@ -18,7 +18,7 @@ export function recordReview(filePath: string, fileName: string, action: 'keep' 
 
 function getCandidates(folder: string): PhotoGroup[] {
   const db = getDb()
-  const photos = getPhotosForFolder(folder).filter(p => !p.isOrphan)
+  const photos = getPhotosForFolder(folder)
   if (photos.length === 0) return []
 
   const now = new Date().toISOString()

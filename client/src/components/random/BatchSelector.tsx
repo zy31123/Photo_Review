@@ -16,7 +16,9 @@ export default function BatchSelector({
     <div className="text-center">
       {exhausted ? (
         <>
-          <p className="text-text-secondary text-lg mb-2">所有照片已审阅完毕</p>
+          <p className="text-text-secondary text-lg mb-2">
+            {sessionReviewed > 0 ? '所有照片已审阅完毕' : '暂无可用的照片'}
+          </p>
           {sessionReviewed > 0 && (
             <p className="text-text-muted text-sm mb-6">本次共审阅 {sessionReviewed} 张</p>
           )}
