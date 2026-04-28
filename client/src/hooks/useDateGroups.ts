@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
 import type { PhotoGroup } from '../api'
+import { formatChineseDate } from '../utils/date'
 
 export interface DateGroup {
   date: string
@@ -16,16 +17,6 @@ export interface MonthGroup {
   dates: DateGroup[]
 }
 
-function formatDateLabel(dateStr: string): string {
-  const [, m, d] = dateStr.split('-')
-  return `${parseInt(m)}月${parseInt(d)}日`
-}
-
-function formatMonthLabel(yearMonth: string): string {
-  const [y, m] = yearMonth.split('-')
-  return `${y}年${parseInt(m)}月`
-}
-
 export function useDateGroups(photos: PhotoGroup[], selectedDate: string | null) {
   const monthGroups = useMemo(() => {
     const groups: MonthGroup[] = []
@@ -36,7 +27,10 @@ export function useDateGroups(photos: PhotoGroup[], selectedDate: string | null)
       const yearMonth = date.length >= 7 ? date.slice(0, 7) : '未知'
 
       if (!currentMonth || currentMonth.yearMonth !== yearMonth) {
-        currentMonth = { yearMonth, label: formatMonthLabel(yearMonth), count: 0, dates: [] }
+        const parts = yearMonth.split('-')
+        const y: string = parts[0]
+        const m: string = parts[1]
+        currentMonth = { yearMonth, label: y && m ? `${y}年${parseInt(m)}月` : yearMonth, count: 0, dates: [] }
         groups.push(currentMonth)
       }
 
@@ -44,7 +38,7 @@ export function useDateGroups(photos: PhotoGroup[], selectedDate: string | null)
       if (!lastDate || lastDate.date !== date) {
         currentMonth.dates.push({
           date,
-          label: formatDateLabel(date),
+          label: formatChineseDate(date),
           count: 1,
           startIndex: currentMonth.count,
           photos: [photo],

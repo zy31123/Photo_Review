@@ -1,3 +1,6 @@
+export type ReviewAction = 'keep' | 'deleted'
+export type ReviewMode = 'sequential' | 'random'
+
 const BASE = '/api'
 
 let activeFolder = ''
@@ -112,7 +115,7 @@ export const api = {
       body: JSON.stringify({ type, folder: activeFolder }),
     }),
 
-  submitReview: (photoId: string, action: 'keep' | 'deleted', mode: 'sequential' | 'random') =>
+  submitReview: (photoId: string, action: ReviewAction, mode: ReviewMode) =>
     request<{ success: boolean }>('/reviews', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

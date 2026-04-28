@@ -1,4 +1,5 @@
 import type { PhotoGroup, ExifData } from '../../api'
+import { formatChineseDate } from '../../utils/date'
 import SectionHeader from '../ui/SectionHeader'
 
 interface PhotoDetailsViewProps {
@@ -117,11 +118,4 @@ function StatusBadge({ reviewed }: { reviewed: boolean }) {
       未审阅
     </span>
   )
-}
-
-function formatChineseDate(dateStr?: string): string {
-  if (!dateStr) return '—'
-  const parts = dateStr.split('-')
-  if (parts.length < 3) return dateStr
-  return `${parts[0]}年${parseInt(parts[1])}月${parseInt(parts[2])}日`
 }
