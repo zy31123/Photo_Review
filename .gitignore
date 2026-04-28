@@ -5,4 +5,11 @@ data/
 .DS_Store
 
 # Logs
-.claude/
+.claude
+
+# E2E test outputs
+e2e/reports/screenshots/
+e2e/reports/results.json
+e2e/reports/analysis.json
+e2e/reports/report.html
+test-results/
