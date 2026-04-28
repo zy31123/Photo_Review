@@ -46,7 +46,7 @@ export default function BatchPage() {
   return (
     <div className="h-screen flex flex-col bg-bg">
       <div className="flex items-center justify-between px-5 py-3 border-b border-border">
-        <button onClick={() => navigate('/')} className="text-text-muted hover:text-text text-sm">
+        <button onClick={() => navigate('/review')} className="text-text-muted hover:text-text text-sm">
           ← 返回
         </button>
         <h1 className="text-lg font-display font-bold">批量处理</h1>

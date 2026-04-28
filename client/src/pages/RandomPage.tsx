@@ -1,17 +1,19 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { api, getActiveFolder, type ExifData } from '../api'
+import { api, getActiveFolder } from '../api'
 import { useRandomBatch } from '../hooks/useRandomBatch'
+import { useExif } from '../hooks/useExif'
 import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts'
 import RandomToolbar from '../components/random/RandomToolbar'
 import RandomControls from '../components/random/RandomControls'
 import BatchSelector from '../components/random/BatchSelector'
 import PhotoDetailsView from '../components/review/PhotoDetailsView'
+import LoadingSpinner from '../components/ui/LoadingSpinner'
 
 export default function RandomPage() {
   const navigate = useNavigate()
   const batch = useRandomBatch()
-  const [exif, setExif] = useState<ExifData | null>(null)
+  const exif = useExif(batch.currentPhoto)
   const [cacheDays, setCacheDays] = useState(7)
   const [started, setStarted] = useState(false)
 
@@ -24,15 +26,6 @@ export default function RandomPage() {
       if (s.random_cache_days) setCacheDays(Number(s.random_cache_days))
     })
   }, [])
-
-  useEffect(() => {
-    if (!batch.currentPhoto) { setExif(null); return }
-    let cancelled = false
-    api.getExif(batch.currentPhoto.id).then(data => {
-      if (!cancelled) setExif(data)
-    })
-    return () => { cancelled = true }
-  }, [batch.currentPhoto])
 
   const handleCacheDaysChange = async (days: number) => {
     setCacheDays(days)
@@ -60,6 +53,17 @@ export default function RandomPage() {
     ? `1fr ${rightW}`
     : '1fr 0px'
 
+  const placeholder = batch.loading
+    ? <LoadingSpinner />
+    : <BatchSelector
+        batchSize={batch.batchSize}
+        onBatchSizeChange={batch.changeBatchSize}
+        onStart={handleStart}
+        loading={batch.loading}
+        exhausted={batch.exhausted}
+        sessionReviewed={batch.sessionReviewed}
+      />
+
   return (
     <div className="h-screen flex flex-col bg-bg">
       <RandomToolbar
@@ -83,25 +87,8 @@ export default function RandomPage() {
         className="flex-1 min-h-0"
         style={{ display: 'grid', gridTemplateColumns: gridCols, columnGap: 8 }}
       >
-        {/* Image area */}
         <div className="relative flex items-center justify-center bg-bg overflow-hidden">
-          {!started || !batch.currentPhoto ? (
-            batch.loading ? (
-              <div className="flex flex-col items-center gap-3">
-                <div className="w-8 h-8 border-2 border-accent border-t-transparent rounded-full animate-spin" />
-                <span className="text-text-muted text-sm tracking-wide">加载中...</span>
-              </div>
-            ) : (
-              <BatchSelector
-                batchSize={batch.batchSize}
-                onBatchSizeChange={batch.changeBatchSize}
-                onStart={handleStart}
-                loading={batch.loading}
-                exhausted={batch.exhausted}
-                sessionReviewed={batch.sessionReviewed}
-              />
-            )
-          ) : (
+          {!started || !batch.currentPhoto ? placeholder : (
             <>
               <img
                 key={batch.currentPhoto.id}
@@ -110,8 +97,8 @@ export default function RandomPage() {
                 className="max-h-full max-w-full object-contain rounded shadow-2xl"
               />
               <RandomControls
-                currentIndex={batch.currentIndex}
-                batchTotal={batch.batchTotal}
+                canGoPrev={batch.canGoPrev}
+                canGoNext={batch.canGoNext}
                 onPrev={batch.goPrev}
                 onNext={batch.goNext}
                 onSkip={() => batch.handleAction('skip')}
@@ -122,7 +109,6 @@ export default function RandomPage() {
           )}
         </div>
 
-        {/* Details panel */}
         {batch.rightPanelOpen && batch.currentPhoto && (
           <div className="h-full bg-bg-deep border-l border-border/30 overflow-y-auto" style={{ paddingRight: 12 }}>
             <PhotoDetailsView

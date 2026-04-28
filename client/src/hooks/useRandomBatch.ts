@@ -15,6 +15,8 @@ export function useRandomBatch() {
 
   const currentPhoto = currentIndex >= 0 && currentIndex < photos.length ? photos[currentIndex] : null
   const batchReviewed = actionedSet.size
+  const canGoPrev = currentIndex > 0
+  const canGoNext = currentIndex < photos.length - 1
 
   const loadBatch = useCallback(async (size?: number) => {
     const count = size ?? batchSize
@@ -110,6 +112,8 @@ export function useRandomBatch() {
     exhausted,
     batchReviewed,
     batchTotal: photos.length,
+    canGoPrev,
+    canGoNext,
     loadBatch,
     goTo,
     goNext,
