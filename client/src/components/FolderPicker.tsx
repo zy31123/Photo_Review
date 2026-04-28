@@ -27,7 +27,7 @@ export default function FolderPicker({ open, onClose, onSelect }: FolderPickerPr
   }, [])
 
   useEffect(() => {
-    if (open) loadDir()
+    if (open) loadDir('')
   }, [open, loadDir])
 
   if (!open) return null
