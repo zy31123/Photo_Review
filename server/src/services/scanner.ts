@@ -1,7 +1,7 @@
 import fs from 'fs'
 import path from 'path'
 import crypto from 'crypto'
-import { resolveNormalized } from '../utils/path.js'
+import { resolveNormalized, normalizePath } from '../utils/path.js'
 
 const JPG_EXTS = new Set(['.jpg', '.jpeg'])
 const RAW_EXTS = new Set(['.cr2', '.cr3', '.nef'])
@@ -52,10 +52,15 @@ export function scanFolder(folderPath: string): {
 
   const groups = new Map<string, { jpg: string[]; raw: string[] }>()
 
+  const visited = new Set<string>()
+
   const walkDir = (dir: string) => {
+    const realDir = fs.realpathSync(dir)
+    if (visited.has(realDir)) return
+    visited.add(realDir)
     const entries = fs.readdirSync(dir, { withFileTypes: true })
     for (const entry of entries) {
-      const fullPath = path.join(dir, entry.name)
+      const fullPath = normalizePath(path.join(dir, entry.name))
       if (entry.isDirectory()) {
         walkDir(fullPath)
       } else if (entry.isFile()) {
@@ -63,7 +68,7 @@ export function scanFolder(folderPath: string): {
         const baseName = path.basename(entry.name, path.extname(entry.name))
 
         if (JPG_EXTS.has(ext) || RAW_EXTS.has(ext)) {
-          const key = path.join(dir, baseName)
+          const key = normalizePath(path.join(dir, baseName))
           if (!groups.has(key)) {
             groups.set(key, { jpg: [], raw: [] })
           }

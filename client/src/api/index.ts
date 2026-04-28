@@ -11,8 +11,8 @@ export function getActiveFolder(): string {
 }
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
-  const maxRetries = 3
-  for (let i = 0; i <= maxRetries; i++) {
+  const maxAttempts = 3
+  for (let i = 0; i < maxAttempts; i++) {
     try {
       const res = await fetch(`${BASE}${path}`, options)
       if (!res.ok) {
@@ -22,7 +22,7 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
       return res.json()
     } catch (e: any) {
       const isRetryable = !options?.method || options.method === 'GET'
-      if (i < maxRetries && isRetryable) {
+      if (i < maxAttempts - 1 && isRetryable) {
         await new Promise(r => setTimeout(r, 1000 * (i + 1)))
         continue
       }

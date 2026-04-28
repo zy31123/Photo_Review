@@ -17,8 +17,8 @@ const BLOCKED_PREFIXES = [
 ]
 
 function isPathAllowed(p: string): boolean {
-  const resolved = resolveNormalized(p)
-  return !BLOCKED_PREFIXES.some(prefix => resolved === prefix || resolved.startsWith(prefix + '/'))
+  const resolved = resolveNormalized(p).toLowerCase()
+  return !BLOCKED_PREFIXES.some(prefix => resolved === prefix.toLowerCase() || resolved.startsWith(prefix.toLowerCase() + '/'))
 }
 
 function isWindowsDriveRoot(p: string): boolean {
@@ -26,9 +26,11 @@ function isWindowsDriveRoot(p: string): boolean {
 }
 
 let cachedDrives: string[] | null = null
+let drivesCacheTime = 0
+const DRIVES_CACHE_TTL = 30_000
 
 function getWindowsDrives(): string[] {
-  if (cachedDrives) return cachedDrives
+  if (cachedDrives && Date.now() - drivesCacheTime < DRIVES_CACHE_TTL) return cachedDrives
   try {
     const result = execSync(
       'powershell -Command "Get-PSDrive -PSProvider FileSystem | Select-Object -ExpandProperty Root"',
@@ -38,6 +40,7 @@ function getWindowsDrives(): string[] {
       .split(/\r?\n/)
       .map((line: string) => line.trim())
       .filter((line: string) => line.length > 0 && /^[A-Za-z]:\\$/i.test(line))
+    drivesCacheTime = Date.now()
     return cachedDrives
   } catch {
     return ['C:\\']
@@ -85,7 +88,7 @@ router.get('/folders/browse', (req, res) => {
     }
   }
 
-  const targetDir = dir || os.homedir()
+  const targetDir = (dir || os.homedir()).replace(/[A-Za-z]:$/, '$&\\')
 
   if (!isPathAllowed(targetDir)) {
     return res.status(403).json({ message: '不允许访问此路径' })

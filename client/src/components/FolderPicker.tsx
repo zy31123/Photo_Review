@@ -19,6 +19,7 @@ export default function FolderPicker({ open, onClose, onSelect }: FolderPickerPr
       const result = await api.browseFolders(dirPath)
       setBrowse(result)
     } catch (e: any) {
+      setBrowse(null)
       setError(e.message || '无法加载文件夹')
     } finally {
       setLoading(false)
@@ -109,14 +110,15 @@ export default function FolderPicker({ open, onClose, onSelect }: FolderPickerPr
           </button>
           <button
             onClick={() => {
-              if (browse?.current) {
+              if (browse?.current != null && browse.current !== '') {
                 onSelect(browse.current)
                 onClose()
               }
             }}
-            className="px-5 py-3 rounded-lg bg-accent text-bg font-semibold text-base hover:bg-accent-dim transition-colors"
+            disabled={!browse?.current}
+            className="px-5 py-3 rounded-lg bg-accent text-bg font-semibold text-base hover:bg-accent-dim transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
           >
-            选择此文件夹
+            {browse?.current === '' ? '请选择一个驱动器' : '选择此文件夹'}
           </button>
         </div>
       </div>
