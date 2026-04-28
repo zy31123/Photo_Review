@@ -54,7 +54,7 @@ function collectSpecs(suites: Suite[]): { title: string; ok: boolean }[] {
 }
 
 function escapeHtml(str: string): string {
-  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+  return str.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!)
 }
 
 function generate() {
@@ -94,7 +94,7 @@ function generate() {
     <div class="section">
       <h2>${escapeHtml(page)} 页面截图</h2>
       ${entries.map(e => {
-        const screenshotFile = path.join('screenshots', e.file)
+        const screenshotFile = `screenshots/${e.file}`
         const exists = fs.existsSync(path.join(SCREENSHOTS_DIR, e.file))
         const ai = analysisByFile.get(e.file)
         return `

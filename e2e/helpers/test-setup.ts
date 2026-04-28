@@ -7,3 +7,7 @@ export const MOCK_PHOTOS = [
   { id: 'mock-green', name: 'photo-green.jpg', jpgPath: 'photo-green.jpg', rawPaths: [], hasJpg: true, hasRaw: false, isOrphan: false, folder: TEST_PHOTOS_DIR },
   { id: 'mock-blue', name: 'photo-blue.jpg', jpgPath: 'photo-blue.jpg', rawPaths: [], hasJpg: true, hasRaw: false, isOrphan: false, folder: TEST_PHOTOS_DIR },
 ]
+
+export function jsonResponse(data: unknown) {
+  return { status: 200, contentType: 'application/json', body: JSON.stringify(data) }
+}
