@@ -23,6 +23,14 @@ test.describe('Home Page', () => {
   })
 
   test('folder picker opens when clicking input', async ({ page }) => {
+    await page.route('**/api/folders/browse**', async route => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ current: 'C:\\', parent: null, children: [] }),
+      })
+    })
+
     await page.goto('/')
 
     await page.getByText('点击选择文件夹').click()

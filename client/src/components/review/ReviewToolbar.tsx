@@ -13,6 +13,7 @@ export default function ReviewToolbar() {
       {/* Left: back button */}
       <button
         onClick={() => navigate('/')}
+        data-testid="btn-back"
         className="text-text-muted hover:text-text transition-colors text-sm flex items-center gap-1.5"
       >
         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -30,7 +31,7 @@ export default function ReviewToolbar() {
 
       {/* Right: counter + toggles */}
       <div className="flex items-center gap-4">
-        <span className="text-text-muted text-sm font-display tabular-nums">
+        <span className="text-text-muted text-sm font-display tabular-nums" data-testid="photo-counter">
           <span className="text-text-heading">{position.toLocaleString()}</span>
           <span className="mx-1 text-text-muted">/</span>
           <span>{total.toLocaleString()}</span>
@@ -57,6 +58,7 @@ export default function ReviewToolbar() {
           </button>
           <button
             onClick={toggleLeftSidebar}
+            data-testid="btn-toggle-sidebar"
             className={`w-8 h-8 rounded flex items-center justify-center transition-colors ${
               leftSidebarOpen ? 'text-accent' : 'text-text-muted hover:text-text-secondary'
             }`}
@@ -69,6 +71,7 @@ export default function ReviewToolbar() {
           </button>
           <button
             onClick={toggleRightPanel}
+            data-testid="btn-toggle-details"
             className={`w-8 h-8 rounded flex items-center justify-center transition-colors ${
               rightPanelOpen ? 'text-accent' : 'text-text-muted hover:text-text-secondary'
             }`}
