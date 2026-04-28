@@ -1,38 +1,22 @@
 import { test, expect } from '@playwright/test'
 import path from 'path'
 import { addScreenshot } from '../helpers/screenshot-manifest'
-import { TEST_PHOTOS_DIR, MOCK_PHOTOS } from '../helpers/test-setup'
+import { TEST_PHOTOS_DIR, MOCK_PHOTOS, jsonResponse } from '../helpers/test-setup'
 
 const SCREENSHOTS_DIR = 'e2e/reports/screenshots'
 
 async function setupReviewPage(page: import('@playwright/test').Page) {
-  await page.route('**/api/folders/browse**', async route => {
-    await route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify({
-        current: TEST_PHOTOS_DIR,
-        parent: path.dirname(TEST_PHOTOS_DIR),
-        children: [],
-      }),
-    })
-  })
+  await page.route('**/api/folders/browse**', route =>
+    route.fulfill(jsonResponse({ current: TEST_PHOTOS_DIR, parent: path.dirname(TEST_PHOTOS_DIR), children: [] }))
+  )
 
-  await page.route('**/api/folders/scan', async route => {
-    await route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify({ total: 3, paired: 3, orphanJpg: 0, orphanRaw: 0 }),
-    })
-  })
+  await page.route('**/api/folders/scan', route =>
+    route.fulfill(jsonResponse({ total: 3, paired: 3, orphanJpg: 0, orphanRaw: 0 }))
+  )
 
-  await page.route('**/api/photos**', async route => {
-    await route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify({ photos: MOCK_PHOTOS, total: MOCK_PHOTOS.length }),
-    })
-  })
+  await page.route('**/api/photos**', route =>
+    route.fulfill(jsonResponse({ photos: MOCK_PHOTOS, total: MOCK_PHOTOS.length }))
+  )
 
   await page.goto('/')
 
