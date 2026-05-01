@@ -32,6 +32,18 @@ export function getPhotosForFolder(folder: string): PhotoGroup[] {
   return photoStore.get(resolveNormalized(folder)) || []
 }
 
+export function removePhoto(id: string): boolean {
+  const photo = photoIndex.get(id)
+  if (!photo) return false
+  photoIndex.delete(id)
+  const list = photoStore.get(photo.folder)
+  if (list) {
+    const idx = list.indexOf(photo)
+    if (idx !== -1) list.splice(idx, 1)
+  }
+  return true
+}
+
 export function scanFolder(folderPath: string): {
   photos: PhotoGroup[]
   total: number

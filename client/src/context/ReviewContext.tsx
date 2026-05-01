@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useCallback, useMemo, type ReactNode } from 'react'
+import { createContext, useContext, useState, useCallback, useMemo, useRef, type ReactNode } from 'react'
 import { api, type PhotoGroup } from '../api'
 import { useDateGroups } from '../hooks/useDateGroups'
 
@@ -44,6 +44,7 @@ export function ReviewProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [reviewedIds, setReviewedIds] = useState<Set<string>>(new Set())
+  const processingRef = useRef(false)
 
   const { monthGroups, filteredPhotos, dateOfIndex } = useDateGroups(photos, selectedDate)
 
@@ -63,7 +64,8 @@ export function ReviewProvider({ children }: { children: ReactNode }) {
   const toggleRightPanel = useCallback(() => setRightPanelOpen(v => !v), [])
 
   const handleAction = useCallback(async (action: 'keep' | 'deleted') => {
-    if (!currentPhoto) return
+    if (!currentPhoto || processingRef.current) return
+    processingRef.current = true
     setError('')
     try {
       if (action === 'deleted') {
@@ -76,6 +78,8 @@ export function ReviewProvider({ children }: { children: ReactNode }) {
       }
     } catch (e: any) {
       setError(e.message || '操作失败')
+    } finally {
+      processingRef.current = false
     }
   }, [currentPhoto, currentIndex, filteredPhotos.length])
 

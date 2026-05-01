@@ -11,6 +11,7 @@ export default function BatchPage() {
   }, [navigate])
   const [loading, setLoading] = useState(true)
   const [processing, setProcessing] = useState(false)
+  const [error, setError] = useState('')
   const [confirmDelete, setConfirmDelete] = useState<'jpg' | 'raw' | null>(null)
 
   useEffect(() => {
@@ -23,11 +24,15 @@ export default function BatchPage() {
   const handleDelete = async (type: 'jpg' | 'raw') => {
     setConfirmDelete(null)
     setProcessing(true)
+    setError('')
     try {
       const result = await api.deleteOrphaned(type)
       if (result.success) {
         setOrphaned(prev => ({ ...prev, [type]: [] }))
       }
+    } catch (e: any) {
+      setError(e.message || '删除失败')
+      api.getOrphaned().then(setOrphaned).catch(() => {})
     } finally {
       setProcessing(false)
     }
@@ -54,6 +59,11 @@ export default function BatchPage() {
       </div>
 
       <div className="flex-1 overflow-y-auto px-6 py-6 space-y-6">
+        {error && (
+          <div className="px-4 py-2 rounded-lg bg-danger/20 border border-danger/40 text-danger text-sm text-center">
+            {error}
+          </div>
+        )}
         {!hasOrphans && (
           <div className="text-center text-text-secondary mt-20">
             <svg className="w-10 h-10 text-success mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
