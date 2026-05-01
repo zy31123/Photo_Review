@@ -27,7 +27,18 @@ export default function ImageViewport() {
     }, 150)
   }, [currentIndex, goTo])
 
-  if (!currentPhoto) return null
+  if (!currentPhoto) {
+    return (
+      <div className="image-viewport relative flex items-center justify-center bg-bg overflow-hidden">
+        <div className="flex flex-col items-center gap-4 text-text-muted">
+          <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+          </svg>
+          <span className="text-sm">选择一张照片开始审阅</span>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="image-viewport relative flex items-center justify-center bg-bg overflow-hidden" onWheel={handleWheel}>
@@ -53,7 +64,7 @@ export default function ImageViewport() {
         src={api.fullUrl(currentPhoto.id)}
         alt={currentPhoto.name}
         onLoad={handleImageLoad}
-        className={`max-h-full max-w-full object-contain transition-all duration-300 ${
+        className={`max-h-full max-w-full object-contain transition-all duration-300 ease-out ${
           loaded ? 'opacity-100 scale-100' : 'opacity-0 scale-[1.02]'
         }`}
       />

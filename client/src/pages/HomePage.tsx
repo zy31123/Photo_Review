@@ -40,11 +40,11 @@ export default function HomePage() {
           <span className="w-1.5 h-1.5 rounded-full bg-accent/30" />
         </div>
 
-        <h1 className="text-6xl font-display font-bold text-text-heading tracking-tight mb-3">
+        <h1 className="text-6xl font-display font-bold text-text-heading tracking-tight mb-5">
           Photo Review
         </h1>
         <div className="w-16 h-px bg-gradient-to-r from-transparent via-accent to-transparent mb-4" />
-        <p className="text-text-secondary text-xl mb-12 tracking-wide">
+        <p className="text-text-secondary text-lg mb-14 tracking-wide">
           选择你的图库文件夹开始审阅
         </p>
 
@@ -58,20 +58,20 @@ export default function HomePage() {
             </div>
             <button
               onClick={() => setPickerOpen(true)}
-              className="px-5 py-4 rounded-lg border border-border text-text-secondary hover:bg-bg-hover hover:text-text hover:border-border-light transition-all duration-200 text-base"
+              className="px-5 py-4 rounded-lg border border-border text-text-secondary hover:bg-bg-hover hover:text-text hover:border-border-light hover:shadow-inner transition-all duration-200 text-base"
             >
               浏览
             </button>
           </div>
 
           {error && (
-            <p className="text-danger text-sm bg-danger/10 px-4 py-2 rounded-lg border border-danger/20">{error}</p>
+            <p className="text-danger text-sm bg-danger/10 px-4 py-2 rounded-lg border border-danger/20 border-l-2 border-l-danger">{error}</p>
           )}
 
           <button
             onClick={handleScan}
             disabled={loading || !folderPath.trim()}
-            className="w-full py-4 rounded-lg bg-accent text-bg font-semibold text-lg hover:bg-accent-dim disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-200 active:scale-[0.98]"
+            className="w-full py-4 rounded-lg bg-accent text-bg font-semibold text-lg hover:bg-accent-dim hover:shadow-lg hover:shadow-accent/20 disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-200 active:scale-[0.98]"
           >
             {loading ? '扫描中...' : '开始审阅'}
           </button>

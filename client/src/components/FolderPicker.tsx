@@ -48,8 +48,8 @@ export default function FolderPicker({ open, onClose, onSelect }: FolderPickerPr
 
         {/* Current path */}
         <div className="px-5 py-3 border-b border-border">
-          <div className="text-sm text-text-muted mb-1">当前路径</div>
-          <div className="text-base text-text-secondary font-mono truncate">
+          <div className="text-sm text-text-muted mb-1 text-left">当前路径</div>
+          <div className="text-base text-text-secondary font-mono font-medium truncate">
             {browse?.current === '' ? '此电脑 / 所有驱动器' : (browse?.current || '...')}
           </div>
         </div>
@@ -101,10 +101,10 @@ export default function FolderPicker({ open, onClose, onSelect }: FolderPickerPr
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-between px-5 py-3 border-t border-border">
+        <div className="flex items-center justify-end gap-3 px-5 py-3 border-t border-border">
           <button
             onClick={onClose}
-            className="px-4 py-3 rounded-lg border border-border text-text-secondary hover:bg-bg-hover text-base transition-colors"
+            className="px-4 py-3.5 rounded-lg border border-border text-text-secondary hover:bg-bg-hover text-base transition-colors"
           >
             取消
           </button>
@@ -116,7 +116,7 @@ export default function FolderPicker({ open, onClose, onSelect }: FolderPickerPr
               }
             }}
             disabled={!browse?.current}
-            className="px-5 py-3 rounded-lg bg-accent text-bg font-semibold text-base hover:bg-accent-dim transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            className="px-5 py-3.5 rounded-lg bg-accent text-bg font-semibold text-base hover:bg-accent-dim hover:shadow-lg hover:shadow-accent/20 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
           >
             {browse?.current === '' ? '请选择一个驱动器' : '选择此文件夹'}
           </button>
