@@ -13,10 +13,9 @@ test.describe('Home Page', () => {
     await page.goto('/')
 
     await expect(page.locator('h1')).toContainText('Photo Review')
-    await expect(page.getByText('点击选择文件夹')).toBeVisible()
+    await expect(page.getByText('点击选择文件夹...')).toBeVisible()
     await expect(page.getByRole('button', { name: '开始审阅' })).toBeVisible()
-    await expect(page.getByText('批量处理')).toBeVisible()
-    await expect(page.getByText('随机浏览')).toBeVisible()
+    await expect(page.getByRole('button', { name: '浏览' })).toBeVisible()
 
     const screenshotPath = `${SCREENSHOTS_DIR}/home-initial.png`
     await page.screenshot({ path: screenshotPath, fullPage: true })
@@ -30,7 +29,7 @@ test.describe('Home Page', () => {
 
     await page.goto('/')
 
-    await page.getByText('点击选择文件夹').click()
+    await page.getByText('点击选择文件夹...').click()
 
     await expect(page.getByRole('heading', { name: '选择文件夹' })).toBeVisible()
     await expect(page.getByText('当前路径')).toBeVisible()
@@ -45,24 +44,11 @@ test.describe('Home Page', () => {
   test('folder picker closes when clicking cancel', async ({ page }) => {
     await page.goto('/')
 
-    await page.getByText('点击选择文件夹').click()
+    await page.getByText('点击选择文件夹...').click()
     await expect(page.getByRole('heading', { name: '选择文件夹' })).toBeVisible()
 
     await page.getByRole('button', { name: '取消' }).click()
     await expect(page.getByRole('heading', { name: '选择文件夹' })).not.toBeVisible()
   })
 
-  test('navigates to batch page', async ({ page }) => {
-    await page.goto('/')
-
-    await page.getByText('批量处理').click()
-    await expect(page).toHaveURL('/batch')
-  })
-
-  test('navigates to random page', async ({ page }) => {
-    await page.goto('/')
-
-    await page.getByText('随机浏览').click()
-    await expect(page).toHaveURL('/random')
-  })
 })
