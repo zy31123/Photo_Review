@@ -51,4 +51,50 @@ test.describe('Home Page', () => {
     await expect(page.getByRole('heading', { name: '选择文件夹' })).not.toBeVisible()
   })
 
+  test('shows loading state when scanning', async ({ page }) => {
+    await page.route('**/api/folders/browse**', route =>
+      route.fulfill(jsonResponse({ current: 'C:\\TestPhotos', parent: 'C:\\', children: [] }))
+    )
+    await page.route('**/api/folders/scan', async route => {
+      await new Promise(() => {})
+    })
+
+    await page.goto('/')
+
+    await page.getByText('点击选择文件夹...').click()
+    await expect(page.getByRole('heading', { name: '选择文件夹' })).toBeVisible()
+    await page.getByRole('button', { name: '选择此文件夹' }).click()
+    await expect(page.getByRole('heading', { name: '选择文件夹' })).not.toBeVisible()
+
+    await page.getByRole('button', { name: '开始审阅' }).click()
+    await expect(page.getByRole('button', { name: '扫描中...' })).toBeVisible()
+
+    const screenshotPath = `${SCREENSHOTS_DIR}/home-loading.png`
+    await page.screenshot({ path: screenshotPath, fullPage: true })
+    addScreenshot({ file: 'home-loading.png', page: 'Home', description: '首页加载中状态', testName: 'shows loading state when scanning' })
+  })
+
+  test('shows error state on scan failure', async ({ page }) => {
+    await page.route('**/api/folders/browse**', route =>
+      route.fulfill(jsonResponse({ current: 'C:\\TestPhotos', parent: 'C:\\', children: [] }))
+    )
+    await page.route('**/api/folders/scan', route =>
+      route.fulfill({ status: 500, contentType: 'application/json', body: JSON.stringify({ message: '扫描失败：文件夹不存在' }) })
+    )
+
+    await page.goto('/')
+
+    await page.getByText('点击选择文件夹...').click()
+    await expect(page.getByRole('heading', { name: '选择文件夹' })).toBeVisible()
+    await page.getByRole('button', { name: '选择此文件夹' }).click()
+    await expect(page.getByRole('heading', { name: '选择文件夹' })).not.toBeVisible()
+
+    await page.getByRole('button', { name: '开始审阅' }).click()
+    await expect(page.getByText(/扫描失败/)).toBeVisible()
+
+    const screenshotPath = `${SCREENSHOTS_DIR}/home-error.png`
+    await page.screenshot({ path: screenshotPath, fullPage: true })
+    addScreenshot({ file: 'home-error.png', page: 'Home', description: '首页错误状态', testName: 'shows error state on scan failure' })
+  })
+
 })

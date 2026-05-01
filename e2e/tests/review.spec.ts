@@ -1,31 +1,41 @@
-import { test, expect } from '@playwright/test'
+import { test, expect, type Page, type Route } from '@playwright/test'
 import path from 'path'
 import { addScreenshot } from '../helpers/screenshot-manifest'
 import { TEST_PHOTOS_DIR, MOCK_PHOTOS, jsonResponse } from '../helpers/test-setup'
 
 const SCREENSHOTS_DIR = 'e2e/reports/screenshots'
 
-async function setupReviewPage(page: import('@playwright/test').Page) {
+const defaultBrowseResponse = { current: TEST_PHOTOS_DIR, parent: path.dirname(TEST_PHOTOS_DIR), children: [] }
+const defaultScanResponse = { total: 3, paired: 3, orphanJpg: 0, orphanRaw: 0 }
+const defaultPhotosResponse = { photos: MOCK_PHOTOS, total: MOCK_PHOTOS.length }
+
+async function setupReviewPage(
+  page: Page,
+  options?: {
+    scanResponse?: unknown
+    photosHandler?: (route: Route) => Promise<void>
+    photosResponse?: unknown
+  },
+) {
   await page.route('**/api/folders/browse**', route =>
-    route.fulfill(jsonResponse({ current: TEST_PHOTOS_DIR, parent: path.dirname(TEST_PHOTOS_DIR), children: [] }))
+    route.fulfill(jsonResponse(defaultBrowseResponse)),
   )
-
   await page.route('**/api/folders/scan', route =>
-    route.fulfill(jsonResponse({ total: 3, paired: 3, orphanJpg: 0, orphanRaw: 0 }))
+    route.fulfill(jsonResponse(options?.scanResponse ?? defaultScanResponse)),
   )
-
-  await page.route('**/api/photos**', route =>
-    route.fulfill(jsonResponse({ photos: MOCK_PHOTOS, total: MOCK_PHOTOS.length }))
-  )
+  if (options?.photosHandler) {
+    await page.route('**/api/photos**', options.photosHandler)
+  } else {
+    await page.route('**/api/photos**', route =>
+      route.fulfill(jsonResponse(options?.photosResponse ?? defaultPhotosResponse)),
+    )
+  }
 
   await page.goto('/')
-
   await page.getByText('点击选择文件夹').click()
   await expect(page.getByRole('heading', { name: '选择文件夹' })).toBeVisible()
-
   await page.getByRole('button', { name: '选择此文件夹' }).click()
   await expect(page.getByRole('heading', { name: '选择文件夹' })).not.toBeVisible()
-
   await page.getByRole('button', { name: '开始审阅' }).click()
   await page.waitForURL('/review', { timeout: 10000 })
 }
@@ -80,5 +90,30 @@ test.describe('Review Page', () => {
     const screenshotAfter = `${SCREENSHOTS_DIR}/review-after-toggle.png`
     await page.screenshot({ path: screenshotAfter, fullPage: true })
     addScreenshot({ file: 'review-after-toggle.png', page: 'Review', description: '切换侧栏后', testName: 'sidebar panel toggles' })
+  })
+
+  test('shows loading spinner', async ({ page }) => {
+    await setupReviewPage(page, {
+      photosHandler: async () => { await new Promise(() => {}) },
+    })
+
+    await expect(page.getByText('加载中...')).toBeVisible({ timeout: 5000 })
+
+    const screenshotPath = `${SCREENSHOTS_DIR}/review-loading.png`
+    await page.screenshot({ path: screenshotPath, fullPage: true })
+    addScreenshot({ file: 'review-loading.png', page: 'Review', description: '审阅页面加载中', testName: 'shows loading spinner' })
+  })
+
+  test('shows empty state when no photos', async ({ page }) => {
+    await setupReviewPage(page, {
+      scanResponse: { total: 0, paired: 0, orphanJpg: 0, orphanRaw: 0 },
+      photosResponse: { photos: [], total: 0 },
+    })
+
+    await expect(page.getByText('暂无照片')).toBeVisible({ timeout: 5000 })
+
+    const screenshotPath = `${SCREENSHOTS_DIR}/review-empty.png`
+    await page.screenshot({ path: screenshotPath, fullPage: true })
+    addScreenshot({ file: 'review-empty.png', page: 'Review', description: '审阅页面无照片', testName: 'shows empty state when no photos' })
   })
 })

@@ -10,6 +10,9 @@ data/
 # E2E test outputs
 e2e/reports/screenshots/
 e2e/reports/results.json
+e2e/reports/results-visual.json
 e2e/reports/analysis.json
 e2e/reports/report.html
 test-results/
+report-*.png
+.playwright-mcp/
