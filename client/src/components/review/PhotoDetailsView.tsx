@@ -15,7 +15,7 @@ export default function PhotoDetailsView({ photo, exif, reviewed }: PhotoDetails
   return (
     <>
       <SectionHeader title="文件信息" />
-      <div className="px-5 py-3 space-y-3">
+      <div className="px-5 py-3 space-y-4">
         <MetaRow label="文件名" value={photo.name} mono />
         <MetaRow label="日期" value={formattedDate} />
         <MetaRow label="文件夹" value={folderName} />
@@ -24,7 +24,7 @@ export default function PhotoDetailsView({ photo, exif, reviewed }: PhotoDetails
       {exif && (
         <>
           <SectionHeader title="拍摄参数" />
-          <div className="px-5 py-3 space-y-3">
+          <div className="px-5 py-3 space-y-4">
             <MetaRow label="相机" value={exif.camera} />
             <MetaRow label="镜头" value={exif.lens} />
             <MetaRow label="焦距" value={exif.focalLength} />
@@ -43,15 +43,31 @@ export default function PhotoDetailsView({ photo, exif, reviewed }: PhotoDetails
       )}
 
       <SectionHeader title="文件状态" />
-      <div className="px-5 py-3 space-y-2">
+      <div className="px-5 py-3 space-y-3">
         <div className="flex items-center gap-2">
-          <span className={`w-2.5 h-2.5 rounded-full ${photo.hasJpg ? 'bg-success' : 'bg-danger'}`} />
+          {photo.hasJpg ? (
+            <svg className="w-4 h-4 text-success shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            </svg>
+          ) : (
+            <svg className="w-4 h-4 text-danger shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          )}
           <span className={`text-base ${photo.hasJpg ? 'text-success' : 'text-danger'}`}>
             {photo.hasJpg ? 'JPG 存在' : 'JPG 缺失'}
           </span>
         </div>
         <div className="flex items-center gap-2">
-          <span className={`w-2.5 h-2.5 rounded-full ${photo.hasRaw ? 'bg-success' : 'bg-danger'}`} />
+          {photo.hasRaw ? (
+            <svg className="w-4 h-4 text-success shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            </svg>
+          ) : (
+            <svg className="w-4 h-4 text-danger shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          )}
           <span className={`text-base ${photo.hasRaw ? 'text-success' : 'text-danger'}`}>
             {photo.hasRaw ? 'RAW 已配对' : 'RAW 缺失'}
           </span>
@@ -93,8 +109,8 @@ export default function PhotoDetailsView({ photo, exif, reviewed }: PhotoDetails
 function MetaRow({ label, value, mono }: { label: string; value: string; mono?: boolean }) {
   return (
     <div className="flex justify-between items-start gap-2">
-      <span className="text-base text-text-muted shrink-0">{label}</span>
-      <span className={`text-lg text-text text-right max-w-[220px] break-all ${mono ? 'font-mono' : ''}`} title={value}>
+      <span className="text-sm text-text-muted shrink-0">{label}</span>
+      <span className={`text-base text-text text-right max-w-[220px] break-all ${mono ? 'font-mono' : ''}`} title={value}>
         {value || '—'}
       </span>
     </div>

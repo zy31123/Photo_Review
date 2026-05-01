@@ -20,7 +20,7 @@ export default function ActionBtn({
       <button
         onClick={onClick}
         disabled={disabled}
-        className={`w-16 h-16 rounded-full flex items-center justify-center text-text-secondary transition-all duration-150 active:scale-95 disabled:opacity-25 disabled:cursor-not-allowed ${colors}`}
+        className={`w-16 h-16 rounded-full flex items-center justify-center text-text-secondary transition-all duration-150 hover:scale-105 active:scale-95 disabled:opacity-25 disabled:cursor-not-allowed focus-visible:ring-2 focus-visible:ring-accent/50 ${colors}`}
         title={`${label} (${shortcut})`}
       >
         {children}
