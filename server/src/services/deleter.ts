@@ -1,7 +1,14 @@
 import trash from 'trash'
 import fs from 'fs'
-import path from 'path'
 import { type PhotoGroup } from './scanner.js'
+
+async function safeDelete(filePath: string) {
+  try {
+    await trash(filePath)
+  } catch {
+    fs.unlinkSync(filePath)
+  }
+}
 
 export async function deletePhoto(photo: PhotoGroup): Promise<string[]> {
   const deleted: string[] = []
@@ -13,7 +20,7 @@ export async function deletePhoto(photo: PhotoGroup): Promise<string[]> {
 
   for (const p of paths) {
     if (fs.existsSync(p)) {
-      await trash(p)
+      await safeDelete(p)
       deleted.push(p)
     }
   }
@@ -30,7 +37,7 @@ export async function deleteOrphanedFiles(photos: PhotoGroup[], type: 'jpg' | 'r
 
     for (const p of paths) {
       if (fs.existsSync(p)) {
-        await trash(p)
+        await safeDelete(p)
         count++
       }
     }
