@@ -3,7 +3,7 @@ import fs from 'fs'
 import path from 'path'
 import os from 'os'
 import { execSync } from 'child_process'
-import { scanFolder, getPhotoById, getPhotosForFolder } from '../services/scanner.js'
+import { scanFolder, getPhotoById, getPhotosForFolder, removePhoto } from '../services/scanner.js'
 import { recordReview, getRandomUnreviewedPhoto, getRandomUnreviewedPhotos, getCacheDays, setCacheDays, getStats } from '../services/review.js'
 import { getThumbnail, getFullImage, getImageMimeType } from '../services/image.js'
 import { deletePhoto, deleteOrphanedFiles } from '../services/deleter.js'
@@ -197,6 +197,7 @@ router.delete('/photos/:id', async (req, res) => {
 
   try {
     const deleted = await deletePhoto(photo)
+    removePhoto(photo.id)
     res.json({ success: true, deleted })
   } catch (e: any) {
     res.status(500).json({ message: e.message })
@@ -235,8 +236,8 @@ router.post('/batch/orphaned', async (req, res) => {
   const orphaned = photos.filter(p => p.orphanType === type)
 
   try {
-    const count = await deleteOrphanedFiles(orphaned, type)
-    res.json({ success: true, deleted: count })
+    const result = await deleteOrphanedFiles(orphaned, type)
+    res.json({ success: true, deleted: result.deleted, failed: result.failed })
   } catch (e: any) {
     res.status(500).json({ message: e.message })
   }
