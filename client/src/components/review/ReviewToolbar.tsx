@@ -3,7 +3,7 @@ import { useReview } from '../../context/ReviewContext'
 
 export default function ReviewToolbar() {
   const navigate = useNavigate()
-  const { photos, currentPhoto, currentIndex, filteredPhotos, statusFilter, setStatusFilter, subfolderFilter, setSubfolderFilter, subfolders, reviewedCount, leftSidebarOpen, rightPanelOpen, toggleLeftSidebar, toggleRightPanel } = useReview()
+  const { photos, currentPhoto, currentIndex, filteredPhotos, statusFilter, setStatusFilter, reviewedCount, leftSidebarOpen, rightPanelOpen, toggleLeftSidebar, toggleRightPanel } = useReview()
 
   const total = filteredPhotos.length
   const position = currentIndex + 1
@@ -37,22 +37,8 @@ export default function ReviewToolbar() {
         </span>
       </div>
 
-      {/* Right: subfolder + progress + filter + counter + toggles */}
+      {/* Right: progress + filter + counter + toggles */}
       <div className="flex items-center gap-4">
-        {/* Subfolder filter */}
-        {subfolders.length > 1 && (
-          <select
-            value={subfolderFilter ?? ''}
-            onChange={e => setSubfolderFilter(e.target.value || null)}
-            className="bg-bg text-text-secondary text-xs border border-border/50 rounded px-2 py-1 outline-none focus:border-accent/50 transition-colors max-w-[160px] truncate"
-          >
-            <option value="">全部文件夹</option>
-            {subfolders.map(sf => (
-              <option key={sf.path} value={sf.path}>{sf.name} ({sf.count})</option>
-            ))}
-          </select>
-        )}
-
         {/* Progress */}
         <div className="flex items-center gap-2">
           <div className="w-20 h-1.5 bg-bg rounded-full overflow-hidden">

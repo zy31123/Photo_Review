@@ -3,7 +3,7 @@ import { useReview } from '../../context/ReviewContext'
 import type { MonthGroup } from '../../hooks/useDateGroups'
 
 export default function DateSidebar() {
-  const { monthGroups, selectedDate, setDateFilter, leftSidebarOpen, photos, currentPhoto } = useReview()
+  const { monthGroups, selectedDate, setDateFilter, leftSidebarOpen, photos, currentPhoto, subfolderFilter, setSubfolderFilter, subfolders } = useReview()
   const [collapsedMonths, setCollapsedMonths] = useState<Set<string>>(new Set())
 
   const toggleMonth = useCallback((ym: string) => {
@@ -32,6 +32,18 @@ export default function DateSidebar() {
   return (
     <div className="h-full bg-bg-deep border-r border-border/30 flex flex-col overflow-hidden" style={{ paddingLeft: 12 }}>
       <div className="px-5 pt-4 pb-2">
+        {subfolders.length > 1 && (
+          <select
+            value={subfolderFilter ?? ''}
+            onChange={e => setSubfolderFilter(e.target.value || null)}
+            className="w-full mb-3 bg-bg text-text-secondary text-sm border border-border/50 rounded-lg px-3 py-2 outline-none focus:border-accent/50 transition-colors"
+          >
+            <option value="">全部文件夹</option>
+            {subfolders.map(sf => (
+              <option key={sf.path} value={sf.path}>{sf.name} ({sf.count})</option>
+            ))}
+          </select>
+        )}
         <button
           onClick={() => setDateFilter(null)}
           className={`w-full text-left px-4 py-3 rounded-r text-lg transition-all duration-200 ${
