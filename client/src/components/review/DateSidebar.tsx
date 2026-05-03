@@ -98,6 +98,7 @@ const MonthBlock = memo(function MonthBlock({
               date={dg.date}
               label={dg.label}
               count={dg.count}
+              reviewedCount={dg.reviewedCount}
               active={selectedDate === dg.date}
               isCurrent={currentPhotoDate === dg.date}
               onSelect={onSelectDate}
@@ -110,29 +111,35 @@ const MonthBlock = memo(function MonthBlock({
 })
 
 const DateRow = memo(function DateRow({
-  date, label, count, active, isCurrent, onSelect,
+  date, label, count, reviewedCount, active, isCurrent, onSelect,
 }: {
   date: string
   label: string
   count: number
+  reviewedCount: number
   active: boolean
   isCurrent: boolean
   onSelect: (d: string | null) => void
 }) {
+  const fullyReviewed = reviewedCount >= count
+  const rowClass = active
+    ? 'border-l-2 border-accent bg-accent-subtle text-accent'
+    : isCurrent
+      ? 'border-l-2 border-accent/40 text-text-secondary'
+      : fullyReviewed
+        ? 'text-text-muted hover:text-text-secondary'
+        : 'text-text-secondary hover:text-text'
+
+  const countColor = active ? 'text-accent/70' : fullyReviewed ? 'text-green-500/70' : 'text-text-muted'
+
   return (
     <button
       onClick={() => onSelect(active ? null : date)}
-      className={`date-item w-full flex items-center justify-between pl-5 pr-3 py-3 text-base rounded-r transition-all duration-200 ${
-        active
-          ? 'border-l-2 border-accent bg-accent-subtle text-accent'
-          : isCurrent
-            ? 'border-l-2 border-accent/40 text-text-secondary'
-            : 'text-text-secondary hover:text-text'
-      }`}
+      className={`date-item w-full flex items-center justify-between pl-5 pr-3 py-3 text-base rounded-r transition-all duration-200 ${rowClass}`}
     >
       <span className="relative z-10">{label}</span>
-      <span className={`relative z-10 text-sm tabular-nums ${active ? 'text-accent/70' : 'text-text-muted'}`}>
-        {count}
+      <span className={`relative z-10 text-sm tabular-nums ${countColor}`}>
+        {reviewedCount > 0 ? `${reviewedCount}/${count}` : count}
       </span>
     </button>
   )

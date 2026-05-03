@@ -1,6 +1,27 @@
 import { getDb } from '../db/index.js'
 import { type PhotoGroup, getPhotosForFolder } from './scanner.js'
 
+export interface ReviewStatus {
+  action: string
+  reviewedAt: string
+}
+
+export function getReviewStatuses(filePaths: string[]): Map<string, ReviewStatus> {
+  const result = new Map<string, ReviewStatus>()
+  if (filePaths.length === 0) return result
+
+  const db = getDb()
+  const placeholders = filePaths.map(() => '?').join(',')
+  const rows = db.prepare(
+    `SELECT file_path, action, reviewed_at FROM review_records WHERE file_path IN (${placeholders})`
+  ).all(...filePaths) as { file_path: string; action: string; reviewed_at: string }[]
+
+  for (const row of rows) {
+    result.set(row.file_path, { action: row.action, reviewedAt: row.reviewed_at })
+  }
+  return result
+}
+
 export function recordReview(filePath: string, fileName: string, action: 'keep' | 'deleted', mode: 'sequential' | 'random', cacheDays?: number) {
   const db = getDb()
   let cacheUntil: string | null = null

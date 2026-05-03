@@ -3,7 +3,7 @@ import { useExif } from '../../hooks/useExif'
 import PhotoDetailsView from './PhotoDetailsView'
 
 export default function DetailsPanel() {
-  const { currentPhoto, rightPanelOpen, reviewedIds } = useReview()
+  const { currentPhoto, rightPanelOpen } = useReview()
   const exif = useExif(currentPhoto)
 
   if (!rightPanelOpen || !currentPhoto) return <div />
@@ -13,7 +13,7 @@ export default function DetailsPanel() {
       <PhotoDetailsView
         photo={currentPhoto}
         exif={exif}
-        reviewed={reviewedIds.has(currentPhoto.id)}
+        reviewed={!!currentPhoto.reviewAction}
       />
     </div>
   )

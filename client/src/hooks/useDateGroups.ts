@@ -2,10 +2,19 @@ import { useMemo } from 'react'
 import type { PhotoGroup } from '../api'
 import { formatChineseDate } from '../utils/date'
 
+export type StatusFilter = 'all' | 'unreviewed' | 'reviewed'
+
+function applyStatusFilter(photos: PhotoGroup[], filter: StatusFilter): PhotoGroup[] {
+  if (filter === 'all') return photos
+  if (filter === 'unreviewed') return photos.filter(p => !p.reviewAction)
+  return photos.filter(p => !!p.reviewAction)
+}
+
 export interface DateGroup {
   date: string
   label: string
   count: number
+  reviewedCount: number
   startIndex: number
   photos: PhotoGroup[]
 }
@@ -14,10 +23,11 @@ export interface MonthGroup {
   yearMonth: string
   label: string
   count: number
+  reviewedCount: number
   dates: DateGroup[]
 }
 
-export function useDateGroups(photos: PhotoGroup[], selectedDate: string | null) {
+export function useDateGroups(photos: PhotoGroup[], selectedDate: string | null, statusFilter: StatusFilter = 'all') {
   const monthGroups = useMemo(() => {
     const groups: MonthGroup[] = []
     let currentMonth: MonthGroup | null = null
@@ -25,12 +35,13 @@ export function useDateGroups(photos: PhotoGroup[], selectedDate: string | null)
     for (const photo of photos) {
       const date = photo.date || '未知日期'
       const yearMonth = date.length >= 7 ? date.slice(0, 7) : '未知'
+      const isReviewed = !!photo.reviewAction
 
       if (!currentMonth || currentMonth.yearMonth !== yearMonth) {
         const parts = yearMonth.split('-')
         const y: string = parts[0]
         const m: string = parts[1]
-        currentMonth = { yearMonth, label: y && m ? `${y}年${parseInt(m)}月` : yearMonth, count: 0, dates: [] }
+        currentMonth = { yearMonth, label: y && m ? `${y}年${parseInt(m)}月` : yearMonth, count: 0, reviewedCount: 0, dates: [] }
         groups.push(currentMonth)
       }
 
@@ -40,27 +51,27 @@ export function useDateGroups(photos: PhotoGroup[], selectedDate: string | null)
           date,
           label: formatChineseDate(date),
           count: 1,
+          reviewedCount: isReviewed ? 1 : 0,
           startIndex: currentMonth.count,
           photos: [photo],
         })
       } else {
         lastDate.count++
+        if (isReviewed) lastDate.reviewedCount++
         lastDate.photos.push(photo)
       }
       currentMonth.count++
+      if (isReviewed) currentMonth.reviewedCount++
     }
     return groups
   }, [photos])
 
   const filteredPhotos = useMemo(() => {
-    if (!selectedDate) return photos
-    for (const month of monthGroups) {
-      for (const dg of month.dates) {
-        if (dg.date === selectedDate) return dg.photos
-      }
-    }
-    return photos
-  }, [photos, selectedDate, monthGroups])
+    const source = selectedDate
+      ? monthGroups.flatMap(m => m.dates).find(dg => dg.date === selectedDate)?.photos ?? photos
+      : photos
+    return applyStatusFilter(source, statusFilter)
+  }, [photos, selectedDate, monthGroups, statusFilter])
 
   const dateOfIndex = useMemo(() => {
     const map = new Map<number, string>()

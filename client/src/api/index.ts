@@ -46,6 +46,8 @@ export interface PhotoGroup {
   orphanType?: 'jpg' | 'raw'
   date?: string
   folder: string
+  reviewAction?: 'keep' | 'deleted' | null
+  reviewedAt?: string | null
 }
 
 export interface ScanResult {
