@@ -73,14 +73,23 @@ export function useRandomBatch() {
     processingRef.current = true
     setError('')
     try {
+      await api.submitReview(photo.id, action, 'random')
       if (action === 'deleted') {
         await api.deletePhoto(photo.id)
       }
-      await api.submitReview(photo.id, action, 'random')
       setActionedSet(prev => new Set(prev).add(currentIndex))
       setSessionReviewed(prev => prev + 1)
 
-      if (currentIndex < photos.length - 1) {
+      if (action === 'deleted') {
+        const remaining = photos.filter(p => p.id !== photo.id)
+        setPhotos(remaining)
+        if (remaining.length === 0) {
+          loadBatch()
+        } else {
+          const adjustedIndex = Math.min(currentIndex, remaining.length - 1)
+          setCurrentIndex(Math.max(0, adjustedIndex))
+        }
+      } else if (currentIndex < photos.length - 1) {
         setCurrentIndex(currentIndex + 1)
       } else {
         loadBatch()

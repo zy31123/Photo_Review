@@ -67,13 +67,19 @@ export function ReviewProvider({ children }: { children: ReactNode }) {
     if (!currentPhoto || processingRef.current) return
     processingRef.current = true
     setError('')
+    const photoId = currentPhoto.id
     try {
+      await api.submitReview(photoId, action, 'sequential')
       if (action === 'deleted') {
-        await api.deletePhoto(currentPhoto.id)
+        await api.deletePhoto(photoId)
       }
-      await api.submitReview(currentPhoto.id, action, 'sequential')
-      setReviewedIds(prev => new Set(prev).add(currentPhoto.id))
-      if (currentIndex < filteredPhotos.length - 1) {
+      setReviewedIds(prev => new Set(prev).add(photoId))
+      if (action === 'deleted') {
+        const remainingPhotos = photos.filter(p => p.id !== photoId)
+        setPhotos(remainingPhotos)
+        const adjustedIndex = Math.min(currentIndex, remainingPhotos.length - 1)
+        setCurrentIndex(Math.max(0, adjustedIndex))
+      } else if (currentIndex < filteredPhotos.length - 1) {
         setCurrentIndex(currentIndex + 1)
       }
     } catch (e: any) {
@@ -81,7 +87,7 @@ export function ReviewProvider({ children }: { children: ReactNode }) {
     } finally {
       processingRef.current = false
     }
-  }, [currentPhoto, currentIndex, filteredPhotos.length])
+  }, [currentPhoto, currentIndex, filteredPhotos.length, photos])
 
   const refresh = useCallback(async () => {
     setLoading(true)
