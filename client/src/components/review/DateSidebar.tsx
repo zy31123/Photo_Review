@@ -32,29 +32,47 @@ export default function DateSidebar() {
   return (
     <div className="h-full bg-bg-deep border-r border-border/30 flex flex-col overflow-hidden" style={{ paddingLeft: 12 }}>
       <div className="px-5 pt-4 pb-2">
-        {subfolders.length > 1 && (
-          <select
-            value={subfolderFilter ?? ''}
-            onChange={e => setSubfolderFilter(e.target.value || null)}
-            className="w-full mb-3 bg-bg text-text-secondary text-sm border border-border/50 rounded-lg px-3 py-2 outline-none focus:border-accent/50 transition-colors"
-          >
-            <option value="">全部文件夹</option>
+        {subfolders.length > 1 ? (
+          <div className="space-y-0.5 mb-2">
+            <button
+              onClick={() => setSubfolderFilter(null)}
+              className={`w-full text-left px-4 py-2.5 rounded-r text-sm transition-all duration-200 ${
+                subfolderFilter === null
+                  ? 'text-accent border-l-2 border-accent bg-accent-subtle'
+                  : 'text-text-secondary hover:text-text hover:bg-bg-raised'
+              }`}
+            >
+              全部照片
+              <span className="ml-2 text-text-muted">{photos.length}</span>
+            </button>
             {subfolders.map(sf => (
-              <option key={sf.path} value={sf.path}>{sf.name} ({sf.count})</option>
+              <button
+                key={sf.path}
+                onClick={() => setSubfolderFilter(sf.path === subfolderFilter ? null : sf.path)}
+                className={`w-full text-left px-4 py-2.5 rounded-r text-sm transition-all duration-200 flex items-center justify-between ${
+                  subfolderFilter === sf.path
+                    ? 'text-accent border-l-2 border-accent bg-accent-subtle'
+                    : 'text-text-secondary hover:text-text hover:bg-bg-raised'
+                }`}
+              >
+                <span className="truncate">{sf.name}</span>
+                <span className="text-text-muted text-xs shrink-0 ml-2">{sf.count}</span>
+              </button>
             ))}
-          </select>
+          </div>
+        ) : (
+          <button
+            onClick={() => setDateFilter(null)}
+            className={`w-full text-left px-4 py-3 rounded-r text-lg transition-all duration-200 ${
+              selectedDate === null
+                ? 'text-accent border-l-2 border-accent bg-accent-subtle'
+                : 'text-text-secondary hover:text-text hover:bg-bg-raised'
+            }`}
+          >
+            全部照片
+            <span className="ml-2 text-sm text-text-muted">{photos.length}</span>
+          </button>
         )}
-        <button
-          onClick={() => setDateFilter(null)}
-          className={`w-full text-left px-4 py-3 rounded-r text-lg transition-all duration-200 ${
-            selectedDate === null
-              ? 'text-accent border-l-2 border-accent bg-accent-subtle'
-              : 'text-text-secondary hover:text-text hover:bg-bg-raised'
-          }`}
-        >
-          全部照片
-          <span className="ml-2 text-sm text-text-muted">{photos.length}</span>
-        </button>
       </div>
 
       <div className="flex-1 overflow-y-auto px-4 pb-4 space-y-1">
