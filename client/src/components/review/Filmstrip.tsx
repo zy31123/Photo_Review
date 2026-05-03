@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, memo } from 'react'
-import { api } from '../../api'
+import { api, type PhotoGroup } from '../../api'
 import { useReview } from '../../context/ReviewContext'
 
 export default function Filmstrip() {
@@ -35,7 +35,7 @@ export default function Filmstrip() {
           return (
             <FilmstripItem
               key={photo.id}
-              photoId={photo.id}
+              photo={photo}
               index={realIndex}
               active={realIndex === currentIndex}
               onSelect={handleGoTo}
@@ -53,13 +53,14 @@ export default function Filmstrip() {
 }
 
 const FilmstripItem = memo(function FilmstripItem({
-  photoId, index, active, onSelect,
+  photo, index, active, onSelect,
 }: {
-  photoId: string
+  photo: PhotoGroup
   index: number
   active: boolean
   onSelect: (i: number) => void
 }) {
+  const reviewed = !!photo.reviewAction
   return (
     <button
       data-active={active}
@@ -67,10 +68,15 @@ const FilmstripItem = memo(function FilmstripItem({
       className={`relative flex-shrink-0 w-14 h-14 rounded overflow-hidden transition-all duration-150 ${
         active
           ? 'border-2 border-accent scale-105 z-10 filmstrip-item-active'
-          : 'border-2 border-transparent opacity-50 hover:opacity-80'
+          : reviewed
+            ? 'border-2 border-transparent opacity-40 hover:opacity-70'
+            : 'border-2 border-transparent opacity-50 hover:opacity-80'
       }`}
     >
-      <img src={api.thumbnailUrl(photoId)} alt="" className="w-full h-full object-cover" loading="lazy" />
+      <img src={api.thumbnailUrl(photo.id)} alt="" className="w-full h-full object-cover" loading="lazy" />
+      {reviewed && !active && (
+        <div className="absolute bottom-0.5 right-0.5 w-2.5 h-2.5 rounded-full bg-green-500 border border-black/30" />
+      )}
     </button>
   )
 })

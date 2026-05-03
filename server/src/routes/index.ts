@@ -4,7 +4,7 @@ import path from 'path'
 import os from 'os'
 import { execSync } from 'child_process'
 import { scanFolder, getPhotoById, getPhotosForFolder, removePhoto } from '../services/scanner.js'
-import { recordReview, getRandomUnreviewedPhoto, getRandomUnreviewedPhotos, getCacheDays, setCacheDays, getStats } from '../services/review.js'
+import { recordReview, getRandomUnreviewedPhoto, getRandomUnreviewedPhotos, getCacheDays, setCacheDays, getStats, getReviewStatuses } from '../services/review.js'
 import { getThumbnail, getFullImage, getImageMimeType } from '../services/image.js'
 import { deletePhoto, deleteOrphanedFiles } from '../services/deleter.js'
 import { extractExif } from '../services/exif.js'
@@ -149,14 +149,34 @@ router.get('/photos', (req, res) => {
   if (!folder) return res.status(400).json({ message: '缺少 folder 参数' })
   const photos = getPhotosForFolder(folder)
 
+  const filePaths = photos.map(p => p.jpgPath || p.rawPaths[0] || '')
+  const reviewMap = getReviewStatuses(filePaths)
+
+  const photosWithStatus = photos.map((p, i) => {
+    const status = reviewMap.get(filePaths[i])
+    return {
+      ...p,
+      reviewAction: status?.action || null,
+      reviewedAt: status?.reviewedAt || null,
+    }
+  })
+
+  const status = req.query.status as string
+  let filtered = photosWithStatus
+  if (status === 'unreviewed') {
+    filtered = photosWithStatus.filter(p => !p.reviewAction)
+  } else if (status === 'reviewed') {
+    filtered = photosWithStatus.filter(p => p.reviewAction)
+  }
+
   const page = Number(req.query.page) || 1
   const limit = Number(req.query.limit) || 2000
   const start = (page - 1) * limit
-  const paged = photos.slice(start, start + limit)
+  const paged = filtered.slice(start, start + limit)
 
   res.json({
     photos: paged,
-    total: photos.length,
+    total: filtered.length,
   })
 })
 
