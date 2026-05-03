@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useCallback, useMemo, useRef, type ReactNode } from 'react'
-import { api, type PhotoGroup } from '../api'
+import { api, type PhotoGroup, type SubfolderInfo } from '../api'
 import { useDateGroups, type StatusFilter } from '../hooks/useDateGroups'
 
 interface ReviewState {
@@ -13,6 +13,8 @@ interface ReviewState {
   loading: boolean
   error: string
   statusFilter: StatusFilter
+  subfolderFilter: string | null
+  subfolders: SubfolderInfo[]
   reviewedCount: number
   monthGroups: ReturnType<typeof useDateGroups>['monthGroups']
 }
@@ -21,6 +23,7 @@ interface ReviewActions {
   goTo: (index: number) => void
   setDateFilter: (date: string | null) => void
   setStatusFilter: (filter: StatusFilter) => void
+  setSubfolderFilter: (filter: string | null) => void
   toggleLeftSidebar: () => void
   toggleRightPanel: () => void
   handleAction: (action: 'keep' | 'deleted') => void
@@ -42,13 +45,15 @@ export function ReviewProvider({ children }: { children: ReactNode }) {
   const [currentIndex, setCurrentIndex] = useState(0)
   const [selectedDate, setSelectedDate] = useState<string | null>(null)
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
+  const [subfolderFilter, setSubfolderFilter] = useState<string | null>(null)
+  const [subfolders, setSubfolders] = useState<SubfolderInfo[]>([])
   const [leftSidebarOpen, setLeftSidebarOpen] = useState(true)
   const [rightPanelOpen, setRightPanelOpen] = useState(true)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const processingRef = useRef(false)
 
-  const { monthGroups, filteredPhotos, dateOfIndex } = useDateGroups(photos, selectedDate, statusFilter)
+  const { monthGroups, filteredPhotos, dateOfIndex } = useDateGroups(photos, selectedDate, statusFilter, subfolderFilter)
 
   const currentPhoto = filteredPhotos[currentIndex] ?? null
   const reviewedCount = photos.filter(p => !!p.reviewAction).length
@@ -65,6 +70,12 @@ export function ReviewProvider({ children }: { children: ReactNode }) {
 
   const toggleLeftSidebar = useCallback(() => setLeftSidebarOpen(v => !v), [])
   const toggleRightPanel = useCallback(() => setRightPanelOpen(v => !v), [])
+
+  const handleSetSubfolderFilter = useCallback((filter: string | null) => {
+    setSubfolderFilter(filter)
+    setSelectedDate(null)
+    setCurrentIndex(0)
+  }, [])
 
   const handleAction = useCallback(async (action: 'keep' | 'deleted') => {
     if (!currentPhoto || processingRef.current) return
@@ -98,9 +109,12 @@ export function ReviewProvider({ children }: { children: ReactNode }) {
   const refresh = useCallback(async () => {
     setLoading(true)
     try {
-      const result = await api.getPhotos({ limit: 2000 })
+      const [result, subs] = await Promise.all([
+        api.getPhotos({ limit: 2000 }),
+        api.getSubfolders(),
+      ])
       setPhotos(result.photos)
-      // Jump to first unreviewed photo
+      setSubfolders(subs)
       const firstUnreviewed = result.photos.findIndex(p => !p.reviewAction)
       setCurrentIndex(firstUnreviewed >= 0 ? firstUnreviewed : 0)
     } catch {
@@ -120,18 +134,21 @@ export function ReviewProvider({ children }: { children: ReactNode }) {
     loading,
     error,
     statusFilter,
+    subfolderFilter,
+    subfolders,
     reviewedCount,
     monthGroups,
     goTo,
     setDateFilter,
     setStatusFilter,
+    setSubfolderFilter: handleSetSubfolderFilter,
     toggleLeftSidebar,
     toggleRightPanel,
     handleAction,
     refresh,
   }), [photos, filteredPhotos, currentIndex, currentPhoto, selectedDate,
-    leftSidebarOpen, rightPanelOpen, loading, error, statusFilter, reviewedCount, monthGroups,
-    goTo, setDateFilter, setStatusFilter, toggleLeftSidebar, toggleRightPanel, handleAction, refresh])
+    leftSidebarOpen, rightPanelOpen, loading, error, statusFilter, subfolderFilter, subfolders, reviewedCount, monthGroups,
+    goTo, setDateFilter, setStatusFilter, handleSetSubfolderFilter, toggleLeftSidebar, toggleRightPanel, handleAction, refresh])
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>
 }

@@ -27,12 +27,15 @@ export interface MonthGroup {
   dates: DateGroup[]
 }
 
-export function useDateGroups(photos: PhotoGroup[], selectedDate: string | null, statusFilter: StatusFilter = 'all') {
+export function useDateGroups(photos: PhotoGroup[], selectedDate: string | null, statusFilter: StatusFilter = 'all', subfolderFilter: string | null = null) {
   const monthGroups = useMemo(() => {
+    const source = subfolderFilter
+      ? photos.filter(p => p.subfolder === subfolderFilter)
+      : photos
     const groups: MonthGroup[] = []
     let currentMonth: MonthGroup | null = null
 
-    for (const photo of photos) {
+    for (const photo of source) {
       const date = photo.date || '未知日期'
       const yearMonth = date.length >= 7 ? date.slice(0, 7) : '未知'
       const isReviewed = !!photo.reviewAction
@@ -64,7 +67,7 @@ export function useDateGroups(photos: PhotoGroup[], selectedDate: string | null,
       if (isReviewed) currentMonth.reviewedCount++
     }
     return groups
-  }, [photos])
+  }, [photos, subfolderFilter])
 
   const filteredPhotos = useMemo(() => {
     const source = selectedDate
