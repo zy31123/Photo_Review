@@ -46,6 +46,7 @@ export interface PhotoGroup {
   orphanType?: 'jpg' | 'raw'
   date?: string
   folder: string
+  subfolder: string
   reviewAction?: 'keep' | 'deleted' | null
   reviewedAt?: string | null
 }
@@ -63,6 +64,12 @@ export interface Stats {
   pending: number
   orphanJpg: number
   orphanRaw: number
+}
+
+export interface SubfolderInfo {
+  name: string
+  path: string
+  count: number
 }
 
 export interface BrowseResult {
@@ -95,12 +102,16 @@ export const api = {
       body: JSON.stringify({ path: folderPath }),
     }),
 
-  getPhotos: (params?: { sort?: string; page?: number; limit?: number }) => {
+  getSubfolders: () =>
+    request<SubfolderInfo[]>(`/folders/subfolders?folder=${encodeURIComponent(activeFolder)}`),
+
+  getPhotos: (params?: { sort?: string; page?: number; limit?: number; subfolder?: string }) => {
     const qs = new URLSearchParams()
     qs.set('folder', activeFolder)
     if (params?.sort) qs.set('sort', params.sort)
     if (params?.page) qs.set('page', String(params.page))
     if (params?.limit) qs.set('limit', String(params.limit))
+    if (params?.subfolder) qs.set('subfolder', params.subfolder)
     return request<{ photos: PhotoGroup[]; total: number }>(`/photos?${qs.toString()}`)
   },
 
