@@ -1,4 +1,6 @@
+import { LayoutList } from 'lucide-react'
 import type { PhotoGroup } from '../../api'
+import ToolbarDivider from '../ui/ToolbarDivider'
 
 interface RandomToolbarProps {
   currentPhoto: PhotoGroup | null
@@ -23,7 +25,7 @@ export default function RandomToolbar({
         </span>
       </div>
 
-      <div className="w-px h-6 bg-border/40" />
+      <ToolbarDivider />
 
       <div className="flex items-center gap-4">
         {batchTotal > 0 && (
@@ -48,7 +50,7 @@ export default function RandomToolbar({
           <option value={30}>缓存 30 天</option>
         </select>
 
-        <div className="w-px h-6 bg-border/40" />
+        <ToolbarDivider />
 
         <button
           onClick={onToggleRightPanel}
@@ -57,9 +59,7 @@ export default function RandomToolbar({
           }`}
           title="详细信息 ( ] )"
         >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 16h6M13 8h6M13 12h6M5 16h.01M5 8h.01M5 12h.01" />
-          </svg>
+          <LayoutList className="w-4 h-4" />
         </button>
       </div>
     </div>
