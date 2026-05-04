@@ -23,6 +23,8 @@ export default function RandomToolbar({
         </span>
       </div>
 
+      <div className="w-px h-6 bg-border/40" />
+
       <div className="flex items-center gap-4">
         {batchTotal > 0 && (
           <span className="text-text-muted text-sm font-display tabular-nums">
@@ -46,9 +48,11 @@ export default function RandomToolbar({
           <option value={30}>缓存 30 天</option>
         </select>
 
+        <div className="w-px h-6 bg-border/40" />
+
         <button
           onClick={onToggleRightPanel}
-          className={`w-8 h-8 rounded flex items-center justify-center transition-colors border-l border-border/30 ml-4 pl-4 ${
+          className={`w-8 h-8 rounded flex items-center justify-center transition-colors ${
             rightPanelOpen ? 'text-accent' : 'text-text-muted hover:text-text-secondary'
           }`}
           title="详细信息 ( ] )"

@@ -23,6 +23,8 @@ export default function ReviewToolbar() {
         </span>
       </div>
 
+      <div className="w-px h-6 bg-border/40" />
+
       {/* Right: progress + filter + counter + toggles */}
       <div className="flex items-center gap-4">
         {/* Progress */}
