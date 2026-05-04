@@ -54,7 +54,7 @@ export default function PhotoDetailsView({ photo, exif, reviewed }: PhotoDetails
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
           )}
-          <span className={`text-base ${photo.hasJpg ? 'text-success' : 'text-danger'}`}>
+          <span className={`text-sm font-medium ${photo.hasJpg ? 'text-success' : 'text-danger'}`}>
             {photo.hasJpg ? 'JPG 存在' : 'JPG 缺失'}
           </span>
         </div>
@@ -68,7 +68,7 @@ export default function PhotoDetailsView({ photo, exif, reviewed }: PhotoDetails
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
           )}
-          <span className={`text-base ${photo.hasRaw ? 'text-success' : 'text-danger'}`}>
+          <span className={`text-sm font-medium ${photo.hasRaw ? 'text-success' : 'text-danger'}`}>
             {photo.hasRaw ? 'RAW 已配对' : 'RAW 缺失'}
           </span>
         </div>
@@ -110,7 +110,7 @@ function MetaRow({ label, value, mono }: { label: string; value: string; mono?: 
   return (
     <div className="flex justify-between items-start gap-2">
       <span className="text-sm text-text-muted shrink-0">{label}</span>
-      <span className={`text-base text-text text-right max-w-[220px] break-all ${mono ? 'font-mono' : ''}`} title={value}>
+      <span className={`text-sm font-medium text-text text-right max-w-[260px] break-all ${mono ? 'font-mono' : ''}`} title={value}>
         {value || '—'}
       </span>
     </div>
@@ -120,7 +120,7 @@ function MetaRow({ label, value, mono }: { label: string; value: string; mono?: 
 function StatusBadge({ reviewed }: { reviewed: boolean }) {
   if (reviewed) {
     return (
-      <span className="inline-flex items-center gap-1.5 text-base text-success">
+      <span className="inline-flex items-center gap-1.5 text-sm font-medium text-success">
         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
         </svg>
@@ -129,7 +129,7 @@ function StatusBadge({ reviewed }: { reviewed: boolean }) {
     )
   }
   return (
-    <span className="inline-flex items-center gap-1.5 text-base text-text-muted">
+    <span className="inline-flex items-center gap-1.5 text-sm font-medium text-text-muted">
       <span className="w-2 h-2 rounded-full bg-text-muted" />
       未审阅
     </span>
