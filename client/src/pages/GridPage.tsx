@@ -1,4 +1,4 @@
-import { useEffect, useCallback, useRef, useState } from 'react'
+import { useEffect, useCallback, useRef, useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { useApp } from '../context/AppContext'
@@ -17,6 +17,12 @@ function GridLayout() {
 
   const scrollRef = useRef<HTMLDivElement>(null)
   const [lightboxIndex, setLightboxIndex] = useState(-1)
+
+  const photoIndexMap = useMemo(() => {
+    const map = new Map<string, number>()
+    filteredPhotos.forEach((p, i) => map.set(p.id, i))
+    return map
+  }, [filteredPhotos])
 
   const HEADER_HEIGHT = 64
   const GAP = 12
@@ -117,8 +123,8 @@ function GridLayout() {
                   }}
                   className="flex gap-3 px-8"
                 >
-                  {item.photos.map((photo, colIdx) => {
-                    const photoIndex = filteredPhotos.indexOf(photo)
+                  {item.photos.map((photo) => {
+                    const photoIndex = photoIndexMap.get(photo.id)!
                     return (
                       <div
                         key={photo.id}
