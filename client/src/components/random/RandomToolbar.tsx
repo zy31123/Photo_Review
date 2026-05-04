@@ -1,4 +1,3 @@
-import { useNavigate } from 'react-router-dom'
 import type { PhotoGroup } from '../../api'
 
 interface RandomToolbarProps {
@@ -16,20 +15,8 @@ export default function RandomToolbar({
   currentPhoto, batchReviewed, batchTotal, sessionReviewed,
   rightPanelOpen, onToggleRightPanel, cacheDays, onCacheDaysChange,
 }: RandomToolbarProps) {
-  const navigate = useNavigate()
-
   return (
-    <div className="h-12 bg-bg-deep border-b border-border/30 flex items-center px-4 shrink-0">
-      <button
-        onClick={() => navigate('/review')}
-        className="text-text-muted hover:text-text transition-colors text-sm flex items-center gap-1.5"
-      >
-        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 19l-7-7 7-7" />
-        </svg>
-        返回
-      </button>
-
+    <div className="h-13 bg-bg-deep border-b border-border/30 flex items-center px-4 shrink-0">
       <div className="flex-1 text-center px-4">
         <span className="text-text-secondary text-sm font-mono truncate block max-w-md mx-auto">
           {currentPhoto?.name || ''}

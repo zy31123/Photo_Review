@@ -1,8 +1,6 @@
-import { useNavigate } from 'react-router-dom'
 import { useReview } from '../../context/ReviewContext'
 
 export default function ReviewToolbar() {
-  const navigate = useNavigate()
   const { photos, currentPhoto, currentIndex, filteredPhotos, statusFilter, setStatusFilter, reviewedCount, leftSidebarOpen, rightPanelOpen, toggleLeftSidebar, toggleRightPanel } = useReview()
 
   const total = filteredPhotos.length
@@ -17,19 +15,7 @@ export default function ReviewToolbar() {
   ]
 
   return (
-    <div className="h-12 bg-bg-deep border-b border-border/30 flex items-center px-4 shrink-0">
-      {/* Left: back button */}
-      <button
-        onClick={() => navigate('/')}
-        data-testid="btn-back"
-        className="text-text-muted hover:text-text transition-colors text-sm flex items-center gap-1.5"
-      >
-        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 19l-7-7 7-7" />
-        </svg>
-        返回
-      </button>
-
+    <div className="h-13 bg-bg-deep border-b border-border/30 flex items-center px-4 shrink-0">
       {/* Center: filename */}
       <div className="flex-1 text-center px-4">
         <span className="text-text-secondary text-sm font-mono truncate block max-w-md mx-auto">
@@ -78,24 +64,6 @@ export default function ReviewToolbar() {
         </div>
 
         <div className="flex items-center gap-1 border-l border-border/30 pl-4">
-          <button
-            onClick={() => navigate('/random')}
-            className="w-8 h-8 rounded flex items-center justify-center transition-colors text-text-muted hover:text-text-secondary"
-            title="随机浏览"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-            </svg>
-          </button>
-          <button
-            onClick={() => navigate('/batch')}
-            className="w-8 h-8 rounded flex items-center justify-center transition-colors text-text-muted hover:text-text-secondary"
-            title="批量处理"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-            </svg>
-          </button>
           <button
             onClick={toggleLeftSidebar}
             data-testid="btn-toggle-sidebar"

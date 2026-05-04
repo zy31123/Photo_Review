@@ -1,9 +1,12 @@
 import { useState, useCallback, memo } from 'react'
-import { useReview } from '../../context/ReviewContext'
+import { useGrid } from '../../context/GridContext'
 import type { MonthGroup } from '../../hooks/useDateGroups'
 
-export default function DateSidebar() {
-  const { monthGroups, selectedDate, setDateFilter, leftSidebarOpen, photos, currentPhoto, subfolderFilter, setSubfolderFilter, subfolders } = useReview()
+export default function GridDateSidebar() {
+  const {
+    monthGroups, selectedDate, setSelectedDate, sidebarOpen,
+    photos, subfolderFilter, setSubfolderFilter, subfolders, dateIndexMap, scrollToRef,
+  } = useGrid()
   const [collapsedMonths, setCollapsedMonths] = useState<Set<string>>(new Set())
 
   const toggleMonth = useCallback((ym: string) => {
@@ -14,11 +17,18 @@ export default function DateSidebar() {
     })
   }, [])
 
-  const currentPhotoDate = currentPhoto?.date || null
+  const handleDateClick = useCallback((date: string) => {
+    if (selectedDate === date) {
+      setSelectedDate(null)
+    } else {
+      setSelectedDate(date)
+      scrollToRef.current(date)
+    }
+  }, [selectedDate, setSelectedDate, scrollToRef])
 
-  if (!leftSidebarOpen) {
+  if (!sidebarOpen) {
     return (
-      <div className="h-full bg-bg-deep border-r border-border/30 flex flex-col items-center pt-3">
+      <div className="h-full bg-bg-deep border-r border-border/30 flex flex-col items-center pt-3 w-14 shrink-0">
         <svg className="w-5 h-5 text-text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <rect x="3" y="4" width="18" height="18" rx="2" ry="2" strokeWidth="1.5" />
           <line x1="16" y1="2" x2="16" y2="6" strokeWidth="1.5" />
@@ -30,7 +40,7 @@ export default function DateSidebar() {
   }
 
   return (
-    <div className="h-full bg-bg-deep border-r border-border/30 flex flex-col overflow-hidden">
+    <div className="h-full bg-bg-deep border-r border-border/30 flex flex-col overflow-hidden shrink-0" style={{ width: 'clamp(260px, 15vw, 380px)' }}>
       <div className="px-4 pt-5 pb-3">
         {subfolders.length > 1 ? (
           <div className="space-y-0.5 mb-2">
@@ -62,8 +72,8 @@ export default function DateSidebar() {
           </div>
         ) : (
           <button
-            onClick={() => setDateFilter(null)}
-            className={`w-full text-left px-4 py-3 rounded-r text-xl font-semibold transition-all duration-200 ${
+            onClick={() => setSelectedDate(null)}
+            className={`w-full text-left px-5 py-4 rounded-r text-xl font-semibold transition-all duration-200 ${
               selectedDate === null
                 ? 'text-accent border-l-2 border-accent bg-accent-subtle'
                 : 'text-text-secondary hover:text-text hover:bg-bg-raised'
@@ -75,16 +85,15 @@ export default function DateSidebar() {
         )}
       </div>
 
-      <div className="flex-1 overflow-y-auto px-3 pb-6 space-y-1">
+      <div className="flex-1 overflow-y-auto px-3 pb-6 space-y-1.5">
         {monthGroups.map(month => (
-          <MonthBlock
+          <SidebarMonthBlock
             key={month.yearMonth}
             month={month}
             collapsed={collapsedMonths.has(month.yearMonth)}
             onToggleMonth={toggleMonth}
             selectedDate={selectedDate}
-            currentPhotoDate={currentPhotoDate}
-            onSelectDate={setDateFilter}
+            onSelectDate={handleDateClick}
           />
         ))}
       </div>
@@ -92,21 +101,20 @@ export default function DateSidebar() {
   )
 }
 
-const MonthBlock = memo(function MonthBlock({
-  month, collapsed, onToggleMonth, selectedDate, currentPhotoDate, onSelectDate,
+const SidebarMonthBlock = memo(function SidebarMonthBlock({
+  month, collapsed, onToggleMonth, selectedDate, onSelectDate,
 }: {
   month: MonthGroup
   collapsed: boolean
   onToggleMonth: (ym: string) => void
   selectedDate: string | null
-  currentPhotoDate: string | null
-  onSelectDate: (date: string | null) => void
+  onSelectDate: (date: string) => void
 }) {
   return (
     <div>
       <button
         onClick={() => onToggleMonth(month.yearMonth)}
-        className="w-full flex items-center justify-between px-3 py-2.5 text-xs font-semibold tracking-widest uppercase text-text-muted hover:text-text-secondary transition-colors"
+        className="w-full flex items-center justify-between px-4 py-3 text-xs font-semibold tracking-widest uppercase text-text-muted hover:text-text-secondary transition-colors"
       >
         <span className="flex items-center gap-1.5">
           <svg
@@ -123,14 +131,12 @@ const MonthBlock = memo(function MonthBlock({
       {!collapsed && (
         <div className="space-y-0.5 ml-1">
           {month.dates.map(dg => (
-            <DateRow
+            <SidebarDateRow
               key={dg.date}
               date={dg.date}
               label={dg.label}
               count={dg.count}
-              reviewedCount={dg.reviewedCount}
               active={selectedDate === dg.date}
-              isCurrent={currentPhotoDate === dg.date}
               onSelect={onSelectDate}
             />
           ))}
@@ -140,37 +146,26 @@ const MonthBlock = memo(function MonthBlock({
   )
 })
 
-const DateRow = memo(function DateRow({
-  date, label, count, reviewedCount, active, isCurrent, onSelect,
+const SidebarDateRow = memo(function SidebarDateRow({
+  date, label, count, active, onSelect,
 }: {
   date: string
   label: string
   count: number
-  reviewedCount: number
   active: boolean
-  isCurrent: boolean
-  onSelect: (d: string | null) => void
+  onSelect: (d: string) => void
 }) {
-  const fullyReviewed = reviewedCount >= count
-  const rowClass = active
-    ? 'border-l-2 border-accent bg-accent-subtle text-accent'
-    : isCurrent
-      ? 'border-l-2 border-accent/40 text-text-secondary'
-      : fullyReviewed
-        ? 'text-text-muted hover:text-text-secondary'
-        : 'text-text-secondary hover:text-text'
-
-  const countColor = active ? 'text-accent/70' : fullyReviewed ? 'text-green-500/70' : 'text-text-muted'
-
   return (
     <button
-      onClick={() => onSelect(active ? null : date)}
-      className={`date-item w-full flex items-center justify-between pl-5 pr-3 py-2.5 text-sm rounded-r transition-all duration-200 ${rowClass}`}
+      onClick={() => onSelect(date)}
+      className={`w-full flex items-center justify-between pl-5 pr-3 py-2.5 text-sm rounded-r transition-all duration-200 ${
+        active
+          ? 'border-l-2 border-accent bg-accent-subtle text-accent'
+          : 'text-text-secondary hover:text-text hover:bg-bg-raised'
+      }`}
     >
-      <span className="relative z-10">{label}</span>
-      <span className={`relative z-10 text-xs tabular-nums ${countColor}`}>
-        {reviewedCount > 0 ? `${reviewedCount}/${count}` : count}
-      </span>
+      <span>{label}</span>
+      <span className="text-text-muted text-xs tabular-nums">{count}</span>
     </button>
   )
 })
