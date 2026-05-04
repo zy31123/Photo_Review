@@ -29,21 +29,21 @@ export default function HomePage() {
     <div className="h-screen flex flex-col items-center justify-center px-6 bg-bg relative">
       {/* Subtle gradient orb background */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full bg-accent/[0.03] blur-[120px]" />
+        <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[400px] rounded-full bg-accent/[0.04] blur-[120px]" />
       </div>
 
       <div className="relative z-10 flex flex-col items-center">
         {/* Decorative dots */}
-        <div className="flex items-center gap-2 mb-4">
-          <span className="w-1.5 h-1.5 rounded-full bg-accent" />
-          <span className="w-1.5 h-1.5 rounded-full bg-accent/60" />
-          <span className="w-1.5 h-1.5 rounded-full bg-accent/30" />
+        <div className="flex items-center gap-3 mb-4">
+          <span className="w-2 h-2 rounded-full bg-accent" />
+          <span className="w-2 h-2 rounded-full bg-accent/60" />
+          <span className="w-2 h-2 rounded-full bg-accent/30" />
         </div>
 
         <h1 className="text-6xl font-display font-bold text-text-heading tracking-tight mb-5">
           Photo Review
         </h1>
-        <div className="w-16 h-px bg-gradient-to-r from-transparent via-accent to-transparent mb-4" />
+        <div className="w-24 h-px bg-gradient-to-r from-transparent via-accent to-transparent mb-4" />
         <p className="text-text-secondary text-lg mb-14 tracking-wide">
           选择你的图库文件夹开始审阅
         </p>
@@ -58,7 +58,7 @@ export default function HomePage() {
             </div>
             <button
               onClick={() => setPickerOpen(true)}
-              className="px-5 py-4 rounded-lg border border-border text-text-secondary hover:bg-bg-hover hover:text-text hover:border-border-light hover:shadow-inner transition-all duration-200 text-base"
+              className="px-5 py-4 rounded-lg border border-border text-text-secondary hover:bg-bg-hover hover:text-accent hover:border-accent/40 hover:shadow-inner transition-all duration-200 text-base"
             >
               浏览
             </button>
