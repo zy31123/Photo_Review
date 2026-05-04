@@ -11,6 +11,7 @@ export function useRandomBatch() {
   const [rightPanelOpen, setRightPanelOpen] = useState(true)
   const [exhausted, setExhausted] = useState(false)
   const [actionedSet, setActionedSet] = useState<Set<number>>(new Set())
+  const [batchComplete, setBatchComplete] = useState(false)
   const processingRef = useRef(false)
 
   const currentPhoto = currentIndex >= 0 && currentIndex < photos.length ? photos[currentIndex] : null
@@ -22,6 +23,7 @@ export function useRandomBatch() {
     const count = size ?? batchSize
     setLoading(true)
     setError('')
+    setBatchComplete(false)
     try {
       const result = await api.getRandomPhotos(count)
       if (result.photos.length === 0) {
@@ -62,7 +64,7 @@ export function useRandomBatch() {
       if (currentIndex < photos.length - 1) {
         setCurrentIndex(currentIndex + 1)
       } else {
-        loadBatch()
+        setBatchComplete(true)
       }
       return
     }
@@ -74,9 +76,6 @@ export function useRandomBatch() {
     setError('')
     try {
       await api.submitReview(photo.id, action, 'random')
-      if (action === 'deleted') {
-        await api.deletePhoto(photo.id)
-      }
       setActionedSet(prev => new Set(prev).add(currentIndex))
       setSessionReviewed(prev => prev + 1)
 
@@ -84,7 +83,7 @@ export function useRandomBatch() {
         const remaining = photos.filter(p => p.id !== photo.id)
         setPhotos(remaining)
         if (remaining.length === 0) {
-          loadBatch()
+          setBatchComplete(true)
         } else {
           const adjustedIndex = Math.min(currentIndex, remaining.length - 1)
           setCurrentIndex(Math.max(0, adjustedIndex))
@@ -92,14 +91,14 @@ export function useRandomBatch() {
       } else if (currentIndex < photos.length - 1) {
         setCurrentIndex(currentIndex + 1)
       } else {
-        loadBatch()
+        setBatchComplete(true)
       }
     } catch (e: any) {
       setError(e.message || '操作失败')
     } finally {
       processingRef.current = false
     }
-  }, [photos, currentIndex, loadBatch])
+  }, [photos, currentIndex])
 
   const changeBatchSize = useCallback((size: number) => {
     setBatchSize(size)
@@ -107,6 +106,10 @@ export function useRandomBatch() {
 
   const toggleRightPanel = useCallback(() => {
     setRightPanelOpen(prev => !prev)
+  }, [])
+
+  const dismissBatchComplete = useCallback(() => {
+    setBatchComplete(false)
   }, [])
 
   return {
@@ -123,6 +126,7 @@ export function useRandomBatch() {
     batchTotal: photos.length,
     canGoPrev,
     canGoNext,
+    batchComplete,
     loadBatch,
     goTo,
     goNext,
@@ -130,5 +134,6 @@ export function useRandomBatch() {
     handleAction,
     changeBatchSize,
     toggleRightPanel,
+    dismissBatchComplete,
   }
 }

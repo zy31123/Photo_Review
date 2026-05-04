@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useCallback, useMemo, useRef, type ReactNode } from 'react'
 import { api, type PhotoGroup, type SubfolderInfo } from '../api'
+import { useApp } from './AppContext'
 import { useDateGroups, type StatusFilter } from '../hooks/useDateGroups'
 
 interface ReviewState {
@@ -40,7 +41,8 @@ export function useReview(): ReviewContext {
   return ctx
 }
 
-export function ReviewProvider({ children }: { children: ReactNode }) {
+export function ReviewProvider({ startId, children }: { startId?: string; children: ReactNode }) {
+  const { photos: appPhotos } = useApp()
   const [photos, setPhotos] = useState<PhotoGroup[]>([])
   const [currentIndex, setCurrentIndex] = useState(0)
   const [selectedDate, setSelectedDate] = useState<string | null>(null)
@@ -109,19 +111,23 @@ export function ReviewProvider({ children }: { children: ReactNode }) {
   const refresh = useCallback(async () => {
     setLoading(true)
     try {
-      const [result, subs] = await Promise.all([
-        api.getPhotos({ limit: 2000 }),
-        api.getSubfolders(),
-      ])
-      setPhotos(result.photos)
+      const resultPhotos = appPhotos.length > 0 ? appPhotos : (await api.getPhotos({ limit: 2000 })).photos
+      const subs = await api.getSubfolders()
+      setPhotos(resultPhotos)
       setSubfolders(subs)
-      const firstUnreviewed = result.photos.findIndex(p => !p.reviewAction)
-      setCurrentIndex(firstUnreviewed >= 0 ? firstUnreviewed : 0)
+
+      if (startId) {
+        const idx = resultPhotos.findIndex(p => p.id === startId)
+        setCurrentIndex(idx >= 0 ? idx : 0)
+      } else {
+        const firstUnreviewed = resultPhotos.findIndex(p => !p.reviewAction)
+        setCurrentIndex(firstUnreviewed >= 0 ? firstUnreviewed : 0)
+      }
     } catch {
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [appPhotos, startId])
 
   const value = useMemo<ReviewContext>(() => ({
     photos,

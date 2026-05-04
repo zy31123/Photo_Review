@@ -1,16 +1,19 @@
 import { Routes, Route } from 'react-router-dom'
+import { AppProvider } from './context/AppContext'
 import HomePage from './pages/HomePage'
+import GridPage from './pages/GridPage'
 import ReviewPage from './pages/ReviewPage'
-import BatchPage from './pages/BatchPage'
 import RandomPage from './pages/RandomPage'
 
 export default function App() {
   return (
-    <Routes>
-      <Route path="/" element={<HomePage />} />
-      <Route path="/review" element={<ReviewPage />} />
-      <Route path="/batch" element={<BatchPage />} />
-      <Route path="/random" element={<RandomPage />} />
-    </Routes>
+    <AppProvider>
+      <Routes>
+        <Route path="/" element={<HomePage />} />
+        <Route path="/grid" element={<GridPage />} />
+        <Route path="/review" element={<ReviewPage />} />
+        <Route path="/random" element={<RandomPage />} />
+      </Routes>
+    </AppProvider>
   )
 }

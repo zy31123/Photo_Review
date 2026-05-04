@@ -74,6 +74,7 @@ export default function DateSidebar() {
           </button>
         )}
       </div>
+      <div className="border-b border-border/20 my-2" />
 
       <div className="flex-1 overflow-y-auto px-3 pb-6 space-y-1">
         {monthGroups.map(month => (

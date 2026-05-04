@@ -118,16 +118,6 @@ export const api = {
   deletePhoto: (id: string) =>
     request<{ success: boolean }>(`/photos/${encodeURIComponent(id)}`, { method: 'DELETE' }),
 
-  getOrphaned: () =>
-    request<{ jpg: PhotoGroup[]; raw: PhotoGroup[] }>(`/batch/orphaned?folder=${encodeURIComponent(activeFolder)}`),
-
-  deleteOrphaned: (type: 'jpg' | 'raw') =>
-    request<{ success: boolean; deleted: number }>('/batch/orphaned', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ type, folder: activeFolder }),
-    }),
-
   submitReview: (photoId: string, action: ReviewAction, mode: ReviewMode) =>
     request<{ success: boolean }>('/reviews', {
       method: 'POST',

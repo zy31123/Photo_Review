@@ -23,10 +23,10 @@ export default function Filmstrip() {
   const handleGoTo = useCallback((i: number) => goTo(i), [goTo])
 
   return (
-    <div className="h-[72px] bg-bg-deep border-t border-border/30 flex items-center px-4 overflow-hidden">
+    <div className="h-[88px] bg-bg-deep border-t border-border/30 flex items-center px-4 overflow-hidden">
       <div ref={scrollRef} className="flex gap-1.5 overflow-x-auto scrollbar-thin">
         {start > 0 && (
-          <div className="flex-shrink-0 w-14 h-14 flex items-center justify-center text-[10px] text-text-muted">
+          <div className="flex-shrink-0 w-[72px] h-[72px] flex items-center justify-center text-[10px] text-text-muted">
             ···
           </div>
         )}
@@ -43,7 +43,7 @@ export default function Filmstrip() {
           )
         })}
         {end < filteredPhotos.length && (
-          <div className="flex-shrink-0 w-14 h-14 flex items-center justify-center text-[10px] text-text-muted">
+          <div className="flex-shrink-0 w-[72px] h-[72px] flex items-center justify-center text-[10px] text-text-muted">
             ···
           </div>
         )}
@@ -65,9 +65,9 @@ const FilmstripItem = memo(function FilmstripItem({
     <button
       data-active={active}
       onClick={() => onSelect(index)}
-      className={`relative flex-shrink-0 w-14 h-14 rounded overflow-hidden transition-all duration-150 ${
+      className={`relative flex-shrink-0 w-[72px] h-[72px] rounded overflow-hidden transition-all duration-150 ${
         active
-          ? 'border-2 border-accent scale-105 z-10 filmstrip-item-active'
+          ? 'ring-2 ring-accent ring-offset-2 ring-offset-bg-deep scale-105 z-10'
           : reviewed
             ? 'border-2 border-transparent opacity-40 hover:opacity-70'
             : 'border-2 border-transparent opacity-50 hover:opacity-80'

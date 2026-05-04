@@ -1,10 +1,11 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { api, setActiveFolder } from '../api'
+import { useApp } from '../context/AppContext'
 import FolderPicker from '../components/FolderPicker'
 
 export default function HomePage() {
   const navigate = useNavigate()
+  const { loadPhotos } = useApp()
   const [folderPath, setFolderPath] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -15,9 +16,8 @@ export default function HomePage() {
     setLoading(true)
     setError('')
     try {
-      await api.scanFolder(folderPath.trim())
-      setActiveFolder(folderPath.trim())
-      navigate('/review')
+      await loadPhotos(folderPath.trim())
+      navigate('/grid')
     } catch (e: any) {
       setError(e.message || '扫描失败')
     } finally {
