@@ -119,13 +119,17 @@ export function GridProvider({ children }: { children: ReactNode }) {
     }
   }, [activeFolder])
 
+  const value = useMemo(() => ({
+    photos, subfolderFilter, subfolders, selectedDate, sidebarOpen, columns, loading,
+    monthGroups, filteredPhotos, dateSections, virtualItems, dateIndexMap,
+    setSubfolderFilter, setSelectedDate, toggleSidebar, setColumns,
+    refresh, scrollToRef,
+  }), [photos, subfolderFilter, subfolders, selectedDate, sidebarOpen, columns, loading,
+    monthGroups, filteredPhotos, dateSections, virtualItems, dateIndexMap,
+    setSubfolderFilter, setSelectedDate, toggleSidebar, setColumns, refresh, scrollToRef])
+
   return (
-    <GridContext.Provider value={{
-      photos, subfolderFilter, subfolders, selectedDate, sidebarOpen, columns, loading,
-      monthGroups, filteredPhotos, dateSections, virtualItems, dateIndexMap,
-      setSubfolderFilter, setSelectedDate, toggleSidebar, setColumns,
-      refresh, scrollToRef,
-    }}>
+    <GridContext.Provider value={value}>
       {children}
     </GridContext.Provider>
   )
