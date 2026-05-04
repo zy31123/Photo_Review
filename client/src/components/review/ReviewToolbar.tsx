@@ -1,4 +1,6 @@
+import { PanelLeft, LayoutList } from 'lucide-react'
 import { useReview } from '../../context/ReviewContext'
+import ToolbarDivider from '../ui/ToolbarDivider'
 
 export default function ReviewToolbar() {
   const { photos, currentPhoto, currentIndex, filteredPhotos, statusFilter, setStatusFilter, reviewedCount, leftSidebarOpen, rightPanelOpen, toggleLeftSidebar, toggleRightPanel } = useReview()
@@ -23,7 +25,7 @@ export default function ReviewToolbar() {
         </span>
       </div>
 
-      <div className="w-px h-6 bg-border/40" />
+      <ToolbarDivider />
 
       {/* Right: progress + filter + counter + toggles */}
       <div className="flex items-center gap-4">
@@ -74,10 +76,7 @@ export default function ReviewToolbar() {
             }`}
             title="日期导航 ( [ )"
           >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <rect x="3" y="4" width="18" height="18" rx="2" ry="2" strokeWidth="1.5" />
-              <line x1="9" y1="4" x2="9" y2="22" strokeWidth="1.5" />
-            </svg>
+            <PanelLeft className="w-4 h-4" />
           </button>
           <button
             onClick={toggleRightPanel}
@@ -87,9 +86,7 @@ export default function ReviewToolbar() {
             }`}
             title="详细信息 ( ] )"
           >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 16h6M13 8h6M13 12h6M5 16h.01M5 8h.01M5 12h.01" />
-            </svg>
+            <LayoutList className="w-4 h-4" />
           </button>
         </div>
       </div>

@@ -1,5 +1,6 @@
 import { PanelLeftClose, PanelLeftOpen, LayoutGrid } from 'lucide-react'
 import { useGrid } from '../../context/GridContext'
+import ToolbarDivider from '../ui/ToolbarDivider'
 
 const columnOptions = [2, 3, 4, 5]
 
@@ -26,7 +27,7 @@ export default function GridToolbar() {
         )}
       </div>
 
-      <div className="w-px h-6 bg-border/40" />
+      <ToolbarDivider />
 
       <div className="ml-auto flex items-center gap-1">
         <span className="text-text-muted text-sm mr-3">每行</span>
