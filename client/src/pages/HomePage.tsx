@@ -29,7 +29,7 @@ export default function HomePage() {
     <div className="h-screen flex flex-col items-center justify-center px-6 bg-bg relative">
       {/* Subtle gradient orb background */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[400px] rounded-full bg-accent/[0.04] blur-[120px]" />
+        <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[50rem] h-[25rem] rounded-full bg-accent/[0.04] blur-[7.5rem]" />
       </div>
 
       <div className="relative z-10 flex flex-col items-center">

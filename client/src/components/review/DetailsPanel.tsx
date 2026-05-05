@@ -9,7 +9,7 @@ export default function DetailsPanel() {
   if (!rightPanelOpen || !currentPhoto) return <div />
 
   return (
-    <div className="h-full bg-bg-deep border-l border-border/30 overflow-y-auto" style={{ paddingRight: 12 }}>
+    <div className="h-full bg-bg-deep border-l border-border/30 overflow-y-auto" style={{ paddingRight: '0.75rem' }}>
       <PhotoDetailsView
         photo={currentPhoto}
         exif={exif}

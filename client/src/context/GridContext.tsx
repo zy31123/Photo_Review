@@ -2,7 +2,6 @@ import { createContext, useContext, useState, useMemo, useEffect, useCallback, u
 import { useApp } from './AppContext'
 import { api, type SubfolderInfo, type PhotoGroup } from '../api'
 import { useDateGroups } from '../hooks/useDateGroups'
-import { formatChineseDate } from '../utils/date'
 
 export interface DateSection {
   date: string
@@ -20,7 +19,6 @@ interface GridContextType {
   subfolderFilter: string | null
   subfolders: SubfolderInfo[]
   selectedDate: string | null
-  sidebarOpen: boolean
   columns: number
   loading: boolean
   monthGroups: ReturnType<typeof useDateGroups>['monthGroups']
@@ -30,7 +28,6 @@ interface GridContextType {
   dateIndexMap: Map<string, number>
   setSubfolderFilter: (filter: string | null) => void
   setSelectedDate: (date: string | null) => void
-  toggleSidebar: () => void
   setColumns: (n: number) => void
   refresh: () => Promise<void>
   scrollToRef: React.RefObject<(date: string) => void>
@@ -50,8 +47,7 @@ export function GridProvider({ children }: { children: ReactNode }) {
   const [subfolderFilter, setSubfolderFilterState] = useState<string | null>(null)
   const [subfolders, setSubfolders] = useState<SubfolderInfo[]>([])
   const [selectedDate, setSelectedDate] = useState<string | null>(null)
-  const [sidebarOpen, setSidebarOpen] = useState(true)
-  const [columns, setColumns] = useState(3)
+  const [columns, setColumns] = useState(5)
   const [loading, setLoading] = useState(false)
 
   const scrollToRef = useRef<(date: string) => void>(() => {})
@@ -106,8 +102,6 @@ export function GridProvider({ children }: { children: ReactNode }) {
     setSelectedDate(null)
   }, [])
 
-  const toggleSidebar = useCallback(() => setSidebarOpen(prev => !prev), [])
-
   const refresh = useCallback(async () => {
     if (!activeFolder) return
     setLoading(true)
@@ -120,13 +114,13 @@ export function GridProvider({ children }: { children: ReactNode }) {
   }, [activeFolder])
 
   const value = useMemo(() => ({
-    photos, subfolderFilter, subfolders, selectedDate, sidebarOpen, columns, loading,
+    photos, subfolderFilter, subfolders, selectedDate, columns, loading,
     monthGroups, filteredPhotos, dateSections, virtualItems, dateIndexMap,
-    setSubfolderFilter, setSelectedDate, toggleSidebar, setColumns,
+    setSubfolderFilter, setSelectedDate, setColumns,
     refresh, scrollToRef,
-  }), [photos, subfolderFilter, subfolders, selectedDate, sidebarOpen, columns, loading,
+  }), [photos, subfolderFilter, subfolders, selectedDate, columns, loading,
     monthGroups, filteredPhotos, dateSections, virtualItems, dateIndexMap,
-    setSubfolderFilter, setSelectedDate, toggleSidebar, setColumns, refresh, scrollToRef])
+    setSubfolderFilter, setSelectedDate, setColumns, refresh, scrollToRef])
 
   return (
     <GridContext.Provider value={value}>

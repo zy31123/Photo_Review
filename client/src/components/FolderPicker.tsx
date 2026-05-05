@@ -34,7 +34,7 @@ export default function FolderPicker({ open, onClose, onSelect }: FolderPickerPr
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
-      <div className="w-[680px] max-h-[80vh] bg-bg-card border border-border rounded-xl shadow-2xl flex flex-col">
+      <div className="w-[42.5rem] max-h-[80vh] bg-bg-card border border-border rounded-xl shadow-2xl flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-border">
           <h2 className="text-lg font-semibold text-text">选择文件夹</h2>
@@ -55,7 +55,7 @@ export default function FolderPicker({ open, onClose, onSelect }: FolderPickerPr
         </div>
 
         {/* Directory list */}
-        <div className="flex-1 overflow-y-auto px-4 py-2 min-h-[300px]">
+        <div className="flex-1 overflow-y-auto px-4 py-2 min-h-[18.75rem]">
           {loading ? (
             <div className="flex items-center justify-center h-full text-text-muted text-base">
               加载中...

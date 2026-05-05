@@ -6,13 +6,14 @@ import { GridProvider, useGrid } from '../context/GridContext'
 import { api } from '../api'
 import NavBar from '../components/NavBar'
 import GridToolbar from '../components/grid/GridToolbar'
-import GridDateSidebar from '../components/grid/GridDateSidebar'
+import FolderSidebar from '../components/grid/FolderSidebar'
+import YearTimeline from '../components/grid/YearTimeline'
 import Lightbox from '../components/grid/Lightbox'
 
 function GridLayout() {
   const navigate = useNavigate()
   const {
-    virtualItems, dateIndexMap, columns, sidebarOpen, filteredPhotos, scrollToRef,
+    virtualItems, dateIndexMap, columns, filteredPhotos, scrollToRef,
   } = useGrid()
 
   const scrollRef = useRef<HTMLDivElement>(null)
@@ -24,19 +25,21 @@ function GridLayout() {
     return map
   }, [filteredPhotos])
 
-  const HEADER_HEIGHT = 64
-  const GAP = 12
+  const HEADER_HEIGHT_REM = 4
+  const GAP_REM = 0.25
 
   const rowVirtualizer = useVirtualizer({
     count: virtualItems.length,
     getScrollElement: () => scrollRef.current,
     estimateSize: (index) => {
+      const rootFontSize = parseFloat(getComputedStyle(document.documentElement).fontSize)
       const item = virtualItems[index]
       if (!item) return 100
-      if (item.type === 'header') return HEADER_HEIGHT
+      if (item.type === 'header') return HEADER_HEIGHT_REM * rootFontSize
       const vw = scrollRef.current?.clientWidth ?? 1200
-      const colWidth = (vw - GAP * (columns + 1)) / columns
-      return colWidth * 0.75 + GAP + 32
+      const gap = GAP_REM * rootFontSize
+      const colWidth = (vw - gap * (columns + 1)) / columns
+      return colWidth + gap
     },
     overscan: 8,
   })
@@ -66,7 +69,7 @@ function GridLayout() {
       <GridToolbar />
 
       <div className="flex-1 min-h-0 flex">
-        <GridDateSidebar />
+        <FolderSidebar />
 
         <div
           ref={scrollRef}
@@ -95,14 +98,14 @@ function GridLayout() {
                       height: `${virtualRow.size}px`,
                       transform: `translateY(${virtualRow.start}px)`,
                     }}
-                    className="flex items-end px-8 pb-4 pt-6 border-b border-border/20"
+                    className="flex items-end px-4 pb-3 pt-5"
                   >
                     <div className="flex items-center gap-3 w-full">
-                      <span className="text-text-heading text-base font-semibold whitespace-nowrap">
+                      <span className="text-text-heading text-sm font-medium whitespace-nowrap">
                         {item.label}
                       </span>
-                      <div className="flex-1 h-px bg-border/40" />
-                      <span className="text-text-secondary text-sm tabular-nums">
+                      <div className="flex-1 h-px bg-border" />
+                      <span className="text-text-muted text-xs tabular-nums">
                         {item.count} 张
                       </span>
                     </div>
@@ -121,15 +124,15 @@ function GridLayout() {
                     height: `${virtualRow.size}px`,
                     transform: `translateY(${virtualRow.start}px)`,
                   }}
-                  className="flex gap-3 px-8"
+                  className="flex gap-1 px-4"
                 >
                   {item.photos.map((photo) => {
                     const photoIndex = photoIndexMap.get(photo.id)!
                     return (
                       <div
                         key={photo.id}
-                        className="relative group cursor-pointer overflow-hidden rounded-xl border border-border/20 hover:border-border/40 transition-colors duration-200"
-                        style={{ width: `calc((100% - ${GAP * (columns + 1)}px) / ${columns})` }}
+                        className="relative group cursor-pointer overflow-hidden"
+                        style={{ width: `calc((100% - ${GAP_REM * (columns + 1)}rem) / ${columns})` }}
                         onClick={() => handleSingleClick(photoIndex)}
                         onDoubleClick={() => handleDoubleClick(photo.id)}
                       >
@@ -137,16 +140,10 @@ function GridLayout() {
                           src={api.thumbnailUrl(photo.id)}
                           alt={photo.name}
                           loading="lazy"
-                          className="w-full aspect-[4/3] object-cover bg-bg-card rounded-xl transition-opacity duration-200"
+                          className="w-full aspect-square object-cover bg-bg-card transition-opacity duration-200"
                           style={{ opacity: 0 }}
                           onLoad={e => { (e.target as HTMLImageElement).style.opacity = '1' }}
                         />
-                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/15 transition-colors duration-200 rounded-xl" />
-                        <div className="absolute bottom-0 left-0 right-0 px-3 py-2 bg-gradient-to-t from-black/60 to-transparent rounded-b-xl opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                          <span className="text-white/90 text-sm truncate block">
-                            {photo.name}
-                          </span>
-                        </div>
                       </div>
                     )
                   })}
@@ -155,6 +152,8 @@ function GridLayout() {
             })}
           </div>
         </div>
+
+        <YearTimeline />
       </div>
 
       {lightboxIndex >= 0 && (
@@ -181,7 +180,7 @@ function GridInner() {
         <div className="flex-1 flex items-center justify-center">
           <div className="flex flex-col items-center gap-4">
             <div className="relative">
-              <div className="w-10 h-10 border-[3px] border-accent border-t-transparent rounded-full animate-spin" />
+              <div className="w-10 h-10 border-[0.1875rem] border-accent border-t-transparent rounded-full animate-spin" />
             </div>
             <span className="text-text-secondary text-sm">加载中...</span>
           </div>

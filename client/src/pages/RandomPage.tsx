@@ -51,12 +51,12 @@ export default function RandomPage() {
 
   useKeyboardShortcuts(started && batch.currentPhoto ? shortcuts : {})
 
-  const rightW = 'clamp(300px, 18vw, 440px)'
+  const rightW = 'clamp(18.75rem, 18vw, 27.5rem)'
 
   const placeholder = batch.loading
     ? (
       <div className="flex items-center justify-center h-full">
-        <div className="w-10 h-10 border-[3px] border-accent border-t-transparent rounded-full animate-spin" />
+        <div className="w-10 h-10 border-[0.1875rem] border-accent border-t-transparent rounded-full animate-spin" />
       </div>
     )
     : batch.batchComplete && batch.photos.length === 0
@@ -131,7 +131,7 @@ export default function RandomPage() {
         </div>
 
         {batch.rightPanelOpen && batch.currentPhoto && (
-          <div className="h-full bg-bg-deep border-l border-border/30 overflow-y-auto" style={{ width: rightW, paddingRight: 12 }}>
+          <div className="h-full bg-bg-deep border-l border-border/30 overflow-y-auto" style={{ width: rightW, paddingRight: '0.75rem' }}>
             <PhotoDetailsView
               photo={batch.currentPhoto}
               exif={exif}

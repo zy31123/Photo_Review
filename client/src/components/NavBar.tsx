@@ -39,7 +39,7 @@ export default function NavBar() {
                     : 'text-text-muted/40 cursor-not-allowed'
               }`}
             >
-              <Icon size={16} />
+              <Icon className="size-4" />
               {item.label}
             </button>
           )
@@ -49,8 +49,8 @@ export default function NavBar() {
       <div className="ml-auto flex items-center gap-3">
         {activeFolder && (
           <div className="flex items-center gap-1.5 text-text-muted text-sm">
-            <Folder size={14} />
-            <span className="max-w-[200px] truncate">{activeFolder.split(/[\\/]/).pop()}</span>
+            <Folder className="size-3.5" />
+            <span className="max-w-[12.5rem] truncate">{activeFolder.split(/[\\/]/).pop()}</span>
           </div>
         )}
       </div>

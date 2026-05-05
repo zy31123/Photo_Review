@@ -36,7 +36,7 @@ export default function Lightbox({ photos, currentIndex, onClose, onNavigate }: 
         onClick={(e) => { e.stopPropagation(); onClose() }}
         className="absolute top-4 right-4 w-12 h-12 rounded-full bg-bg-card/80 text-text-secondary hover:text-text flex items-center justify-center transition-colors z-10"
       >
-        <X size={20} />
+        <X className="size-5" />
       </button>
 
       {canPrev && (
@@ -44,7 +44,7 @@ export default function Lightbox({ photos, currentIndex, onClose, onNavigate }: 
           onClick={(e) => { e.stopPropagation(); onNavigate(currentIndex - 1) }}
           className="absolute left-4 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-bg-card/80 text-text-secondary hover:text-text flex items-center justify-center transition-colors z-10"
         >
-          <ChevronLeft size={20} />
+          <ChevronLeft className="size-5" />
         </button>
       )}
 
@@ -53,7 +53,7 @@ export default function Lightbox({ photos, currentIndex, onClose, onNavigate }: 
           onClick={(e) => { e.stopPropagation(); onNavigate(currentIndex + 1) }}
           className="absolute right-4 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-bg-card/80 text-text-secondary hover:text-text flex items-center justify-center transition-colors z-10"
         >
-          <ChevronRight size={20} />
+          <ChevronRight className="size-5" />
         </button>
       )}
 

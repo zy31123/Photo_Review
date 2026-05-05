@@ -35,7 +35,7 @@ function ReviewLayout() {
         <div className="flex-1 flex items-center justify-center bg-bg">
           <div className="flex flex-col items-center gap-4">
             <div className="relative">
-              <div className="w-10 h-10 border-[3px] border-accent border-t-transparent rounded-full animate-spin" />
+              <div className="w-10 h-10 border-[0.1875rem] border-accent border-t-transparent rounded-full animate-spin" />
               <div className="absolute inset-0 w-10 h-10 border-2 border-accent/30 rounded-full spinner-pulse" />
             </div>
             <span className="text-text-secondary text-sm tracking-wide">加载中...</span>
@@ -66,16 +66,16 @@ function ReviewLayout() {
     )
   }
 
-  const leftW = 'clamp(260px, 14vw, 380px)'
-  const rightW = 'clamp(300px, 18vw, 440px)'
+  const leftW = 'clamp(16.25rem, 14vw, 23.75rem)'
+  const rightW = 'clamp(18.75rem, 18vw, 27.5rem)'
 
   const gridCols = leftSidebarOpen
     ? rightPanelOpen
       ? `${leftW} 1fr ${rightW}`
       : `${leftW} 1fr 0px`
     : rightPanelOpen
-      ? `48px 1fr ${rightW}`
-      : '48px 1fr 0px'
+      ? `3rem 1fr ${rightW}`
+      : '3rem 1fr 0'
 
   return (
     <div className="h-screen flex flex-col bg-bg overflow-hidden">
@@ -84,7 +84,7 @@ function ReviewLayout() {
       <div
         className="flex-1 min-h-0 review-grid"
         data-testid="review-grid"
-        style={{ display: 'grid', gridTemplateColumns: gridCols, columnGap: 8 }}
+        style={{ display: 'grid', gridTemplateColumns: gridCols, columnGap: '0.5rem' }}
       >
         <DateSidebar />
         <ImageViewport />

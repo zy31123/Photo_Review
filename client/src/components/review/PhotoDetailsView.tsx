@@ -103,7 +103,7 @@ function MetaRow({ label, value, mono }: { label: string; value: string; mono?: 
   return (
     <div className="flex justify-between items-start gap-2">
       <span className="text-sm text-text-muted shrink-0">{label}</span>
-      <span className={`text-sm font-medium text-text text-right max-w-[260px] break-all ${mono ? 'font-mono' : ''}`} title={value}>
+      <span className={`text-sm font-medium text-text text-right max-w-[16.25rem] break-all ${mono ? 'font-mono' : ''}`} title={value}>
         {value || '—'}
       </span>
     </div>
