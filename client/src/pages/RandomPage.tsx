@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Image as ImageIcon } from 'lucide-react'
 import { api, getActiveFolder } from '../api'
@@ -6,6 +6,8 @@ import { useApp } from '../context/AppContext'
 import { useRandomBatch } from '../hooks/useRandomBatch'
 import { useExif } from '../hooks/useExif'
 import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts'
+import { useDragImage } from '../hooks/useDragImage'
+import { useImageZoom } from '../hooks/useImageZoom'
 import NavBar from '../components/NavBar'
 import RandomToolbar from '../components/random/RandomToolbar'
 import RandomControls from '../components/random/RandomControls'
@@ -17,6 +19,8 @@ export default function RandomPage() {
   const { isLoaded } = useApp()
   const batch = useRandomBatch()
   const exif = useExif(batch.currentPhoto)
+  const drag = useDragImage(batch.currentPhoto)
+  const { resetZoom, zoomStyle, handlers: zoomHandlers } = useImageZoom()
   const [cacheDays, setCacheDays] = useState(7)
   const [started, setStarted] = useState(false)
 
@@ -50,6 +54,12 @@ export default function RandomPage() {
   }), [batch.goPrev, batch.goNext, batch.handleAction, batch.toggleRightPanel])
 
   useKeyboardShortcuts(started && batch.currentPhoto ? shortcuts : {})
+
+  useEffect(() => { resetZoom() }, [batch.currentPhoto?.id, resetZoom])
+
+  const handleWheel = useCallback((e: React.WheelEvent) => {
+    zoomHandlers.onWheel(e)
+  }, [zoomHandlers])
 
   const rightW = 'clamp(18.75rem, 18vw, 27.5rem)'
 
@@ -108,7 +118,7 @@ export default function RandomPage() {
       )}
 
       <div className="flex-1 min-h-0 flex">
-        <div className="flex-1 relative flex items-center justify-center bg-bg overflow-hidden">
+        <div className="flex-1 relative flex items-center justify-center bg-bg overflow-hidden" onWheel={handleWheel}>
           {!started || !batch.currentPhoto ? placeholder : (
             <>
               <img
@@ -116,6 +126,13 @@ export default function RandomPage() {
                 src={api.fullUrl(batch.currentPhoto.id)}
                 alt={batch.currentPhoto.name}
                 className="max-h-full max-w-full object-contain rounded shadow-2xl"
+                style={{ ...zoomStyle, transformOrigin: '0 0' }}
+                {...drag}
+                onMouseDown={zoomHandlers.onMouseDown}
+                onMouseMove={zoomHandlers.onMouseMove}
+                onMouseUp={zoomHandlers.onMouseUp}
+                onMouseLeave={zoomHandlers.onMouseLeave}
+                onDoubleClick={zoomHandlers.onDoubleClick}
               />
               <RandomControls
                 canGoPrev={batch.canGoPrev}

@@ -1,6 +1,8 @@
-import { useState, useCallback, useRef } from 'react'
+import { useState, useCallback, useRef, useEffect } from 'react'
 import { api } from '../../api'
 import { useReview } from '../../context/ReviewContext'
+import { useDragImage } from '../../hooks/useDragImage'
+import { useImageZoom } from '../../hooks/useImageZoom'
 import ReviewControls from './ReviewControls'
 
 export default function ImageViewport() {
@@ -9,13 +11,18 @@ export default function ImageViewport() {
   const [hoveringLeft, setHoveringLeft] = useState(false)
   const [hoveringRight, setHoveringRight] = useState(false)
   const wheelTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const { resetZoom, zoomStyle, handlers: zoomHandlers } = useImageZoom()
 
   const handleImageLoad = useCallback(() => setLoaded(true), [])
+  const drag = useDragImage(currentPhoto, handleImageLoad)
+
+  useEffect(() => { resetZoom() }, [currentPhoto?.id, resetZoom])
 
   const handlePrev = useCallback(() => goTo(currentIndex - 1), [currentIndex, goTo])
   const handleNext = useCallback(() => goTo(currentIndex + 1), [currentIndex, goTo])
 
   const handleWheel = useCallback((e: React.WheelEvent) => {
+    if (zoomHandlers.onWheel(e)) return
     if (wheelTimerRef.current) return
     if (e.deltaY > 0) {
       goTo(currentIndex + 1)
@@ -25,7 +32,7 @@ export default function ImageViewport() {
     wheelTimerRef.current = setTimeout(() => {
       wheelTimerRef.current = null
     }, 150)
-  }, [currentIndex, goTo])
+  }, [currentIndex, goTo, zoomHandlers])
 
   if (!currentPhoto) {
     return (
@@ -63,9 +70,15 @@ export default function ImageViewport() {
         key={currentPhoto.id}
         src={api.fullUrl(currentPhoto.id)}
         alt={currentPhoto.name}
-        onLoad={handleImageLoad}
-        className={`max-h-full max-w-full object-contain transition-all duration-300 ease-out ${
-          loaded ? 'opacity-100 scale-100' : 'opacity-0 scale-[1.02]'
+        {...drag}
+        style={{ ...zoomStyle, transformOrigin: '0 0' }}
+        onMouseDown={zoomHandlers.onMouseDown}
+        onMouseMove={zoomHandlers.onMouseMove}
+        onMouseUp={zoomHandlers.onMouseUp}
+        onMouseLeave={zoomHandlers.onMouseLeave}
+        onDoubleClick={zoomHandlers.onDoubleClick}
+        className={`max-h-full max-w-full object-contain transition-opacity duration-300 ease-out ${
+          loaded ? 'opacity-100' : 'opacity-0'
         }`}
       />
 

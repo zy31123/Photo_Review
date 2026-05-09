@@ -16,3 +16,4 @@ e2e/reports/report.html
 test-results/
 report-*.png
 .playwright-mcp/
+.superpowers/
