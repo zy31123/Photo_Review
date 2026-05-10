@@ -10,6 +10,7 @@ data/
 # E2E test outputs
 e2e/reports/
 test-results/
+playwright-report/
 report-*.png
 .playwright-mcp/
 .superpowers/

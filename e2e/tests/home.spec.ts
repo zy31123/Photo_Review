@@ -1,8 +1,5 @@
 import { test, expect } from '@playwright/test'
-
-function jsonResponse(data: unknown) {
-  return { status: 200, contentType: 'application/json', body: JSON.stringify(data) }
-}
+import { jsonResponse } from '../helpers/navigate-to-review'
 
 test.describe('Home Page', () => {
   test('displays title and folder input on load', async ({ page }) => {

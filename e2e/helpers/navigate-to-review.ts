@@ -1,7 +1,7 @@
 import path from 'path'
 import { expect, type Page, type Route } from '@playwright/test'
 
-function jsonResponse(data: unknown) {
+export function jsonResponse(data: unknown) {
   return { status: 200, contentType: 'application/json', body: JSON.stringify(data) }
 }
 
