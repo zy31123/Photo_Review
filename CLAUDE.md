@@ -9,7 +9,7 @@
 - 前端: React 19 + TypeScript, Vite 6, Tailwind 4
 - 后端: Express 5 + TypeScript, better-sqlite3 (WAL)
 - 图片: sharp (缩略图), exifr (EXIF)
-- 测试: Playwright (E2E)
+- 测试: Playwright (E2E)    运行测试可使用 图片文件夹'E:\Photos'  截图输出目录 e2e/screenshots/
 - 架构: npm workspaces monorepo (client/ + server/)
 - 端口: 前端 5173 → 代理 /api → 后端 3001
 
