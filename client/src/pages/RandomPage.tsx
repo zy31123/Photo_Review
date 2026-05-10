@@ -76,10 +76,10 @@ export default function RandomPage() {
     : batch.batchComplete && batch.photos.length === 0
       ? (
         <div className="flex flex-col items-center justify-center h-full gap-4">
-          <p className="text-text-secondary">所有照片已审阅完毕</p>
+          <p className="text-white/50">所有照片已审阅完毕</p>
           <button
             onClick={() => batch.loadBatch()}
-            className="px-4 py-2 rounded-lg bg-accent text-bg text-sm font-medium hover:bg-accent-dim transition-colors"
+            className="px-4 py-2 rounded-xl bg-accent text-white text-sm font-medium hover:bg-accent-dim transition-colors"
           >
             加载下一批
           </button>
@@ -88,8 +88,8 @@ export default function RandomPage() {
       : <div className="flex flex-col items-center justify-center gap-6">
           <ImageIcon className="w-16 h-16 text-text-muted/30" />
           <div className="text-center">
-            <p className="text-xl text-text-secondary mb-2">随机浏览你的照片</p>
-            <p className="text-sm text-text-muted">选择一个批次大小，随机抽取照片进行审阅</p>
+            <p className="text-3xl font-bold text-text-heading mb-2">随机浏览你的照片</p>
+            <p className="text-text-secondary">选择一个批次大小，随机抽取照片进行审阅</p>
           </div>
           <BatchSelector
             batchSize={batch.batchSize}
@@ -116,20 +116,23 @@ export default function RandomPage() {
       />
 
       {batch.error && (
-        <div className="mx-5 mt-2 px-4 py-2 rounded-lg bg-danger/20 border border-danger/40 text-danger text-sm text-center">
+        <div className="mx-5 mt-2 px-4 py-2.5 rounded-xl bg-danger/10 border border-danger/20 text-danger text-sm text-center">
           {batch.error}
         </div>
       )}
 
       <div className="flex-1 min-h-0 flex">
-        <div ref={containerRef} className="flex-1 relative flex items-center justify-center bg-bg overflow-hidden">
+        <div
+          ref={containerRef}
+          className={`flex-1 relative flex items-center justify-center overflow-hidden ${started && batch.currentPhoto ? 'bg-[#1D1D1F]' : 'bg-bg'}`}
+        >
           {!started || !batch.currentPhoto ? placeholder : (
             <>
               <img
                 key={batch.currentPhoto.id}
                 src={api.fullUrl(batch.currentPhoto.id)}
                 alt={batch.currentPhoto.name}
-                className="max-h-full max-w-full object-contain rounded shadow-2xl"
+                className="max-h-full max-w-full object-contain rounded-lg shadow-overlay"
                 style={{ ...zoomStyle, transformOrigin: '0 0' }}
                 {...drag}
                 onMouseDown={zoomHandlers.onMouseDown}
@@ -147,12 +150,22 @@ export default function RandomPage() {
                 onKeep={() => batch.handleAction('keep')}
                 onDelete={() => batch.handleAction('deleted')}
               />
+
+              {/* Progress bar */}
+              {batch.batchTotal > 0 && (
+                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-white/10">
+                  <div
+                    className="h-full bg-accent/60 transition-all duration-300"
+                    style={{ width: `${(batch.batchReviewed / batch.batchTotal) * 100}%` }}
+                  />
+                </div>
+              )}
             </>
           )}
         </div>
 
         {batch.rightPanelOpen && batch.currentPhoto && (
-          <div className="h-full bg-bg-deep border-l border-border/30 overflow-y-auto" style={{ width: rightW, paddingRight: '0.75rem' }}>
+          <div className="h-full bg-white/60 backdrop-blur-xl border-l border-black/[0.04] overflow-y-auto" style={{ width: rightW, paddingRight: '0.75rem' }}>
             <PhotoDetailsView
               photo={batch.currentPhoto}
               exif={exif}

@@ -26,7 +26,7 @@ function GridLayout() {
   }, [filteredPhotos])
 
   const HEADER_HEIGHT_REM = 3.5
-  const GAP_REM = 0.25
+  const GAP_REM = 0.375
 
   const rowVirtualizer = useVirtualizer({
     count: virtualItems.length,
@@ -55,7 +55,6 @@ function GridLayout() {
     scrollToRef.current = handleScrollToDate
   }, [handleScrollToDate, scrollToRef])
 
-  // Sticky header: track which date header is closest to top on scroll
   useEffect(() => {
     const el = scrollRef.current
     if (!el) return
@@ -102,11 +101,10 @@ function GridLayout() {
           ref={scrollRef}
           className="flex-1 min-h-0 overflow-y-auto"
         >
-          {/* Floating sticky date header */}
           {stickyHeader && (
-            <div className="sticky top-0 z-10 backdrop-blur-md bg-bg-deep/80 border-b border-border/20 px-4 py-2 flex items-center gap-3">
-              <span className="text-sm font-semibold text-text-secondary whitespace-nowrap">{stickyHeader.label}</span>
-              <div className="flex-1 h-px bg-border" />
+            <div className="sticky top-0 z-10 backdrop-blur-xl bg-white/80 border-b border-black/[0.04] px-4 py-2.5 flex items-center gap-3">
+              <span className="text-base font-semibold text-text-heading whitespace-nowrap">{stickyHeader.label}</span>
+              <div className="flex-1 h-px bg-black/[0.06]" />
               <span className="text-xs text-text-muted tabular-nums">{stickyHeader.count} 张</span>
             </div>
           )}
@@ -134,13 +132,13 @@ function GridLayout() {
                       height: `${virtualRow.size}px`,
                       transform: `translateY(${virtualRow.start}px)`,
                     }}
-                    className="flex items-end px-4 pb-2 pt-4"
+                    className="flex items-end px-4 pb-2 pt-6"
                   >
                     <div className="flex items-center gap-3 w-full">
-                      <span className="text-text-heading text-sm font-medium whitespace-nowrap">
+                      <span className="text-text-heading text-base font-semibold whitespace-nowrap">
                         {item.label}
                       </span>
-                      <div className="flex-1 h-px bg-border" />
+                      <div className="flex-1 h-px bg-black/[0.06]" />
                       <span className="text-text-muted text-xs tabular-nums">
                         {item.count} 张
                       </span>
@@ -160,14 +158,14 @@ function GridLayout() {
                     height: `${virtualRow.size}px`,
                     transform: `translateY(${virtualRow.start}px)`,
                   }}
-                  className="flex gap-1 px-4"
+                  className="flex gap-1.5 px-4"
                 >
                   {item.photos.map((photo) => {
                     const photoIndex = photoIndexMap.get(photo.id)!
                     return (
                       <div
                         key={photo.id}
-                        className="relative group cursor-pointer overflow-hidden"
+                        className="relative group cursor-pointer rounded-md overflow-hidden"
                         style={{ width: `calc((100% - ${GAP_REM * (columns + 1)}rem) / ${columns})` }}
                         onClick={() => handleSingleClick(photoIndex)}
                         onDoubleClick={() => handleDoubleClick(photo.id)}
@@ -176,7 +174,7 @@ function GridLayout() {
                           src={api.thumbnailUrl(photo.id)}
                           alt={photo.name}
                           loading="lazy"
-                          className="w-full aspect-square object-cover bg-bg-card transition-all duration-200 group-hover:scale-105"
+                          className="w-full aspect-square object-cover bg-bg-card transition-all duration-200 group-hover:scale-[1.02] group-hover:shadow-raised"
                           style={{ opacity: 0 }}
                           onLoad={e => { (e.target as HTMLImageElement).style.opacity = '1' }}
                         />
