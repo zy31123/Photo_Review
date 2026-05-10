@@ -77,7 +77,7 @@ export function DateSidebarBase({
               onClick={() => onSetSubfolderFilter(null)}
               className={`w-full text-left px-4 py-2.5 rounded-r text-sm font-semibold transition-all duration-200 ${
                 subfolderFilter === null
-                  ? 'text-accent border-l-2 border-accent bg-accent-subtle'
+                  ? 'text-accent border-l-[3px] border-accent bg-accent-subtle font-semibold'
                   : 'text-text-secondary hover:text-text hover:bg-bg-raised'
               }`}
             >
@@ -90,7 +90,7 @@ export function DateSidebarBase({
                 onClick={() => onSetSubfolderFilter(sf.path === subfolderFilter ? null : sf.path)}
                 className={`w-full text-left px-4 py-2.5 rounded-r text-sm transition-all duration-200 flex items-center justify-between ${
                   subfolderFilter === sf.path
-                    ? 'text-accent border-l-2 border-accent bg-accent-subtle'
+                    ? 'text-accent border-l-[3px] border-accent bg-accent-subtle font-semibold'
                     : 'text-text-secondary hover:text-text hover:bg-bg-raised'
                 }`}
               >
@@ -104,7 +104,7 @@ export function DateSidebarBase({
             onClick={onClearSelection}
             className={`w-full text-left ${allPhotosPadding} rounded-r text-xl font-semibold transition-all duration-200 ${
               selectedDate === null
-                ? 'text-accent border-l-2 border-accent bg-accent-subtle'
+                ? 'text-accent border-l-[3px] border-accent bg-accent-subtle'
                 : 'text-text-secondary hover:text-text hover:bg-bg-raised'
             }`}
           >
@@ -186,10 +186,10 @@ const SimpleDateRow = memo(function SimpleDateRow({
   return (
     <button
       onClick={() => onSelect(date)}
-      className={`w-full flex items-center justify-between pl-5 pr-3 py-2.5 text-sm rounded-r transition-all duration-200 ${
+      className={`w-full flex items-center justify-between pl-5 pr-3 py-3 text-sm rounded-r transition-all duration-200 ${
         active
-          ? 'border-l-2 border-accent bg-accent-subtle text-accent'
-          : 'text-text-secondary hover:text-text hover:bg-bg-raised'
+          ? 'border-l-[3px] border-accent bg-accent-subtle text-accent font-semibold'
+          : 'text-text hover:text-text-heading hover:bg-bg-raised'
       }`}
     >
       <span>{label}</span>

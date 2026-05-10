@@ -67,10 +67,10 @@ const FilmstripItem = memo(function FilmstripItem({
       onClick={() => onSelect(index)}
       className={`relative flex-shrink-0 w-[4.5rem] h-[4.5rem] rounded overflow-hidden transition-all duration-150 ${
         active
-          ? 'ring-2 ring-accent ring-offset-2 ring-offset-bg-deep scale-105 z-10'
+          ? 'opacity-100 ring-2 ring-blue-500 ring-offset-1 ring-offset-bg-deep scale-105 z-10'
           : reviewed
-            ? 'border-2 border-transparent opacity-40 hover:opacity-70'
-            : 'border-2 border-transparent opacity-50 hover:opacity-80'
+            ? 'border border-transparent opacity-50 hover:opacity-80'
+            : 'border border-transparent opacity-50 hover:opacity-80'
       }`}
     >
       <img src={api.thumbnailUrl(photo.id)} alt="" className="w-full h-full object-cover" loading="lazy" />

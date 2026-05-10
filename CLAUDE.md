@@ -65,53 +65,6 @@
 
 集成 Immich 照片库时的 API 参考。完整文档: <https://api.immich.app/>
 
-### 基础配置
-
-- Base URL: `https://<immich-server>/api`
-- 认证: API Key (Header `x-api-key` 或 Query `?apiKey=`)
-- 官方 SDK: `@immich/sdk` — `init({ baseUrl, apiKey })`
-- OpenAPI 规范: <https://github.com/immich-app/immich/blob/main/open-api/immich-openapi-specs.json>
-
-### 核心端点
-
-**浏览**
-
-- `GET /timeline/buckets` — 按日期分组的时间桶列表 (支持 albumId/isFavorite/personId/tagId 过滤)
-- `GET /timeline/bucket?timeBucket=YYYY-MM-DD` — 获取特定日期桶内资产 ID
-- `GET /assets/{id}` — 资产详情 (withExif/withPeople/withStacked)
-- `GET /assets/{id}/thumbnail?size=thumbnail|preview` — 缩略图
-- `GET /assets/{id}/original` — 下载原始文件
-
-**操作**
-
-- `PUT /assets` — 批量更新 (isFavorite/rating/description/visibility)
-- `DELETE /assets/{id}` — 删除资产
-- `PUT /tags/{id}/assets` — 批量打标签
-- `PUT /albums/assets` — 批量添加到相册
-
-**搜索**
-
-- `POST /search/metadata` — 元数据搜索 (评分/人物/标签/日期/设备/地理位置)
-- `POST /search/smart` — 语义搜索 (CLIP 向量)
-- `GET /search/person?name=` — 按名字搜索人物
-
-**辅助**
-
-- `GET /server/ping` — 心跳检测 (无需认证)
-- `GET /server/version` — 版本信息
-
-### 与本项目 API 的映射
-
-| Photo_Review 内部 API | Immich API | 说明 |
-| --- | --- | --- |
-| `GET /api/photos` | `GET /timeline/bucket` | 照片列表 |
-| `GET /api/photos/:id/thumbnail` | `GET /assets/{id}/thumbnail` | 缩略图 |
-| `GET /api/photos/:id/full` | `GET /assets/{id}/original` | 全尺寸图 |
-| `GET /api/photos/:id/exif` | `GET /assets/{id}` (+withExif) | EXIF |
-| `DELETE /api/photos/:id` | `DELETE /assets/{id}` | 删除 |
-| `GET /api/reviews/random` | `POST /search/metadata` | 随机审阅 |
-| `GET /api/stats` | `GET /server/statistics` | 统计 |
-
 ## 其他
 
 - 用户指令优先于本文件。

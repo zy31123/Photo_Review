@@ -9,23 +9,29 @@ interface PhotoDetailsViewProps {
   reviewed?: boolean
 }
 
+function Card({ children }: { children: React.ReactNode }) {
+  return <div className="mx-4 mb-3 rounded-lg border border-border/40 bg-bg-card shadow-card overflow-hidden">{children}</div>
+}
+
 export default function PhotoDetailsView({ photo, exif, reviewed }: PhotoDetailsViewProps) {
   const folderName = photo.folder ? photo.folder.split(/[/\\]/).pop() || photo.folder : ''
   const formattedDate = formatChineseDate(photo.date)
 
   return (
     <>
-      <SectionHeader title="文件信息" />
-      <div className="px-5 py-3 space-y-4">
-        <MetaRow label="文件名" value={photo.name} mono />
-        <MetaRow label="日期" value={formattedDate} />
-        <MetaRow label="文件夹" value={folderName} />
-      </div>
+      <Card>
+        <SectionHeader title="文件信息" compact />
+        <div className="px-4 py-3 space-y-3">
+          <MetaRow label="文件名" value={photo.name} mono />
+          <MetaRow label="日期" value={formattedDate} />
+          <MetaRow label="文件夹" value={folderName} />
+        </div>
+      </Card>
 
       {exif && (
-        <>
-          <SectionHeader title="拍摄参数" />
-          <div className="px-5 py-3 space-y-4">
+        <Card>
+          <SectionHeader title="拍摄参数" compact />
+          <div className="px-4 py-3 space-y-3">
             <MetaRow label="相机" value={exif.camera} />
             <MetaRow label="镜头" value={exif.lens} />
             <MetaRow label="焦距" value={exif.focalLength} />
@@ -40,60 +46,46 @@ export default function PhotoDetailsView({ photo, exif, reviewed }: PhotoDetails
               <MetaRow label="拍摄时间" value={exif.dateTime} />
             )}
           </div>
-        </>
+        </Card>
       )}
 
-      <SectionHeader title="文件状态" />
-      <div className="px-5 py-3 space-y-3">
-        <div className="flex items-center gap-2">
-          {photo.hasJpg ? (
-            <Check className="w-4 h-4 text-success shrink-0" strokeWidth={2} />
-          ) : (
-            <X className="w-4 h-4 text-danger shrink-0" strokeWidth={2} />
-          )}
-          <span className={`text-sm font-medium ${photo.hasJpg ? 'text-success' : 'text-danger'}`}>
-            {photo.hasJpg ? 'JPG 存在' : 'JPG 缺失'}
-          </span>
+      <Card>
+        <SectionHeader title="文件状态" compact />
+        <div className="px-4 py-3 flex flex-wrap items-center gap-2">
+          <FileStatusBadge exists={photo.hasJpg} label={photo.hasJpg ? 'JPG 存在' : 'JPG 缺失'} />
+          <FileStatusBadge exists={photo.hasRaw} label={photo.hasRaw ? 'RAW 已配对' : 'RAW 缺失'} />
         </div>
-        <div className="flex items-center gap-2">
-          {photo.hasRaw ? (
-            <Check className="w-4 h-4 text-success shrink-0" strokeWidth={2} />
-          ) : (
-            <X className="w-4 h-4 text-danger shrink-0" strokeWidth={2} />
-          )}
-          <span className={`text-sm font-medium ${photo.hasRaw ? 'text-success' : 'text-danger'}`}>
-            {photo.hasRaw ? 'RAW 已配对' : 'RAW 缺失'}
-          </span>
-        </div>
-      </div>
+      </Card>
 
-      <SectionHeader title="文件路径" />
-      <div className="px-5 py-3 space-y-2">
-        {photo.jpgPath && (
-          <div>
-            <p className="text-sm text-text-muted mb-0.5">JPG</p>
-            <p className="text-sm text-text-secondary font-mono break-all" title={photo.jpgPath}>
-              {photo.jpgPath}
-            </p>
-          </div>
-        )}
-        {photo.rawPaths.map((p, i) => (
-          <div key={i}>
-            <p className="text-sm text-text-muted mb-0.5">RAW {photo.rawPaths.length > 1 ? i + 1 : ''}</p>
-            <p className="text-sm text-text-secondary font-mono break-all" title={p}>
-              {p}
-            </p>
-          </div>
-        ))}
-      </div>
+      <Card>
+        <SectionHeader title="文件路径" compact />
+        <div className="px-4 py-3 space-y-2">
+          {photo.jpgPath && (
+            <div>
+              <p className="text-sm text-text-secondary mb-0.5">JPG</p>
+              <p className="text-sm text-text-secondary font-mono break-all" title={photo.jpgPath}>
+                {photo.jpgPath}
+              </p>
+            </div>
+          )}
+          {photo.rawPaths.map((p, i) => (
+            <div key={i}>
+              <p className="text-sm text-text-secondary mb-0.5">RAW {photo.rawPaths.length > 1 ? i + 1 : ''}</p>
+              <p className="text-sm text-text-secondary font-mono break-all" title={p}>
+                {p}
+              </p>
+            </div>
+          ))}
+        </div>
+      </Card>
 
       {reviewed !== undefined && (
-        <>
-          <SectionHeader title="审阅状态" />
-          <div className="px-5 py-3">
-            <StatusBadge reviewed={reviewed} />
+        <Card>
+          <SectionHeader title="审阅状态" compact />
+          <div className="px-4 py-3">
+            <ReviewStatusBadge reviewed={reviewed} />
           </div>
-        </>
+        </Card>
       )}
     </>
   )
@@ -101,26 +93,37 @@ export default function PhotoDetailsView({ photo, exif, reviewed }: PhotoDetails
 
 function MetaRow({ label, value, mono }: { label: string; value: string; mono?: boolean }) {
   return (
-    <div className="flex justify-between items-start gap-2">
-      <span className="text-sm text-text-muted shrink-0">{label}</span>
-      <span className={`text-sm font-medium text-text text-right max-w-[16.25rem] break-all ${mono ? 'font-mono' : ''}`} title={value}>
+    <div className="grid grid-cols-[auto_1fr] gap-x-4 items-start">
+      <span className="text-sm text-text-secondary shrink-0">{label}</span>
+      <span className={`text-sm font-medium text-text text-right break-all ${mono ? 'font-mono' : ''}`} title={value}>
         {value || '—'}
       </span>
     </div>
   )
 }
 
-function StatusBadge({ reviewed }: { reviewed: boolean }) {
+function FileStatusBadge({ exists, label }: { exists: boolean; label: string }) {
+  return (
+    <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium ${
+      exists ? 'bg-success-bg text-success-text' : 'bg-danger-bg text-danger-text'
+    }`}>
+      {exists ? <Check className="w-3 h-3" strokeWidth={2} /> : <X className="w-3 h-3" strokeWidth={2} />}
+      {label}
+    </span>
+  )
+}
+
+function ReviewStatusBadge({ reviewed }: { reviewed: boolean }) {
   if (reviewed) {
     return (
-      <span className="inline-flex items-center gap-1.5 text-sm font-medium text-success">
-        <Check className="w-4 h-4" strokeWidth={2} />
+      <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium bg-success-bg text-success-text">
+        <Check className="w-3 h-3" strokeWidth={2} />
         已审阅
       </span>
     )
   }
   return (
-    <span className="inline-flex items-center gap-1.5 text-sm font-medium text-text-muted">
+    <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium bg-bg-raised text-text-secondary">
       <span className="w-2 h-2 rounded-full bg-text-muted" />
       未审阅
     </span>

@@ -6,7 +6,7 @@ export default function ReviewControls() {
 
   return (
     <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-10">
-      <div className="flex items-center gap-4 bg-black/50 backdrop-blur-md rounded-2xl px-6 py-4">
+      <div className="flex items-center gap-4 bg-black/60 backdrop-blur-xl rounded-2xl px-6 py-4 shadow-overlay">
         <ActionBtn
           onClick={() => goTo(currentIndex - 1)}
           disabled={currentIndex === 0}

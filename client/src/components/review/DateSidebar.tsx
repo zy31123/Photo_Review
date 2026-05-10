@@ -4,10 +4,10 @@ import { DateSidebarBase, type DateRowCommonProps } from '../shared/DateSidebarB
 import { useCollapsedMonths } from '../shared/useCollapsedMonths'
 
 function getRowClass(active: boolean, isCurrent: boolean, fullyReviewed: boolean): string {
-  if (active) return 'border-l-2 border-accent bg-accent-subtle text-accent'
-  if (isCurrent) return 'border-l-2 border-accent/40 text-text-secondary'
+  if (active) return 'border-l-[3px] border-accent bg-accent-subtle text-accent font-semibold'
+  if (isCurrent) return 'border-l-[3px] border-accent/40 text-text-secondary'
   if (fullyReviewed) return 'text-text-muted hover:text-text-secondary'
-  return 'text-text-secondary hover:text-text'
+  return 'text-text hover:text-text-heading'
 }
 
 function getCountColor(active: boolean, fullyReviewed: boolean): string {
@@ -53,7 +53,7 @@ const ReviewDateRow = memo(function ReviewDateRow({
   return (
     <button
       onClick={() => onSelect(active ? null : date)}
-      className={`date-item w-full flex items-center justify-between pl-5 pr-3 py-2.5 text-sm rounded-r transition-all duration-200 ${rowClass}`}
+      className={`date-item w-full flex items-center justify-between pl-5 pr-3 py-3 text-sm rounded-r transition-all duration-200 ${rowClass}`}
     >
       <span className="relative z-10">{label}</span>
       <span className={`relative z-10 text-xs tabular-nums ${countColor}`}>
