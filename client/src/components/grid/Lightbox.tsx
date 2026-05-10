@@ -1,4 +1,4 @@
-import { useEffect, useCallback, useMemo } from 'react'
+import { useEffect, useCallback } from 'react'
 import { ChevronLeft, ChevronRight, X } from 'lucide-react'
 import type { PhotoGroup } from '../../api'
 
@@ -8,6 +8,8 @@ interface LightboxProps {
   onClose: () => void
   onNavigate: (index: number) => void
 }
+
+const overlayBtn = 'w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm text-white/50 hover:text-white/80 hover:bg-white/30 flex items-center justify-center transition-all z-10'
 
 export default function Lightbox({ photos, currentIndex, onClose, onNavigate }: LightboxProps) {
   const photo = photos[currentIndex]
@@ -29,20 +31,20 @@ export default function Lightbox({ photos, currentIndex, onClose, onNavigate }: 
 
   return (
     <div
-      className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center"
+      className="fixed inset-0 z-50 bg-black/85 flex items-center justify-center transition-colors duration-300"
       onClick={onClose}
     >
       <button
         onClick={(e) => { e.stopPropagation(); onClose() }}
-        className="absolute top-4 right-4 w-12 h-12 rounded-full bg-bg-card/80 text-text-secondary hover:text-text flex items-center justify-center transition-colors z-10"
+        className={`absolute top-4 right-4 ${overlayBtn}`}
       >
-        <X className="size-5" />
+        <X className="size-4" />
       </button>
 
       {canPrev && (
         <button
           onClick={(e) => { e.stopPropagation(); onNavigate(currentIndex - 1) }}
-          className="absolute left-4 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-bg-card/80 text-text-secondary hover:text-text flex items-center justify-center transition-colors z-10"
+          className={`absolute left-4 top-1/2 -translate-y-1/2 ${overlayBtn}`}
         >
           <ChevronLeft className="size-5" />
         </button>
@@ -51,7 +53,7 @@ export default function Lightbox({ photos, currentIndex, onClose, onNavigate }: 
       {canNext && (
         <button
           onClick={(e) => { e.stopPropagation(); onNavigate(currentIndex + 1) }}
-          className="absolute right-4 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-bg-card/80 text-text-secondary hover:text-text flex items-center justify-center transition-colors z-10"
+          className={`absolute right-4 top-1/2 -translate-y-1/2 ${overlayBtn}`}
         >
           <ChevronRight className="size-5" />
         </button>
@@ -60,12 +62,14 @@ export default function Lightbox({ photos, currentIndex, onClose, onNavigate }: 
       <img
         src={`/api/photos/${encodeURIComponent(photo.id)}/full`}
         alt={photo.name}
-        className="max-h-[90vh] max-w-[90vw] object-contain rounded shadow-2xl"
+        className="max-h-[90vh] max-w-[90vw] object-contain rounded-lg shadow-overlay"
         onClick={e => e.stopPropagation()}
       />
 
-      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-text-secondary text-sm font-mono">
-        {photo.name}
+      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-white/50 text-sm flex items-center gap-3">
+        <span>{photo.name}</span>
+        <span className="text-white/30">|</span>
+        <span className="tabular-nums">{currentIndex + 1} / {photos.length}</span>
       </div>
     </div>
   )

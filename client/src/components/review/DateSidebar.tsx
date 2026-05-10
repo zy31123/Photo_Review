@@ -12,7 +12,7 @@ function getRowClass(active: boolean, isCurrent: boolean, fullyReviewed: boolean
 
 function getCountColor(active: boolean, fullyReviewed: boolean): string {
   if (active) return 'text-accent/70'
-  if (fullyReviewed) return 'text-green-500/70'
+  if (fullyReviewed) return 'text-accent/50'
   return 'text-text-muted'
 }
 

@@ -44,8 +44,8 @@ export default function ImageViewport() {
 
   if (!currentPhoto) {
     return (
-      <div className="image-viewport relative flex items-center justify-center bg-bg overflow-hidden">
-        <div className="flex flex-col items-center gap-4 text-text-muted">
+      <div className="relative flex items-center justify-center bg-[#1D1D1F] overflow-hidden">
+        <div className="flex flex-col items-center gap-4 text-white/30">
           <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
           </svg>
@@ -56,7 +56,7 @@ export default function ImageViewport() {
   }
 
   return (
-    <div ref={containerRef} className="image-viewport relative flex items-center justify-center bg-bg overflow-hidden" onWheel={handleWheel}>
+    <div ref={containerRef} className="relative flex items-center justify-center bg-[#1D1D1F] overflow-hidden" onWheel={handleWheel}>
       {/* Prev overlay */}
       <div
         className="absolute left-0 top-0 bottom-0 w-24 z-10 flex items-center justify-start pl-4 cursor-pointer opacity-0 hover:opacity-100 transition-opacity duration-200"
@@ -65,8 +65,8 @@ export default function ImageViewport() {
         onMouseLeave={() => setHoveringLeft(false)}
       >
         {hoveringLeft && currentIndex > 0 && (
-          <div className="w-10 h-10 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center">
-            <svg className="w-5 h-5 text-white/80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="w-10 h-10 rounded-full bg-white/15 backdrop-blur-sm flex items-center justify-center">
+            <svg className="w-5 h-5 text-white/70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
           </div>
@@ -85,7 +85,7 @@ export default function ImageViewport() {
         onMouseUp={zoomHandlers.onMouseUp}
         onMouseLeave={zoomHandlers.onMouseLeave}
         onDoubleClick={zoomHandlers.onDoubleClick}
-        className={`max-h-full max-w-full object-contain transition-opacity duration-300 ease-out ${
+        className={`max-h-full max-w-full object-contain rounded-lg transition-opacity duration-300 ease-out ${
           loaded ? 'opacity-100' : 'opacity-0'
         }`}
       />
@@ -98,8 +98,8 @@ export default function ImageViewport() {
         onMouseLeave={() => setHoveringRight(false)}
       >
         {hoveringRight && currentIndex < filteredPhotos.length - 1 && (
-          <div className="w-10 h-10 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center">
-            <svg className="w-5 h-5 text-white/80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="w-10 h-10 rounded-full bg-white/15 backdrop-blur-sm flex items-center justify-center">
+            <svg className="w-5 h-5 text-white/70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>
           </div>
@@ -111,7 +111,7 @@ export default function ImageViewport() {
 
       {/* Error toast */}
       {error && (
-        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-20 px-4 py-2 rounded-lg bg-danger/20 border border-danger/40 text-danger text-sm">
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-20 px-4 py-2 rounded-xl bg-danger/20 border border-danger/30 text-danger text-sm backdrop-blur-sm">
           {error}
         </div>
       )}

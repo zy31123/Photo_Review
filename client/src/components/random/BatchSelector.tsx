@@ -1,3 +1,5 @@
+import { Shuffle } from 'lucide-react'
+
 interface BatchSelectorProps {
   batchSize: number
   onBatchSizeChange: (size: number) => void
@@ -28,16 +30,17 @@ export default function BatchSelector({
         </>
       ) : (
         <>
-          <p className="text-text-secondary text-lg mb-4">选择每批浏览数量</p>
-          <div className="flex items-center justify-center gap-4 mb-6">
+          <Shuffle className="w-12 h-12 text-accent/30 mx-auto mb-4" />
+          <p className="text-text-secondary text-lg mb-5">选择每批浏览数量</p>
+          <div className="flex items-center justify-center gap-4 mb-8">
             {SIZES.map(size => (
               <button
                 key={size}
                 onClick={() => onBatchSizeChange(size)}
-                className={`w-14 h-14 rounded-xl text-lg font-display transition-all duration-150 ${
+                className={`w-16 h-16 rounded-2xl text-lg font-medium transition-all duration-200 ${
                   batchSize === size
-                    ? 'bg-accent text-bg font-bold'
-                    : 'bg-bg-raised border border-border text-text-secondary hover:border-accent/50 hover:text-text'
+                    ? 'bg-accent text-white font-bold shadow-md shadow-accent/20'
+                    : 'bg-black/[0.04] text-text-secondary hover:bg-black/[0.06] hover:text-text'
                 }`}
               >
                 {size}
@@ -51,7 +54,7 @@ export default function BatchSelector({
         <button
           onClick={onStart}
           disabled={loading}
-          className="px-10 py-3.5 rounded-xl bg-accent text-bg font-display font-bold text-base hover:brightness-110 transition-all disabled:opacity-50"
+          className="px-12 py-4 rounded-xl bg-accent text-white font-semibold text-base hover:bg-accent-dim hover:shadow-lg hover:shadow-accent/15 transition-all disabled:opacity-50 active:scale-[0.98]"
         >
           {loading ? '加载中...' : '开始浏览'}
         </button>

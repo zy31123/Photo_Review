@@ -23,8 +23,8 @@ export default function Filmstrip() {
   const handleGoTo = useCallback((i: number) => goTo(i), [goTo])
 
   return (
-    <div className="h-[5.5rem] bg-bg-deep border-t border-border/30 flex items-center px-4 overflow-hidden">
-      <div ref={scrollRef} className="flex gap-1.5 overflow-x-auto scrollbar-thin">
+    <div className="h-[5.5rem] bg-white/80 backdrop-blur-xl border-t border-black/[0.04] flex items-center px-4 overflow-hidden">
+      <div ref={scrollRef} className="flex gap-1.5 overflow-x-auto">
         {start > 0 && (
           <div className="flex-shrink-0 w-[4.5rem] h-[4.5rem] flex items-center justify-center text-[0.625rem] text-text-muted">
             ···
@@ -65,17 +65,15 @@ const FilmstripItem = memo(function FilmstripItem({
     <button
       data-active={active}
       onClick={() => onSelect(index)}
-      className={`relative flex-shrink-0 w-[4.5rem] h-[4.5rem] rounded overflow-hidden transition-all duration-150 ${
+      className={`relative flex-shrink-0 w-[4.5rem] h-[4.5rem] rounded-md overflow-hidden transition-all duration-150 ${
         active
-          ? 'opacity-100 ring-2 ring-blue-500 ring-offset-1 ring-offset-bg-deep scale-105 z-10'
-          : reviewed
-            ? 'border border-transparent opacity-50 hover:opacity-80'
-            : 'border border-transparent opacity-50 hover:opacity-80'
+          ? 'opacity-100 ring-2 ring-accent ring-offset-1 ring-offset-white scale-105 z-10'
+          : 'border border-transparent opacity-60 hover:opacity-80'
       }`}
     >
       <img src={api.thumbnailUrl(photo.id)} alt="" className="w-full h-full object-cover" loading="lazy" />
       {reviewed && !active && (
-        <div className="absolute bottom-0.5 right-0.5 w-2.5 h-2.5 rounded-full bg-green-500 border border-black/30" />
+        <div className="absolute bottom-0.5 right-0.5 w-3 h-3 rounded-full bg-accent/80 border border-white/50" />
       )}
     </button>
   )

@@ -85,13 +85,13 @@ export default function YearTimeline() {
   }
 
   return (
-    <div className="w-12 shrink-0 border-l border-border bg-bg-deep overflow-y-auto py-3 flex flex-col items-center gap-1">
+    <div className="w-12 shrink-0 border-l border-black/[0.06] bg-white/60 backdrop-blur-xl overflow-y-auto py-3 flex flex-col items-center gap-1">
       {granularity === 'year' && items.map(item => (
         <button
           key={item.label}
           onClick={() => handleClick(item.date)}
-          className={`text-[0.6875rem] font-medium leading-tight transition-colors cursor-pointer py-1 ${
-            isItemActive(item) ? 'text-accent' : 'text-text-secondary hover:text-accent'
+          className={`text-xs font-medium leading-tight transition-colors cursor-pointer py-1 px-2 rounded ${
+            isItemActive(item) ? 'text-accent font-semibold' : 'text-text-secondary hover:text-accent hover:bg-accent/5'
           }`}
         >
           {item.label}
@@ -107,8 +107,8 @@ export default function YearTimeline() {
             <button
               key={`${item.label}-${item.date}`}
               onClick={() => handleClick(item.date)}
-              className={`text-[0.625rem] leading-tight transition-colors cursor-pointer py-0.5 ${
-                isItemActive(item) ? 'text-accent font-medium' : 'text-text-secondary hover:text-accent'
+              className={`text-[0.6875rem] leading-tight transition-colors cursor-pointer py-0.5 px-2 rounded ${
+                isItemActive(item) ? 'text-accent font-semibold' : 'text-text-secondary hover:text-accent hover:bg-accent/5'
               }`}
             >
               {item.label}

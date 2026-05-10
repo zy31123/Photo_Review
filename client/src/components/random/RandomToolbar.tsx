@@ -18,7 +18,7 @@ export default function RandomToolbar({
   rightPanelOpen, onToggleRightPanel, cacheDays, onCacheDaysChange,
 }: RandomToolbarProps) {
   return (
-    <div className="h-13 bg-bg-deep border-b border-border/30 flex items-center px-4 shrink-0">
+    <div className="h-13 bg-white/80 backdrop-blur-xl border-b border-black/[0.06] flex items-center px-4 shrink-0">
       <div className="flex-1 text-center px-4">
         <span className="text-text-secondary text-sm font-mono truncate block max-w-md mx-auto">
           {currentPhoto?.name || ''}
@@ -29,9 +29,9 @@ export default function RandomToolbar({
 
       <div className="flex items-center gap-4">
         {batchTotal > 0 && (
-          <span className="text-text-muted text-sm font-display tabular-nums">
-            <span className="text-text-heading">{batchReviewed}</span>
-            <span className="mx-1 text-text-muted">/</span>
+          <span className="text-text-muted text-sm tabular-nums">
+            <span className="text-text-heading font-medium">{batchReviewed}</span>
+            <span className="mx-0.5 text-text-muted/60">/</span>
             <span>{batchTotal}</span>
           </span>
         )}
@@ -44,7 +44,7 @@ export default function RandomToolbar({
         <select
           value={cacheDays}
           onChange={e => onCacheDaysChange(Number(e.target.value))}
-          className="bg-bg-card border border-border rounded px-2 py-1 text-text-secondary text-xs focus:outline-none focus:border-accent"
+          className="bg-black/[0.03] border border-black/[0.06] rounded-lg px-2.5 py-1.5 text-text-secondary text-xs focus:outline-none focus:border-accent/50 transition-colors"
         >
           <option value={7}>缓存 7 天</option>
           <option value={30}>缓存 30 天</option>
@@ -54,7 +54,7 @@ export default function RandomToolbar({
 
         <button
           onClick={onToggleRightPanel}
-          className={`w-8 h-8 rounded flex items-center justify-center transition-colors ${
+          className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${
             rightPanelOpen ? 'text-accent' : 'text-text-muted hover:text-text-secondary'
           }`}
           title="详细信息 ( ] )"

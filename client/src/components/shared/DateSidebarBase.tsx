@@ -62,14 +62,14 @@ export function DateSidebarBase({
 }: DateSidebarBaseProps) {
   if (collapsed) {
     return (
-      <div className={`h-full bg-bg-deep border-r border-border/30 flex flex-col items-center pt-3 ${collapsedClassName ?? ''}`}>
+      <div className={`h-full bg-white/60 backdrop-blur-xl border-r border-black/[0.04] flex flex-col items-center pt-3 ${collapsedClassName ?? ''}`}>
         <Calendar className="w-5 h-5 text-text-muted" />
       </div>
     )
   }
 
   return (
-    <div className={`h-full bg-bg-deep border-r border-border/30 flex flex-col overflow-hidden ${expandedClassName ?? ''}`} style={expandedStyle}>
+    <div className={`h-full bg-white/60 backdrop-blur-xl border-r border-black/[0.04] flex flex-col overflow-hidden ${expandedClassName ?? ''}`} style={expandedStyle}>
       <div className="px-4 pt-5 pb-3">
         {subfolders.length > 1 ? (
           <div className="space-y-0.5 mb-2">
@@ -78,7 +78,7 @@ export function DateSidebarBase({
               className={`w-full text-left px-4 py-2.5 rounded-r text-sm font-semibold transition-all duration-200 ${
                 subfolderFilter === null
                   ? 'text-accent border-l-[3px] border-accent bg-accent-subtle font-semibold'
-                  : 'text-text-secondary hover:text-text hover:bg-bg-raised'
+                  : 'text-text-secondary hover:text-text hover:bg-black/[0.03]'
               }`}
             >
               全部照片
@@ -91,7 +91,7 @@ export function DateSidebarBase({
                 className={`w-full text-left px-4 py-2.5 rounded-r text-sm transition-all duration-200 flex items-center justify-between ${
                   subfolderFilter === sf.path
                     ? 'text-accent border-l-[3px] border-accent bg-accent-subtle font-semibold'
-                    : 'text-text-secondary hover:text-text hover:bg-bg-raised'
+                    : 'text-text-secondary hover:text-text hover:bg-black/[0.03]'
                 }`}
               >
                 <span className="truncate">{sf.name}</span>
@@ -105,7 +105,7 @@ export function DateSidebarBase({
             className={`w-full text-left ${allPhotosPadding} rounded-r text-xl font-semibold transition-all duration-200 ${
               selectedDate === null
                 ? 'text-accent border-l-[3px] border-accent bg-accent-subtle'
-                : 'text-text-secondary hover:text-text hover:bg-bg-raised'
+                : 'text-text-secondary hover:text-text hover:bg-black/[0.03]'
             }`}
           >
             全部照片
@@ -113,7 +113,7 @@ export function DateSidebarBase({
           </button>
         )}
       </div>
-      <div className="border-b border-border/20 my-2" />
+      <div className="border-b border-black/[0.04] mx-3" />
 
       <div className={monthListClassName}>
         {monthGroups.map(month => (
@@ -151,7 +151,7 @@ function SidebarMonthBlock({
     <div>
       <button
         onClick={() => onToggleMonth(month.yearMonth)}
-        className={`w-full flex items-center justify-between ${monthHeaderPadding} text-xs font-semibold tracking-widest uppercase text-text-muted hover:text-text-secondary transition-colors`}
+        className={`w-full flex items-center justify-between ${monthHeaderPadding} text-xs font-semibold text-text-muted hover:text-text-secondary transition-colors`}
       >
         <span className="flex items-center gap-1.5">
           <ChevronRight className={`w-4 h-4 transition-transform duration-200 ${collapsed ? '' : 'rotate-90'}`} />
@@ -189,7 +189,7 @@ const SimpleDateRow = memo(function SimpleDateRow({
       className={`w-full flex items-center justify-between pl-5 pr-3 py-3 text-sm rounded-r transition-all duration-200 ${
         active
           ? 'border-l-[3px] border-accent bg-accent-subtle text-accent font-semibold'
-          : 'text-text hover:text-text-heading hover:bg-bg-raised'
+          : 'text-text hover:text-text-heading hover:bg-black/[0.03]'
       }`}
     >
       <span>{label}</span>
