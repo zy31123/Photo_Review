@@ -4,7 +4,6 @@ import { useApp } from '../context/AppContext'
 import { ReviewProvider, useReview } from '../context/ReviewContext'
 import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts'
 import NavBar from '../components/NavBar'
-import ReviewToolbar from '../components/review/ReviewToolbar'
 import DateSidebar from '../components/review/DateSidebar'
 import ImageViewport from '../components/review/ImageViewport'
 import DetailsPanel from '../components/review/DetailsPanel'
@@ -80,7 +79,6 @@ function ReviewLayout() {
   return (
     <div className="h-screen flex flex-col bg-bg overflow-hidden">
       <NavBar />
-      <ReviewToolbar />
       <div
         className="flex-1 min-h-0 review-grid"
         data-testid="review-grid"

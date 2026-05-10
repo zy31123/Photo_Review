@@ -8,10 +8,10 @@ export default function FolderSidebar() {
     <div className="w-48 shrink-0 border-r border-border bg-bg-deep overflow-y-auto py-3 px-2">
       <button
         onClick={() => setSubfolderFilter(null)}
-        className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors ${
+        className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors duration-200 ${
           !subfolderFilter
             ? 'bg-accent/10 text-accent font-medium'
-            : 'text-text-secondary hover:bg-bg-hover'
+            : 'text-text-muted hover:bg-bg-hover'
         }`}
       >
         <FolderOpen className="size-4" />
@@ -20,7 +20,7 @@ export default function FolderSidebar() {
       </button>
 
       {subfolders.length > 0 && (
-        <div className="mt-2 space-y-0.5">
+        <div className="mt-2 space-y-1">
           <div className="px-3 py-1 text-[0.6875rem] font-medium text-text-muted uppercase tracking-wide">
             子文件夹
           </div>
@@ -28,10 +28,10 @@ export default function FolderSidebar() {
             <button
               key={sf.path}
               onClick={() => setSubfolderFilter(subfolderFilter === sf.path ? null : sf.path)}
-              className={`w-full flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm transition-colors ${
+              className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors duration-200 ${
                 subfolderFilter === sf.path
                   ? 'bg-accent/10 text-accent font-medium'
-                  : 'text-text-secondary hover:bg-bg-hover'
+                  : 'text-text-muted hover:bg-bg-hover'
               }`}
             >
               <Folder className="size-3.5" />

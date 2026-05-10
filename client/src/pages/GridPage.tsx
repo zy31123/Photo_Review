@@ -2,10 +2,9 @@ import { useEffect, useCallback, useRef, useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { useApp } from '../context/AppContext'
-import { GridProvider, useGrid } from '../context/GridContext'
+import { GridProvider, useGrid, type VirtualItem } from '../context/GridContext'
 import { api } from '../api'
 import NavBar from '../components/NavBar'
-import GridToolbar from '../components/grid/GridToolbar'
 import FolderSidebar from '../components/grid/FolderSidebar'
 import YearTimeline from '../components/grid/YearTimeline'
 import Lightbox from '../components/grid/Lightbox'
@@ -18,6 +17,7 @@ function GridLayout() {
 
   const scrollRef = useRef<HTMLDivElement>(null)
   const [lightboxIndex, setLightboxIndex] = useState(-1)
+  const [stickyHeader, setStickyHeader] = useState<{ label: string; count: number } | null>(null)
 
   const photoIndexMap = useMemo(() => {
     const map = new Map<string, number>()
@@ -25,7 +25,7 @@ function GridLayout() {
     return map
   }, [filteredPhotos])
 
-  const HEADER_HEIGHT_REM = 4
+  const HEADER_HEIGHT_REM = 3.5
   const GAP_REM = 0.25
 
   const rowVirtualizer = useVirtualizer({
@@ -55,6 +55,28 @@ function GridLayout() {
     scrollToRef.current = handleScrollToDate
   }, [handleScrollToDate, scrollToRef])
 
+  // Sticky header: track which date header is closest to top on scroll
+  useEffect(() => {
+    const el = scrollRef.current
+    if (!el) return
+    const onScroll = () => {
+      const scrollTop = el.scrollTop
+      for (let i = virtualItems.length - 1; i >= 0; i--) {
+        const item = virtualItems[i]
+        if (item.type === 'header') {
+          const offset = rowVirtualizer.getOffsetForIndex(i, 'start')
+          if (typeof offset === 'number' && offset <= scrollTop + 1) {
+            setStickyHeader({ label: item.label, count: item.count })
+            return
+          }
+        }
+      }
+      setStickyHeader(null)
+    }
+    el.addEventListener('scroll', onScroll, { passive: true })
+    return () => el.removeEventListener('scroll', onScroll)
+  }, [virtualItems, rowVirtualizer])
+
   const handleSingleClick = useCallback((index: number) => {
     setLightboxIndex(index)
   }, [])
@@ -66,7 +88,6 @@ function GridLayout() {
   return (
     <div className="h-screen flex flex-col bg-bg overflow-hidden">
       <NavBar />
-      <GridToolbar />
 
       <div className="flex-1 min-h-0 flex">
         <FolderSidebar />
@@ -75,6 +96,15 @@ function GridLayout() {
           ref={scrollRef}
           className="flex-1 min-h-0 overflow-y-auto"
         >
+          {/* Floating sticky date header */}
+          {stickyHeader && (
+            <div className="sticky top-0 z-10 backdrop-blur-md bg-bg-deep/80 border-b border-border/20 px-4 py-2 flex items-center gap-3">
+              <span className="text-sm font-semibold text-text-secondary whitespace-nowrap">{stickyHeader.label}</span>
+              <div className="flex-1 h-px bg-border" />
+              <span className="text-xs text-text-muted tabular-nums">{stickyHeader.count} 张</span>
+            </div>
+          )}
+
           <div
             style={{
               height: `${rowVirtualizer.getTotalSize()}px`,
@@ -98,7 +128,7 @@ function GridLayout() {
                       height: `${virtualRow.size}px`,
                       transform: `translateY(${virtualRow.start}px)`,
                     }}
-                    className="flex items-end px-4 pb-3 pt-5"
+                    className="flex items-end px-4 pb-2 pt-4"
                   >
                     <div className="flex items-center gap-3 w-full">
                       <span className="text-text-heading text-sm font-medium whitespace-nowrap">
@@ -140,7 +170,7 @@ function GridLayout() {
                           src={api.thumbnailUrl(photo.id)}
                           alt={photo.name}
                           loading="lazy"
-                          className="w-full aspect-square object-cover bg-bg-card transition-opacity duration-200"
+                          className="w-full aspect-square object-cover bg-bg-card transition-all duration-200 group-hover:scale-105"
                           style={{ opacity: 0 }}
                           onLoad={e => { (e.target as HTMLImageElement).style.opacity = '1' }}
                         />

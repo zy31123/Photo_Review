@@ -3,8 +3,8 @@ import fs from 'fs'
 import path from 'path'
 import { type PhotoGroup } from './scanner.js'
 
-const THUMBNAIL_SIZE = 200
-const MAX_CACHE_SIZE = 500
+const THUMBNAIL_SIZE = 800
+const MAX_CACHE_SIZE = 300
 const RAW_EXTS = new Set(['.cr2', '.cr3', '.nef'])
 
 // LRU thumbnail cache
