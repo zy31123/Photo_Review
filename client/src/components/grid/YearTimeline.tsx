@@ -85,12 +85,12 @@ export default function YearTimeline() {
   }
 
   return (
-    <div className="w-12 shrink-0 border-l border-black/[0.06] bg-white/60 backdrop-blur-xl overflow-y-auto py-3 flex flex-col items-center gap-1">
+    <div className="w-16 shrink-0 border-l border-black/[0.06] bg-white/60 backdrop-blur-xl overflow-y-auto py-4 flex flex-col items-center gap-2">
       {granularity === 'year' && items.map(item => (
         <button
           key={item.label}
           onClick={() => handleClick(item.date)}
-          className={`text-xs font-medium leading-tight transition-colors cursor-pointer py-1 px-2 rounded ${
+          className={`text-sm font-medium leading-tight transition-colors cursor-pointer py-1.5 px-3 rounded ${
             isItemActive(item) ? 'text-accent font-semibold' : 'text-text-secondary hover:text-accent hover:bg-accent/5'
           }`}
         >
@@ -99,21 +99,22 @@ export default function YearTimeline() {
       ))}
 
       {granularity !== 'year' && groupBySecondary && Array.from(groupBySecondary.entries()).map(([header, subItems]) => (
-        <div key={header} className="flex flex-col items-center gap-0.5 w-full">
-          <div className="text-text-muted text-[0.625rem] font-medium leading-none py-0.5">
+        <div key={header} className="flex flex-col items-center gap-1 w-full">
+          <div className="text-text-muted text-xs font-semibold leading-none py-1">
             {granularity === 'month' ? header : header.slice(5)}
           </div>
           {subItems.map(item => (
             <button
               key={`${item.label}-${item.date}`}
               onClick={() => handleClick(item.date)}
-              className={`text-[0.6875rem] leading-tight transition-colors cursor-pointer py-0.5 px-2 rounded ${
+              className={`text-sm leading-tight transition-colors cursor-pointer py-1 px-2.5 rounded ${
                 isItemActive(item) ? 'text-accent font-semibold' : 'text-text-secondary hover:text-accent hover:bg-accent/5'
               }`}
             >
               {item.label}
             </button>
           ))}
+          <div className="w-6 h-px bg-black/[0.06]" />
         </div>
       ))}
     </div>

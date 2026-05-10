@@ -29,15 +29,17 @@ export default function BatchSelector({
           )}
         </>
       ) : (
-        <>
-          <Shuffle className="w-12 h-12 text-accent/30 mx-auto mb-4" />
+        <div className="inline-block bg-white/60 backdrop-blur-xl rounded-2xl border border-black/[0.04] shadow-card px-10 py-8 max-w-lg mx-auto">
+          <div className="relative inline-flex items-center justify-center w-28 h-28 rounded-full bg-accent/5 mb-6 mx-auto">
+            <Shuffle className="w-14 h-14 text-accent/40" />
+          </div>
           <p className="text-text-secondary text-lg mb-5">选择每批浏览数量</p>
-          <div className="flex items-center justify-center gap-4 mb-8">
+          <div className="flex items-center justify-center gap-5 mb-8">
             {SIZES.map(size => (
               <button
                 key={size}
                 onClick={() => onBatchSizeChange(size)}
-                className={`w-16 h-16 rounded-2xl text-lg font-medium transition-all duration-200 ${
+                className={`w-[4.5rem] h-[4.5rem] rounded-2xl text-xl font-semibold transition-all duration-200 ${
                   batchSize === size
                     ? 'bg-accent text-white font-bold shadow-md shadow-accent/20'
                     : 'bg-black/[0.04] text-text-secondary hover:bg-black/[0.06] hover:text-text'
@@ -47,14 +49,14 @@ export default function BatchSelector({
               </button>
             ))}
           </div>
-        </>
+        </div>
       )}
 
       {!exhausted && (
         <button
           onClick={onStart}
           disabled={loading}
-          className="px-12 py-4 rounded-xl bg-accent text-white font-semibold text-base hover:bg-accent-dim hover:shadow-lg hover:shadow-accent/15 transition-all disabled:opacity-50 active:scale-[0.98]"
+          className="px-14 py-4 rounded-2xl bg-accent text-white font-semibold text-base hover:bg-accent-dim hover:shadow-lg hover:shadow-accent/15 transition-all disabled:opacity-50 active:scale-[0.98]"
         >
           {loading ? '加载中...' : '开始浏览'}
         </button>

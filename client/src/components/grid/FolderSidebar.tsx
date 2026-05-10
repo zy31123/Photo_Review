@@ -5,7 +5,7 @@ export default function FolderSidebar() {
   const { subfolders, subfolderFilter, setSubfolderFilter, filteredPhotos, photos } = useGrid()
 
   return (
-    <div className="w-56 shrink-0 border-r border-black/[0.06] bg-white/60 backdrop-blur-xl overflow-y-auto py-3 px-2">
+    <div className="w-56 shrink-0 border-r border-black/[0.06] bg-white/60 backdrop-blur-xl overflow-y-auto py-3 px-4">
       <button
         onClick={() => setSubfolderFilter(null)}
         className={`w-full flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm transition-colors duration-200 border-l-[3px] ${

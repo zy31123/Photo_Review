@@ -19,15 +19,15 @@ function GridControls() {
         <button
           onClick={() => setColumns(Math.max(2, columns - 1))}
           disabled={columns <= 2}
-          className="w-7 h-7 rounded-lg bg-black/[0.04] flex items-center justify-center text-text-secondary hover:bg-black/[0.06] disabled:opacity-30 transition-colors"
+          className="w-8 h-8 rounded-lg bg-black/[0.04] flex items-center justify-center text-text-secondary hover:bg-black/[0.06] disabled:opacity-30 transition-colors"
         >
           <Minus className="size-3" />
         </button>
-        <span className="text-text-secondary text-xs tabular-nums w-5 text-center font-medium">{columns}</span>
+        <span className="text-text-secondary text-xs tabular-nums w-6 text-center font-medium">{columns}</span>
         <button
           onClick={() => setColumns(Math.min(8, columns + 1))}
           disabled={columns >= 8}
-          className="w-7 h-7 rounded-lg bg-black/[0.04] flex items-center justify-center text-text-secondary hover:bg-black/[0.06] disabled:opacity-30 transition-colors"
+          className="w-8 h-8 rounded-lg bg-black/[0.04] flex items-center justify-center text-text-secondary hover:bg-black/[0.06] disabled:opacity-30 transition-colors"
         >
           <Plus className="size-3" />
         </button>
@@ -129,7 +129,7 @@ export default function NavBar() {
         Photo Review
       </button>
 
-      <div className="flex items-center bg-black/[0.04] rounded-lg p-0.5 ml-6">
+      <div className="flex items-center bg-black/[0.04] rounded-lg p-1 ml-6">
         {navItems.map(item => {
           const Icon = item.icon
           const active = pathname === item.path
@@ -138,7 +138,7 @@ export default function NavBar() {
               key={item.path}
               onClick={() => navigate(item.path)}
               disabled={!isLoaded}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+              className={`flex items-center gap-1.5 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
                 active
                   ? 'bg-white text-text-heading shadow-sm'
                   : isLoaded

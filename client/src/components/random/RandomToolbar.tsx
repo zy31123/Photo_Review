@@ -1,4 +1,4 @@
-import { LayoutList } from 'lucide-react'
+import { LayoutList, Timer } from 'lucide-react'
 import type { PhotoGroup } from '../../api'
 import ToolbarDivider from '../ui/ToolbarDivider'
 
@@ -19,15 +19,15 @@ export default function RandomToolbar({
 }: RandomToolbarProps) {
   return (
     <div className="h-13 bg-white/80 backdrop-blur-xl border-b border-black/[0.06] flex items-center px-4 shrink-0">
+      <div className="flex-1" />
+
       <div className="flex-1 text-center px-4">
         <span className="text-text-secondary text-sm font-mono truncate block max-w-md mx-auto">
           {currentPhoto?.name || ''}
         </span>
       </div>
 
-      <ToolbarDivider />
-
-      <div className="flex items-center gap-4">
+      <div className="flex-1 flex items-center justify-end gap-3">
         {batchTotal > 0 && (
           <span className="text-text-muted text-sm tabular-nums">
             <span className="text-text-heading font-medium">{batchReviewed}</span>
@@ -41,14 +41,20 @@ export default function RandomToolbar({
           </span>
         )}
 
-        <select
-          value={cacheDays}
-          onChange={e => onCacheDaysChange(Number(e.target.value))}
-          className="bg-black/[0.03] border border-black/[0.06] rounded-lg px-2.5 py-1.5 text-text-secondary text-xs focus:outline-none focus:border-accent/50 transition-colors"
-        >
-          <option value={7}>缓存 7 天</option>
-          <option value={30}>缓存 30 天</option>
-        </select>
+        <ToolbarDivider />
+
+        <div className="flex items-center gap-1.5">
+          <Timer className="w-3.5 h-3.5 text-text-muted" />
+          <span className="text-text-muted text-xs">缓存</span>
+          <select
+            value={cacheDays}
+            onChange={e => onCacheDaysChange(Number(e.target.value))}
+            className="bg-black/[0.03] border border-black/[0.06] rounded-lg px-2 py-1 text-text-secondary text-xs focus:outline-none focus:border-accent/50 transition-colors"
+          >
+            <option value={7}>7 天</option>
+            <option value={30}>30 天</option>
+          </select>
+        </div>
 
         <ToolbarDivider />
 
