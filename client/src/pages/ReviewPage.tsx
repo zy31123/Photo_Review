@@ -56,7 +56,7 @@ function ReviewLayout() {
           <p className="text-text-muted text-sm mb-6">请返回首页选择一个包含照片的文件夹</p>
           <button
             onClick={() => navigate('/')}
-            className="px-4 py-2 rounded-lg border border-border text-text-secondary hover:text-text hover:bg-bg-hover hover:border-border-light transition-all duration-200"
+            className="px-4 py-2 rounded-lg border border-black/[0.06] text-text-secondary hover:text-text hover:bg-black/[0.04] transition-all duration-200"
           >
             返回首页
           </button>

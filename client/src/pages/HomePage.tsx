@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useApp } from '../context/AppContext'
+import { FolderOpen } from 'lucide-react'
 import FolderPicker from '../components/FolderPicker'
 
 export default function HomePage() {
@@ -27,51 +28,45 @@ export default function HomePage() {
 
   return (
     <div className="h-screen flex flex-col items-center justify-center px-6 bg-bg relative">
-      {/* Subtle gradient orb background */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[50rem] h-[25rem] rounded-full bg-accent/[0.04] blur-[7.5rem]" />
+        <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[60rem] h-[30rem] rounded-full bg-accent/[0.06] blur-[10rem]" />
       </div>
 
       <div className="relative z-10 flex flex-col items-center">
-        {/* Decorative dots */}
-        <div className="flex items-center gap-3 mb-4">
-          <span className="w-2 h-2 rounded-full bg-accent" />
-          <span className="w-2 h-2 rounded-full bg-accent/60" />
-          <span className="w-2 h-2 rounded-full bg-accent/30" />
-        </div>
-
-        <h1 className="text-6xl font-display font-bold text-text-heading tracking-tight mb-5">
+        <h1 className="text-5xl font-bold text-text-heading tracking-tight mb-3">
           Photo Review
         </h1>
-        <div className="w-24 h-px bg-gradient-to-r from-transparent via-accent to-transparent mb-4" />
-        <p className="text-text-secondary text-lg mb-14 tracking-wide">
+        <div className="w-24 h-px bg-gradient-to-r from-transparent via-accent/30 to-transparent mb-3" />
+        <p className="text-text-secondary text-lg mb-12">
           选择你的图库文件夹开始审阅
         </p>
 
         <div className="w-full max-w-xl space-y-4">
-          <div className="flex gap-2">
-            <div
-              className="flex-1 bg-bg-raised border border-border rounded-lg px-5 py-4 text-text-secondary font-mono text-base truncate cursor-pointer hover:border-accent/40 transition-all duration-200"
-              onClick={() => setPickerOpen(true)}
-            >
-              {folderPath || '点击选择文件夹...'}
+          <div
+            className={`flex items-center bg-white/80 backdrop-blur-xl border rounded-2xl shadow-card overflow-hidden cursor-pointer hover:shadow-raised transition-all duration-200 ${folderPath ? 'border-accent/30' : 'border-white/50'}`}
+            onClick={() => setPickerOpen(true)}
+          >
+            <div className="flex-1 px-5 py-4 text-base truncate flex items-center gap-3">
+              <FolderOpen className="size-5 text-accent/60 shrink-0" />
+              {folderPath ? (
+                <span className="text-text font-medium">{folderPath}</span>
+              ) : (
+                <span className="text-text-secondary">点击选择文件夹...</span>
+              )}
             </div>
-            <button
-              onClick={() => setPickerOpen(true)}
-              className="px-5 py-4 rounded-lg border border-border text-text-secondary hover:bg-bg-hover hover:text-accent hover:border-accent/40 hover:shadow-inner transition-all duration-200 text-base"
-            >
+            <button className="px-5 py-4 text-accent font-medium text-base border-l border-black/[0.04] hover:bg-accent/5 transition-colors">
               浏览
             </button>
           </div>
 
           {error && (
-            <p className="text-danger text-sm bg-danger/10 px-4 py-2 rounded-lg border border-danger/20 border-l-2 border-l-danger">{error}</p>
+            <p className="text-danger text-sm bg-danger/10 px-4 py-2.5 rounded-xl border border-danger/20">{error}</p>
           )}
 
           <button
             onClick={handleScan}
             disabled={loading || !folderPath.trim()}
-            className="w-full py-4 rounded-lg bg-accent text-bg font-semibold text-lg hover:bg-accent-dim hover:shadow-lg hover:shadow-accent/20 disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-200 active:scale-[0.98]"
+            className="w-full py-4 rounded-xl bg-accent text-white font-semibold text-lg hover:bg-accent-dim hover:shadow-lg hover:shadow-accent/15 disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-200 active:scale-[0.98]"
           >
             {loading ? '扫描中...' : '开始审阅'}
           </button>

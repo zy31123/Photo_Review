@@ -1,5 +1,5 @@
 import { useNavigate, useLocation } from 'react-router-dom'
-import { LayoutGrid, Eye, Shuffle, Folder, PanelLeft, LayoutList } from 'lucide-react'
+import { LayoutGrid, Eye, Shuffle, Folder, PanelLeft, LayoutList, Minus, Plus } from 'lucide-react'
 import { useApp } from '../context/AppContext'
 import { useGrid } from '../context/GridContext'
 import { useReview } from '../context/ReviewContext'
@@ -15,14 +15,22 @@ function GridControls() {
   return (
     <div className="flex items-center gap-3">
       <span className="text-text-muted text-sm">{filteredPhotos.length.toLocaleString()} 张</span>
-      <div className="flex items-center gap-2">
-        <input
-          type="range" min={2} max={8} step={1}
-          value={columns}
-          onChange={e => setColumns(Number(e.target.value))}
-          className="w-20 h-1 accent-accent cursor-pointer"
-        />
-        <span className="text-text-muted text-xs tabular-nums w-3 text-center">{columns}</span>
+      <div className="flex items-center gap-1">
+        <button
+          onClick={() => setColumns(Math.max(2, columns - 1))}
+          disabled={columns <= 2}
+          className="w-7 h-7 rounded-lg bg-black/[0.04] flex items-center justify-center text-text-secondary hover:bg-black/[0.06] disabled:opacity-30 transition-colors"
+        >
+          <Minus className="size-3" />
+        </button>
+        <span className="text-text-secondary text-xs tabular-nums w-5 text-center font-medium">{columns}</span>
+        <button
+          onClick={() => setColumns(Math.min(8, columns + 1))}
+          disabled={columns >= 8}
+          className="w-7 h-7 rounded-lg bg-black/[0.04] flex items-center justify-center text-text-secondary hover:bg-black/[0.06] disabled:opacity-30 transition-colors"
+        >
+          <Plus className="size-3" />
+        </button>
       </div>
     </div>
   )
@@ -52,10 +60,10 @@ function ReviewControls() {
         {currentPhoto?.name || ''}
       </span>
 
-      <div className="w-px h-6 bg-border/40" />
+      <div className="w-px h-6 bg-black/[0.06]" />
 
       <div className="flex items-center gap-2">
-        <div className="w-20 h-1.5 bg-bg rounded-full overflow-hidden">
+        <div className="w-20 h-1.5 bg-black/[0.06] rounded-full overflow-hidden">
           <div className="h-full bg-accent rounded-full transition-all duration-300" style={{ width: `${progressPct}%` }} />
         </div>
         <span className="text-text-muted text-xs tabular-nums">{reviewedCount}/{totalCount}</span>
@@ -66,8 +74,8 @@ function ReviewControls() {
           <button
             key={opt.value}
             onClick={() => setStatusFilter(opt.value)}
-            className={`px-2 py-1 rounded text-xs transition-colors ${
-              statusFilter === opt.value ? 'bg-accent/15 text-accent' : 'text-text-muted hover:text-text-secondary'
+            className={`px-2 py-1 rounded-md text-xs transition-colors ${
+              statusFilter === opt.value ? 'bg-accent/10 text-accent font-medium' : 'text-text-muted hover:text-text-secondary'
             }`}
           >
             {opt.label}
@@ -75,19 +83,19 @@ function ReviewControls() {
         ))}
       </div>
 
-      <div className="w-px h-6 bg-border/40" />
+      <div className="w-px h-6 bg-black/[0.06]" />
 
-      <span className="text-text-muted text-sm font-display tabular-nums">
-        <span className="text-text-heading">{position.toLocaleString()}</span>
-        <span className="mx-1">/</span>
+      <span className="text-text-muted text-sm tabular-nums">
+        <span className="text-text-heading font-medium">{position.toLocaleString()}</span>
+        <span className="mx-0.5 text-text-muted/60">/</span>
         <span>{total.toLocaleString()}</span>
       </span>
 
-      <div className="w-px h-6 bg-border/40" />
+      <div className="w-px h-6 bg-black/[0.06]" />
 
       <button
         onClick={toggleLeftSidebar}
-        className={`w-8 h-8 rounded flex items-center justify-center transition-colors ${
+        className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${
           leftSidebarOpen ? 'text-accent' : 'text-text-muted hover:text-text-secondary'
         }`}
         title="日期导航 ( [ )"
@@ -96,7 +104,7 @@ function ReviewControls() {
       </button>
       <button
         onClick={toggleRightPanel}
-        className={`w-8 h-8 rounded flex items-center justify-center transition-colors ${
+        className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${
           rightPanelOpen ? 'text-accent' : 'text-text-muted hover:text-text-secondary'
         }`}
         title="详细信息 ( ] )"
@@ -113,15 +121,15 @@ export default function NavBar() {
   const { activeFolder, isLoaded } = useApp()
 
   return (
-    <div className="h-13 bg-bg-deep border-b border-border/30 flex items-center px-4 shrink-0">
+    <div className="h-13 bg-white/80 backdrop-blur-xl border-b border-black/[0.06] flex items-center px-4 shrink-0">
       <button
         onClick={() => navigate('/')}
-        className="text-text-heading font-display font-semibold text-base tracking-wide hover:text-accent transition-colors"
+        className="text-text-heading font-semibold text-base tracking-tight hover:text-accent transition-colors"
       >
         Photo Review
       </button>
 
-      <div className="flex items-center bg-bg-raised rounded-lg p-0.5 ml-6">
+      <div className="flex items-center bg-black/[0.04] rounded-lg p-0.5 ml-6">
         {navItems.map(item => {
           const Icon = item.icon
           const active = pathname === item.path
@@ -132,7 +140,7 @@ export default function NavBar() {
               disabled={!isLoaded}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
                 active
-                  ? 'bg-bg-deep text-text-heading shadow-sm'
+                  ? 'bg-white text-text-heading shadow-sm'
                   : isLoaded
                     ? 'text-text-muted hover:text-text-secondary'
                     : 'text-text-muted/40 cursor-not-allowed'
