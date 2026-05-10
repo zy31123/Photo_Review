@@ -4,7 +4,7 @@
 
 Photo Review 是一个本地照片审查工具，采用 Darkroom（暗房）视觉主题。
 用户选择本地文件夹后，系统自动扫描 JPG/RAW 文件并配对，
-支持逐张审阅、随机审阅、批量处理孤立文件。
+支持网格浏览、逐张审阅、随机审阅。
 
 架构：npm workspaces monorepo，`client/`（React 前端）和 `server/`（Express 后端）。
 Vite 开发代理将 `/api` 转发至后端 3001 端口。
@@ -17,7 +17,10 @@ Vite 开发代理将 `/api` 转发至后端 3001 端口。
 | 路由 | react-router-dom | 7.x |
 | 构建 | Vite | 6.x |
 | 样式 | Tailwind CSS | 4.x (@tailwindcss/vite 插件) |
+| 虚拟列表 | @tanstack/react-virtual | 3.x |
+| 图标 | lucide-react | 1.x |
 | 后端框架 | Express + TypeScript | Express 5 |
+| CORS | cors | 2.x |
 | 数据库 | better-sqlite3 | 11.x (WAL 模式) |
 | 图片处理 | sharp | 0.33.x |
 | EXIF 解析 | exifr | 7.x |
@@ -37,34 +40,52 @@ Photo_Review/
 │   ├── package.json                # type: module
 │   └── src/
 │       ├── main.tsx                # 渲染入口：StrictMode + BrowserRouter
-│       ├── App.tsx                 # 路由定义：/ /review /batch /random
-│       ├── api/index.ts            # API 客户端层，所有后端调用封装
+│       ├── App.tsx                 # 路由定义：/ /grid /review /random，AppProvider 包裹
+│       ├── api/index.ts            # API 客户端层，所有后端调用封装 (PhotoGroup, SubfolderInfo, ExifData, Stats, BrowseResult, ScanResult)
 │       ├── context/
+│       │   ├── AppContext.tsx       # 根级状态 (activeFolder, photos, settings, isLoaded, loadPhotos)
+│       │   ├── GridContext.tsx      # 网格页状态 (dateSections, virtualItems, subfolder 过滤, 列数)
 │       │   └── ReviewContext.tsx    # 审阅页状态管理 (ReviewProvider + useReview)
 │       ├── hooks/
-│       │   ├── useDateGroups.ts    # 日期分组计算 (月→日二级分组)
+│       │   ├── useDateGroups.ts    # 日期分组计算 (月→日二级分组，支持状态和子文件夹筛选)
 │       │   ├── useKeyboardShortcuts.ts # 全局快捷键
-│       │   └── useRandomBatch.ts   # 随机批次状态管理
+│       │   ├── useRandomBatch.ts   # 随机批次状态管理
+│       │   ├── useExif.ts          # 单张照片 EXIF 懒加载
+│       │   ├── useDragImage.ts     # 拖拽图片导出 (canvas→blob→File)
+│       │   └── useImageZoom.ts     # 缩放与平移 (Ctrl+滚轮/拖拽/双击重置)
 │       ├── pages/
 │       │   ├── HomePage.tsx        # 首页：文件夹选择 + 扫描触发
+│       │   ├── GridPage.tsx        # 网格浏览：虚拟化照片网格 + Lightbox + 文件夹/日期导航
 │       │   ├── ReviewPage.tsx      # 审阅页：三栏布局，核心页面
-│       │   ├── BatchPage.tsx       # 批量处理：孤立文件展示 + 批量删除
 │       │   └── RandomPage.tsx      # 随机浏览：批次随机 + 详情面板
+│       ├── components/
 │       │   ├── FolderPicker.tsx    # 文件夹浏览器 (模态框)
+│       │   ├── NavBar.tsx          # 全局导航栏 (tab 路由切换, GridControls, ReviewControls)
+│       │   ├── grid/
+│       │   │   ├── FolderSidebar.tsx   # 左侧子文件夹树
+│       │   │   ├── Lightbox.tsx        # 全屏图片查看浮层
+│       │   │   └── YearTimeline.tsx    # 右侧垂直日期时间线
 │       │   ├── review/
 │       │   │   ├── DateSidebar.tsx       # 左侧日期导航
 │       │   │   ├── ImageViewport.tsx     # 中央图片视口
 │       │   │   ├── ReviewControls.tsx    # 底部悬浮操作按钮
-│       │   │   ├── ReviewToolbar.tsx     # 顶部工具栏
 │       │   │   ├── DetailsPanel.tsx      # 右侧详情面板 (ReviewContext wrapper)
 │       │   │   ├── PhotoDetailsView.tsx  # 纯展示照片详情组件 (可复用)
 │       │   │   └── Filmstrip.tsx         # 底部胶片条
 │       │   ├── random/
-│       │   │   ├── RandomToolbar.tsx     # 随机模式顶部工具栏
+│       │   │   ├── BatchSelector.tsx     # 批次大小选择器
 │       │   │   ├── RandomControls.tsx    # 随机模式浮动操作按钮
-│       │   │   └── BatchSelector.tsx     # 批次大小选择器
+│       │   │   └── RandomToolbar.tsx     # 随机模式顶部工具栏
+│       │   ├── shared/
+│       │   │   ├── DateSidebarBase.tsx   # 日期侧栏共享基组件
+│       │   │   └── useCollapsedMonths.ts # 月折叠状态 hook
 │       │   └── ui/
-│       │       └── SectionHeader.tsx     # 通用分区标题
+│       │       ├── ActionBtn.tsx         # 可复用圆形操作按钮
+│       │       ├── LoadingSpinner.tsx    # 带脉冲动画加载旋转器
+│       │       ├── SectionHeader.tsx     # 通用分区标题
+│       │       └── ToolbarDivider.tsx    # 垂直分隔线
+│       ├── utils/
+│       │   └── date.ts              # formatChineseDate() 日期格式化
 │       └── styles/
 │           └── index.css           # Tailwind 4 @theme (Darkroom 配色系统)
 ├── server/
@@ -72,15 +93,22 @@ Photo_Review/
 │   └── src/
 │       ├── index.ts                # Express 入口，CORS，端口 127.0.0.1:3001
 │       ├── db/index.ts             # SQLite 连接 (WAL)，建表逻辑
-│       ├── routes/index.ts         # 15 个 API 端点 + 路径安全白名单
+│       ├── routes/index.ts         # 16 个 API 端点 + 路径安全白名单
 │       ├── services/
-│       │   ├── scanner.ts          # 文件扫描 + JPG/RAW 配对
+│       │   ├── scanner.ts          # 文件扫描 + JPG/RAW 配对 + 子文件夹
 │       │   ├── image.ts            # 缩略图生成 + LRU 缓存
 │       │   ├── exif.ts             # EXIF 元数据提取
-│       │   ├── review.ts           # 审阅记录 + 随机选取 + 统计
+│       │   ├── review.ts           # 审阅记录 + 随机选取 + 批量状态 + 统计
 │       │   └── deleter.ts          # 删除到回收站
 │       └── utils/
 │           └── path.ts             # 路径标准化工具
+├── e2e/
+│   ├── playwright.config.ts        # Playwright 配置
+│   ├── fixtures/                   # 测试照片生成器
+│   ├── helpers/                    # 测试辅助函数
+│   ├── tests/                      # E2E 测试 + 可视化测试
+│   ├── reports/                    # HTML 报告生成
+│   └── screenshots/                # 截图输出
 └── docs/
     └── architecture/
         ├── agent-index.md          # Agent 路由索引
@@ -104,6 +132,10 @@ interface PhotoGroup {
   orphanType?: 'jpg' | 'raw'
   date?: string        // ISO 日期 "YYYY-MM-DD"，来自文件 mtime
   folder: string       // 标准化后的文件夹路径
+  subfolder: string    // 相对于根文件夹的子文件夹路径
+  // 以下字段仅客户端（通过 GET /photos 响应填充）
+  reviewAction?: 'keep' | 'deleted' | null
+  reviewedAt?: string | null
 }
 ```
 
@@ -133,7 +165,30 @@ interface ExifData {
 
 使用 exifr 库从源文件提取。文件大小自动合并 JPG 和所有关联 RAW 文件。
 
-### 4.3 ReviewRecord（审阅记录）— 数据库表
+### 4.3 SubfolderInfo（子文件夹信息）
+
+```typescript
+interface SubfolderInfo {
+  name: string    // 显示名称
+  path: string    // 子文件夹相对路径
+  count: number   // 该子文件夹下的照片数
+}
+```
+
+由 `scanner.ts` 的 `getSubfolders()` 返回，供 FolderSidebar 和 GridContext 使用。
+
+### 4.4 ReviewStatus（审阅状态）
+
+```typescript
+interface ReviewStatus {
+  action: string      // 'keep' | 'deleted'
+  reviewedAt: string  // ISO 时间戳
+}
+```
+
+由 `review.ts` 的 `getReviewStatuses()` 返回。`GET /photos` 端点使用此数据为每张照片填充 `reviewAction` 和 `reviewedAt` 字段。
+
+### 4.5 ReviewRecord（审阅记录）— 数据库表
 
 ```sql
 CREATE TABLE review_records (
@@ -145,13 +200,15 @@ CREATE TABLE review_records (
   reviewed_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   cache_until DATETIME
 );
+
+CREATE INDEX IF NOT EXISTS idx_review_records_cache ON review_records(cache_until);
 ```
 
 - `cache_until`：仅用于随机审阅模式，值为 `reviewed_at + random_cache_days`。
   已缓存的照片在随机审阅中不会重复出现，缓存过期后可再次出现。
 - `random_cache_days` 设置存储在 `settings` 表中，默认 7 天。
 
-### 4.4 Settings（设置）— 数据库表
+### 4.6 Settings（设置）— 数据库表
 
 ```sql
 CREATE TABLE settings (
@@ -172,12 +229,13 @@ CREATE TABLE settings (
 |------|------|------|
 | GET | `/folders/browse?path=` | 浏览目录。path 为空时返回磁盘/卷列表。返回 `{ current, parent, children[] }` |
 | POST | `/folders/scan` | 扫描文件夹。Body: `{ path }`。返回 `{ total, paired, orphanJpg, orphanRaw }` |
+| GET | `/folders/subfolders?folder=` | 获取子文件夹列表。返回 `SubfolderInfo[]` |
 
 ### 5.2 照片
 
 | 方法 | 路径 | 说明 |
 |------|------|------|
-| GET | `/photos?folder=&page=&limit=` | 获取照片列表（分页，默认 2000） |
+| GET | `/photos?folder=&page=&limit=&subfolder=&sort=` | 获取照片列表（分页，默认 2000）。返回 `{ photos, total }`。photos 包含 reviewAction/reviewedAt |
 | GET | `/photos/:id/thumbnail` | 获取缩略图 (200px JPEG, Cache-Control: 1h) |
 | GET | `/photos/:id/full` | 获取全尺寸图 (JPG 直接流式, RAW 转 JPEG, Cache-Control: 24h) |
 | GET | `/photos/:id/exif` | 获取 EXIF 元数据 |
@@ -196,7 +254,7 @@ CREATE TABLE settings (
 |------|------|------|
 | POST | `/reviews` | 提交审阅。Body: `{ photoId, action: 'keep'\|'deleted', mode: 'sequential'\|'random' }` |
 | GET | `/reviews/random?folder=` | 获取一张未审阅照片（排除已缓存的） |
-| GET | `/reviews/random/batch?folder=&count=N` | 获取 N 张不重复未审阅照片 (count 1-100, Fisher-Yates 洗牌) |
+| GET | `/reviews/random/batch?folder=&count=N` | 获取 N 张不重复未审阅照片 (count 1-100, Fisher-Yates 洗牌)。返回 `{ photos, total }` |
 
 ### 5.5 统计与设置
 
@@ -208,44 +266,77 @@ CREATE TABLE settings (
 
 ## 6. 状态管理
 
-### 6.1 审阅页 — ReviewContext
+### 6.1 根级状态 — AppContext
 
-`ReviewContext` 是审阅页 (`/review`) 的核心状态管理器，使用 React Context + useState。
+`AppContext` 在 `App.tsx` 中通过 `AppProvider` 包裹所有路由，提供全局共享数据。
 
 **状态**：
-- `photos: PhotoGroup[]` — 当前文件夹所有照片
-- `filteredPhotos: PhotoGroup[]` — 按日期筛选后的照片
+- `activeFolder: string` — 当前活跃文件夹
+- `photos: PhotoGroup[]` — 当前文件夹所有照片（含 reviewAction/reviewedAt）
+- `settings: Record<string, string>` — 服务端设置
+- `isLoaded: boolean` — 是否已完成首次加载
+
+**操作**：
+- `loadPhotos(folder)` — 调用 scanFolder + getPhotos + getSettings，设置所有状态
+
+HomePage 调用 `loadPhotos()` 后跳转到 `/grid`。
+
+### 6.2 审阅页 — ReviewContext
+
+`ReviewContext` 是审阅页 (`/review`) 的核心状态管理器，使用 React Context + useState。
+依赖 `useApp()` 获取根级数据。
+
+**状态**：
+- `photos: PhotoGroup[]` — 本地照片列表（删除时即时更新）
+- `filteredPhotos: PhotoGroup[]` — 按日期、状态、子文件夹筛选后的照片
 - `currentIndex: number` — 当前浏览位置
 - `currentPhoto: PhotoGroup | null` — 当前照片
 - `selectedDate: string | null` — 日期筛选条件
+- `statusFilter: StatusFilter` — 审阅状态筛选 ('all' | 'unreviewed' | 'reviewed')
+- `subfolderFilter: string | null` — 子文件夹筛选条件
+- `subfolders: SubfolderInfo[]` — 子文件夹列表
+- `reviewedCount: number` — 已审阅照片数
 - `leftSidebarOpen: boolean` — 左侧栏开关
 - `rightPanelOpen: boolean` — 右侧面板开关
 - `loading: boolean` — 加载状态
 - `error: string` — 错误信息
-- `reviewedIds: Set<string>` — 本次会话已审阅的照片 ID 集合
 - `monthGroups: MonthGroup[]` — 月份/日期分组数据
 
 **操作**：
 - `goTo(index)` — 跳转到指定位置
 - `setDateFilter(date)` — 设置日期筛选（null 表示全部）
+- `setStatusFilter(filter)` — 设置审阅状态筛选
+- `setSubfolderFilter(filter)` — 设置子文件夹筛选（同时重置日期和索引）
 - `toggleLeftSidebar()` / `toggleRightPanel()` — 切换侧栏
-- `handleAction('keep' | 'deleted')` — 执行审阅操作（删除时调 API，然后提交记录，最后前进）
+- `handleAction('keep' | 'deleted')` — 执行审阅操作
 - `refresh()` — 重新加载照片列表
 
 **操作流程** (handleAction)：
-1. 若 action 为 'deleted'，调用 `api.deletePhoto()` 移至回收站
-2. 调用 `api.submitReview()` 记录审阅结果
-3. 将 photoId 加入 `reviewedIds`
+1. 调用 `api.submitReview()` 记录审阅结果
+2. 若 action 为 'deleted'，调用 `api.deletePhoto()` 移至回收站，从本地列表移除
+3. 若 action 为 'keep'，更新本地照片的 reviewAction/reviewedAt
 4. 自动前进到下一张
 
-### 6.2 日期分组 — useDateGroups
+### 6.3 日期分组 — useDateGroups
 
-将照片按月→日二级分组，返回：
-- `monthGroups: MonthGroup[]` — 月份数组，每月包含 `dates: DateGroup[]`
-- `filteredPhotos` — 按 `selectedDate` 筛选后的子集
+将照片按月→日二级分组，支持状态和子文件夹筛选。
+
+```typescript
+useDateGroups(photos, selectedDate, statusFilter, subfolderFilter)
+```
+
+**参数**：
+- `photos: PhotoGroup[]` — 照片列表
+- `selectedDate: string | null` — 日期筛选条件
+- `statusFilter: StatusFilter` — 'all' | 'unreviewed' | 'reviewed'
+- `subfolderFilter: string | null` — 子文件夹筛选条件
+
+**返回**：
+- `monthGroups: MonthGroup[]` — 月份数组，每月包含 `dates: DateGroup[]`（含 reviewedCount）
+- `filteredPhotos` — 按所有条件筛选后的子集
 - `dateOfIndex: Map<number, string>` — 索引到日期的映射
 
-### 6.3 快捷键 — useKeyboardShortcuts
+### 6.4 快捷键 — useKeyboardShortcuts
 
 | 按键 | 操作 |
 |------|------|
@@ -259,7 +350,7 @@ CREATE TABLE settings (
 
 仅在非输入框焦点时生效。ReviewPage 和 RandomPage 均使用此 hook。
 
-### 6.4 随机浏览页 — useRandomBatch
+### 6.5 随机浏览页 — useRandomBatch
 
 `useRandomBatch` 是随机浏览页 (`/random`) 的自定义 hook，封装批次状态和操作逻辑。
 
@@ -285,15 +376,50 @@ CREATE TABLE settings (
 **批次耗尽处理**：当前批次最后一张操作完成后自动调用 `loadBatch()`，
 服务端返回空数组时设置 `exhausted=true` 显示完成界面。
 
-### 6.5 其他页面状态
+### 6.6 网格浏览页 — GridContext
 
-- **BatchPage** — 页面级 useState，管理孤立文件列表、删除确认弹窗、处理状态。
+`GridContext` 是网格浏览页 (`/grid`) 的核心状态，使用 React Context + useState。
+依赖 `useApp()` 获取根级 photos 和 activeFolder。
 
-### 6.6 activeFolder 模块级状态
+**状态**：
+- `photos: PhotoGroup[]` — 当前文件夹所有照片
+- `filteredPhotos: PhotoGroup[]` — 按日期和子文件夹筛选后的照片
+- `subfolderFilter: string | null` — 子文件夹筛选条件
+- `subfolders: SubfolderInfo[]` — 子文件夹列表
+- `selectedDate: string | null` — 日期筛选条件
+- `columns: number` — 网格列数 (2-8, 默认 5)
+- `dateSections: DateSection[]` — 按日期分组的照片区段 `{ date, label, count, photos }`
+- `virtualItems: VirtualItem[]` — 虚拟化项列表 (header | photo-row)
+- `dateIndexMap: Map<string, number>` — 日期到虚拟项索引的映射
+- `monthGroups: MonthGroup[]` — 月份/日期分组数据
+- `loading: boolean` — 加载状态
 
-`client/src/api/index.ts` 中维护一个模块级变量 `activeFolder`。
-HomePage 设置此值后跳转到审阅页，API 层自动在请求中附加 `folder` 参数。
-其他页面通过 `getActiveFolder()` 检查是否有活跃文件夹。
+**操作**：
+- `setSubfolderFilter(filter)` — 设置子文件夹筛选（同时重置日期选择）
+- `setSelectedDate(date)` — 设置日期筛选
+- `setColumns(n)` — 设置列数
+- `refresh()` — 重新加载子文件夹列表
+- `scrollToRef` — 滚动到指定日期的 ref
+
+**网格页组件**：
+- **FolderSidebar** — 左侧子文件夹树，点击切换筛选
+- **YearTimeline** — 右侧垂直日期时间线，点击滚动到对应日期
+- **Lightbox** — 全屏图片查看浮层，ESC 关闭，箭头导航
+- **NavBar** — 全局导航栏，tab 风格切换 (Grid/Review/Random)，按路由显示对应控件
+
+GridPage 使用 `@tanstack/react-virtual` 的 `useVirtualizer`，overscan=8。
+
+### 6.7 新增 Hooks
+
+- **useExif(photo)** — 单张照片 EXIF 懒加载，带取消支持。返回 `ExifData | null`
+- **useDragImage(photo, onLoad?)** — 拖拽图片导出。将 img 元素通过 canvas→blob→File 转换，附加到 dataTransfer
+- **useImageZoom()** — 缩放与平移管理。Ctrl+滚轮缩放 (1x-5x)，拖拽平移，双击重置。返回 `{ scale, resetZoom, zoomStyle, handleWheel, handlers }`
+
+### 6.8 activeFolder 模块级状态
+
+`client/src/api/index.ts` 中维护模块级变量 `activeFolder`，
+同时 `AppContext` 也管理此值。HomePage 设置后跳转到 `/grid`。
+API 层自动在请求中附加 `folder` 参数。
 
 ## 7. 设计决策
 
@@ -330,6 +456,14 @@ Filmstrip 组件仅渲染当前索引前后各 150 张缩略图。
 - 文件夹浏览：Windows 使用 PowerShell 探测盘符，macOS 读取 /Volumes
 - 盘符根目录的特殊处理（Windows 盘符需要追加反斜杠）
 
+### 7.8 虚拟化网格
+GridPage 使用 `@tanstack/react-virtual` 实现虚拟化渲染，overscan=8。
+理由：照片网格可能包含数千行，仅渲染可见区域的 DOM 节点，避免性能问题。
+
+### 7.9 根级 AppContext
+AppContext 在最顶层提供 activeFolder 和 photos，供 GridPage 和 ReviewPage 共享。
+理由：扫描结果只需加载一次，多页面间共享避免重复请求。
+
 ## 8. 开发命令
 
 | 命令 | 说明 |
@@ -338,3 +472,13 @@ Filmstrip 组件仅渲染当前索引前后各 150 张缩略图。
 | `npm run dev:client` | 仅前端 (Vite, port 5173) |
 | `npm run dev:server` | 仅后端 (tsx watch, port 3001) |
 | `npm run build` | 构建前后端 |
+| `npm run test:e2e` | 运行 E2E 测试 |
+| `npm run test:e2e:headed` | 有头模式运行 E2E 测试 |
+| `npm run test:photos` | 生成测试照片数据 |
+| `npm run test:visual-photos` | 生成可视化测试照片 |
+| `npm run test:visual` | 运行可视化回归测试 |
+| `npm run test:report` | 生成测试报告 |
+| `npm run test:full` | 完整测试流程 (生成数据+E2E+报告) |
+| `npm run test:visual-full` | 完整可视化测试流程 |
+| `npm run screenshot` | 全页面截图 (浏览器保持打开) |
+| `npm run screenshot:close` | 截图后关闭浏览器 |

@@ -4,7 +4,7 @@
 
 Photo Review is a local photo review tool with a Darkroom visual theme.
 After selecting a local folder, the system scans for JPG/RAW files and pairs them.
-Users can review photos one-by-one, randomly, or batch-process orphaned files.
+Users can browse photos in a virtual grid, review one-by-one, or randomly.
 
 Architecture: npm workspaces monorepo with `client/` (React frontend) and `server/` (Express backend).
 Vite dev proxy forwards `/api` to backend port 3001.
@@ -17,7 +17,10 @@ Vite dev proxy forwards `/api` to backend port 3001.
 | Routing | react-router-dom | 7.x |
 | Build | Vite | 6.x |
 | Styling | Tailwind CSS | 4.x (@tailwindcss/vite plugin) |
+| Virtualization | @tanstack/react-virtual | 3.x |
+| Icons | lucide-react | 1.x |
 | Backend Framework | Express + TypeScript | Express 5 |
+| CORS | cors | 2.x |
 | Database | better-sqlite3 | 11.x (WAL mode) |
 | Image Processing | sharp | 0.33.x |
 | EXIF Parsing | exifr | 7.x |
@@ -37,35 +40,52 @@ Photo_Review/
 │   ├── package.json                # type: module
 │   └── src/
 │       ├── main.tsx                # Render entry: StrictMode + BrowserRouter
-│       ├── App.tsx                 # Route definitions: / /review /batch /random
-│       ├── api/index.ts            # API client layer, all backend call wrappers
+│       ├── App.tsx                 # Route definitions: / /grid /review /random, AppProvider wrapper
+│       ├── api/index.ts            # API client layer, all backend call wrappers (PhotoGroup, SubfolderInfo, ExifData, Stats, BrowseResult, ScanResult)
 │       ├── context/
+│       │   ├── AppContext.tsx       # Root state (activeFolder, photos, settings, isLoaded, loadPhotos)
+│       │   ├── GridContext.tsx      # Grid page state (dateSections, virtualItems, subfolder filter, column count)
 │       │   └── ReviewContext.tsx    # Review page state management (ReviewProvider + useReview)
 │       ├── hooks/
-│       │   ├── useDateGroups.ts    # Date grouping calculation (month→day two-level)
+│       │   ├── useDateGroups.ts    # Date grouping calculation (month→day two-level, with status and subfolder filtering)
 │       │   ├── useKeyboardShortcuts.ts # Global keyboard shortcuts
-│       │   └── useRandomBatch.ts   # Random batch state management
+│       │   ├── useRandomBatch.ts   # Random batch state management
+│       │   ├── useExif.ts          # Lazy EXIF loading for a single photo
+│       │   ├── useDragImage.ts     # Drag image export (canvas→blob→File)
+│       │   └── useImageZoom.ts     # Zoom and pan (Ctrl+wheel/drag/double-click reset)
 │       ├── pages/
 │       │   ├── HomePage.tsx        # Home: folder selection + scan trigger
+│       │   ├── GridPage.tsx        # Grid: virtualized photo grid + Lightbox + folder/date navigation
 │       │   ├── ReviewPage.tsx      # Review: three-column layout, core page
-│       │   ├── BatchPage.tsx       # Batch: orphaned files display + batch delete
 │       │   └── RandomPage.tsx      # Random browse: batch random + details panel
 │       ├── components/
 │       │   ├── FolderPicker.tsx    # Folder browser (modal)
+│       │   ├── NavBar.tsx          # Global navigation bar (tab-style route switcher, GridControls, ReviewControls)
+│       │   ├── grid/
+│       │   │   ├── FolderSidebar.tsx   # Left subfolder tree
+│       │   │   ├── Lightbox.tsx        # Full-screen image viewer overlay
+│       │   │   └── YearTimeline.tsx    # Right vertical date timeline
 │       │   ├── review/
 │       │   │   ├── DateSidebar.tsx       # Left date navigation
 │       │   │   ├── ImageViewport.tsx     # Center image viewport
 │       │   │   ├── ReviewControls.tsx    # Bottom floating action buttons
-│       │   │   ├── ReviewToolbar.tsx     # Top toolbar
 │       │   │   ├── DetailsPanel.tsx      # Right details panel (ReviewContext wrapper)
 │       │   │   ├── PhotoDetailsView.tsx  # Pure presentational photo details (reusable)
 │       │   │   └── Filmstrip.tsx         # Bottom filmstrip
 │       │   ├── random/
-│       │   │   ├── RandomToolbar.tsx     # Random mode top toolbar
+│       │   │   ├── BatchSelector.tsx     # Batch size selector
 │       │   │   ├── RandomControls.tsx    # Random mode floating action buttons
-│       │   │   └── BatchSelector.tsx     # Batch size selector
+│       │   │   └── RandomToolbar.tsx     # Random mode top toolbar
+│       │   ├── shared/
+│       │   │   ├── DateSidebarBase.tsx   # Shared date sidebar base component
+│       │   │   └── useCollapsedMonths.ts # Collapsed month state hook
 │       │   └── ui/
-│       │       └── SectionHeader.tsx     # Generic section title
+│       │       ├── ActionBtn.tsx         # Reusable circular action button
+│       │       ├── LoadingSpinner.tsx    # Spinner with pulse animation
+│       │       ├── SectionHeader.tsx     # Generic section title
+│       │       └── ToolbarDivider.tsx    # Vertical divider
+│       ├── utils/
+│       │   └── date.ts              # formatChineseDate() date formatting
 │       └── styles/
 │           └── index.css           # Tailwind 4 @theme (Darkroom color system)
 ├── server/
@@ -73,15 +93,22 @@ Photo_Review/
 │   └── src/
 │       ├── index.ts                # Express entry, CORS, port 127.0.0.1:3001
 │       ├── db/index.ts             # SQLite connection (WAL), schema initialization
-│       ├── routes/index.ts         # 15 API endpoints + path security whitelist
+│       ├── routes/index.ts         # 16 API endpoints + path security whitelist
 │       ├── services/
-│       │   ├── scanner.ts          # File scanning + JPG/RAW pairing
+│       │   ├── scanner.ts          # File scanning + JPG/RAW pairing + subfolders
 │       │   ├── image.ts            # Thumbnail generation + LRU cache
 │       │   ├── exif.ts             # EXIF metadata extraction
-│       │   ├── review.ts           # Review records + random selection + batch + stats
+│       │   ├── review.ts           # Review records + random selection + batch status + stats
 │       │   └── deleter.ts          # Delete to system trash
 │       └── utils/
 │           └── path.ts             # Path normalization utilities
+├── e2e/
+│   ├── playwright.config.ts        # Playwright config
+│   ├── fixtures/                   # Test photo generators
+│   ├── helpers/                    # Test helper functions
+│   ├── tests/                      # E2E tests + visual tests
+│   ├── reports/                    # HTML report generation
+│   └── screenshots/                # Screenshot output
 └── docs/
     └── architecture/
         ├── agent-index.md          # Agent routing index
@@ -105,6 +132,10 @@ interface PhotoGroup {
   orphanType?: 'jpg' | 'raw'
   date?: string        // ISO date "YYYY-MM-DD", from file mtime
   folder: string       // Normalized folder path
+  subfolder: string    // Relative subfolder path from root
+  // Client-only fields (populated via GET /photos response)
+  reviewAction?: 'keep' | 'deleted' | null
+  reviewedAt?: string | null
 }
 ```
 
@@ -134,7 +165,30 @@ interface ExifData {
 
 Uses the exifr library to extract from the source file. File size automatically combines JPG and all associated RAW files.
 
-### 4.3 ReviewRecord — Database Table
+### 4.3 SubfolderInfo
+
+```typescript
+interface SubfolderInfo {
+  name: string    // Display name
+  path: string    // Relative subfolder path
+  count: number   // Photo count in this subfolder
+}
+```
+
+Returned by `getSubfolders()` in `scanner.ts`. Used by FolderSidebar and GridContext.
+
+### 4.4 ReviewStatus
+
+```typescript
+interface ReviewStatus {
+  action: string      // 'keep' | 'deleted'
+  reviewedAt: string  // ISO timestamp
+}
+```
+
+Returned by `getReviewStatuses()` in `review.ts`. The `GET /photos` endpoint uses this data to populate `reviewAction` and `reviewedAt` fields on each photo.
+
+### 4.5 ReviewRecord — Database Table
 
 ```sql
 CREATE TABLE review_records (
@@ -146,13 +200,15 @@ CREATE TABLE review_records (
   reviewed_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   cache_until DATETIME
 );
+
+CREATE INDEX IF NOT EXISTS idx_review_records_cache ON review_records(cache_until);
 ```
 
 - `cache_until`: only used in random review mode. Value is `reviewed_at + random_cache_days`.
   Cached photos will not reappear in random review; they become available again after cache expiry.
 - `random_cache_days` setting is stored in the `settings` table, default 7 days.
 
-### 4.4 Settings — Database Table
+### 4.6 Settings — Database Table
 
 ```sql
 CREATE TABLE settings (
@@ -173,12 +229,13 @@ All endpoints prefixed with `/api`. Vite dev proxy forwards to `http://127.0.0.1
 |--------|------|-------------|
 | GET | `/folders/browse?path=` | Browse directories. Returns drive/volume list when path is empty. Response: `{ current, parent, children[] }` |
 | POST | `/folders/scan` | Scan folder. Body: `{ path }`. Response: `{ total, paired, orphanJpg, orphanRaw }` |
+| GET | `/folders/subfolders?folder=` | List subfolders. Returns `SubfolderInfo[]` |
 
 ### 5.2 Photos
 
 | Method | Path | Description |
 |--------|------|-------------|
-| GET | `/photos?folder=&page=&limit=` | List photos (paginated, default 2000) |
+| GET | `/photos?folder=&page=&limit=&subfolder=&sort=` | List photos (paginated, default 2000). Response: `{ photos, total }`. photos include reviewAction/reviewedAt |
 | GET | `/photos/:id/thumbnail` | Get thumbnail (200px JPEG, Cache-Control: 1h) |
 | GET | `/photos/:id/full` | Get full image (JPG streamed directly, RAW converted to JPEG, Cache-Control: 24h) |
 | GET | `/photos/:id/exif` | Get EXIF metadata |
@@ -197,7 +254,7 @@ All endpoints prefixed with `/api`. Vite dev proxy forwards to `http://127.0.0.1
 |--------|------|-------------|
 | POST | `/reviews` | Submit review. Body: `{ photoId, action: 'keep'\|'deleted', mode: 'sequential'\|'random' }` |
 | GET | `/reviews/random?folder=` | Get one unreviewed photo (excluding cached) |
-| GET | `/reviews/random/batch?folder=&count=N` | Get N unreviewed photos (count 1-100, Fisher-Yates) |
+| GET | `/reviews/random/batch?folder=&count=N` | Get N unreviewed photos (count 1-100, Fisher-Yates). Response: `{ photos, total }` |
 
 ### 5.5 Stats & Settings
 
@@ -209,44 +266,77 @@ All endpoints prefixed with `/api`. Vite dev proxy forwards to `http://127.0.0.1
 
 ## 6. State Management
 
-### 6.1 Review Page — ReviewContext
+### 6.1 Root State — AppContext
 
-`ReviewContext` is the core state manager for the review page (`/review`), using React Context + useState.
+`AppContext` wraps all routes via `AppProvider` in `App.tsx`, providing globally shared data.
 
 **State**:
-- `photos: PhotoGroup[]` — all photos in the current folder
-- `filteredPhotos: PhotoGroup[]` — photos filtered by date
+- `activeFolder: string` — current active folder
+- `photos: PhotoGroup[]` — all photos in the current folder (with reviewAction/reviewedAt)
+- `settings: Record<string, string>` — server settings
+- `isLoaded: boolean` — whether initial load is complete
+
+**Actions**:
+- `loadPhotos(folder)` — calls scanFolder + getPhotos + getSettings, sets all state
+
+HomePage calls `loadPhotos()` then navigates to `/grid`.
+
+### 6.2 Review Page — ReviewContext
+
+`ReviewContext` is the core state manager for the review page (`/review`), using React Context + useState.
+Depends on `useApp()` for root-level data.
+
+**State**:
+- `photos: PhotoGroup[]` — local photo list (updated immediately on delete)
+- `filteredPhotos: PhotoGroup[]` — photos filtered by date, status, and subfolder
 - `currentIndex: number` — current browse position
 - `currentPhoto: PhotoGroup | null` — current photo
 - `selectedDate: string | null` — date filter condition
+- `statusFilter: StatusFilter` — review status filter ('all' | 'unreviewed' | 'reviewed')
+- `subfolderFilter: string | null` — subfolder filter condition
+- `subfolders: SubfolderInfo[]` — subfolder list
+- `reviewedCount: number` — count of reviewed photos
 - `leftSidebarOpen: boolean` — left sidebar toggle
 - `rightPanelOpen: boolean` — right panel toggle
 - `loading: boolean` — loading state
 - `error: string` — error message
-- `reviewedIds: Set<string>` — IDs of photos reviewed in this session
 - `monthGroups: MonthGroup[]` — month/date grouping data
 
 **Actions**:
 - `goTo(index)` — jump to specified position
 - `setDateFilter(date)` — set date filter (null means all)
+- `setStatusFilter(filter)` — set review status filter
+- `setSubfolderFilter(filter)` — set subfolder filter (also resets date and index)
 - `toggleLeftSidebar()` / `toggleRightPanel()` — toggle sidebars
-- `handleAction('keep' | 'deleted')` — execute review action (delete via API, then record, then advance)
+- `handleAction('keep' | 'deleted')` — execute review action
 - `refresh()` — reload photo list
 
 **Action Flow** (handleAction):
-1. If action is 'deleted', call `api.deletePhoto()` to move to trash
-2. Call `api.submitReview()` to record the review
-3. Add photoId to `reviewedIds`
+1. Call `api.submitReview()` to record the review
+2. If action is 'deleted', call `api.deletePhoto()` to move to trash, remove from local list
+3. If action is 'keep', update local photo's reviewAction/reviewedAt
 4. Auto-advance to next photo
 
-### 6.2 Date Grouping — useDateGroups
+### 6.3 Date Grouping — useDateGroups
 
-Groups photos by month→day (two-level), returns:
-- `monthGroups: MonthGroup[]` — array of months, each containing `dates: DateGroup[]`
-- `filteredPhotos` — subset filtered by `selectedDate`
+Groups photos by month→day (two-level), with status and subfolder filtering.
+
+```typescript
+useDateGroups(photos, selectedDate, statusFilter, subfolderFilter)
+```
+
+**Parameters**:
+- `photos: PhotoGroup[]` — photo list
+- `selectedDate: string | null` — date filter condition
+- `statusFilter: StatusFilter` — 'all' | 'unreviewed' | 'reviewed'
+- `subfolderFilter: string | null` — subfolder filter condition
+
+**Returns**:
+- `monthGroups: MonthGroup[]` — array of months, each containing `dates: DateGroup[]` (with reviewedCount)
+- `filteredPhotos` — subset filtered by all conditions
 - `dateOfIndex: Map<number, string>` — index-to-date mapping
 
-### 6.3 Keyboard Shortcuts — useKeyboardShortcuts
+### 6.4 Keyboard Shortcuts — useKeyboardShortcuts
 
 | Key | Action |
 |-----|--------|
@@ -260,7 +350,7 @@ Groups photos by month→day (two-level), returns:
 
 Only active when focus is not in an input field. Both ReviewPage and RandomPage use this hook.
 
-### 6.4 Random Browse — useRandomBatch
+### 6.5 Random Browse — useRandomBatch
 
 `useRandomBatch` is a custom hook for the random browse page (`/random`), encapsulating batch state and action logic.
 
@@ -286,15 +376,50 @@ Only active when focus is not in an input field. Both ReviewPage and RandomPage 
 **Batch exhaustion**: When the last photo in a batch is actioned, `loadBatch()` is called automatically.
 If the server returns an empty array, `exhausted=true` is set and a completion screen is shown.
 
-### 6.5 Other Page State
+### 6.6 Grid Page — GridContext
 
-- **BatchPage** — page-level useState, manages orphaned files list, delete confirmation dialog, processing state.
+`GridContext` is the core state for the grid page (`/grid`), using React Context + useState.
+Depends on `useApp()` for root-level photos and activeFolder.
 
-### 6.6 activeFolder Module-level State
+**State**:
+- `photos: PhotoGroup[]` — all photos in the current folder
+- `filteredPhotos: PhotoGroup[]` — photos filtered by date and subfolder
+- `subfolderFilter: string | null` — subfolder filter condition
+- `subfolders: SubfolderInfo[]` — subfolder list
+- `selectedDate: string | null` — date filter condition
+- `columns: number` — grid column count (2-8, default 5)
+- `dateSections: DateSection[]` — date-grouped photo sections `{ date, label, count, photos }`
+- `virtualItems: VirtualItem[]` — virtualized item list (header | photo-row)
+- `dateIndexMap: Map<string, number>` — date to virtual item index mapping
+- `monthGroups: MonthGroup[]` — month/date grouping data
+- `loading: boolean` — loading state
 
-`client/src/api/index.ts` maintains a module-level variable `activeFolder`.
-HomePage sets this value before navigating to the review page; the API layer automatically appends the `folder` parameter to requests.
-Other pages use `getActiveFolder()` to check for an active folder.
+**Actions**:
+- `setSubfolderFilter(filter)` — set subfolder filter (also resets date selection)
+- `setSelectedDate(date)` — set date filter
+- `setColumns(n)` — set column count
+- `refresh()` — reload subfolder list
+- `scrollToRef` — ref to scroll to a specific date
+
+**Grid page components**:
+- **FolderSidebar** — left subfolder tree, click to switch filter
+- **YearTimeline** — right vertical date timeline, click to scroll to date
+- **Lightbox** — full-screen image viewer overlay, ESC to close, arrow navigation
+- **NavBar** — global navigation bar, tab-style switcher (Grid/Review/Random), shows route-specific controls
+
+GridPage uses `@tanstack/react-virtual`'s `useVirtualizer` with overscan=8.
+
+### 6.7 Additional Hooks
+
+- **useExif(photo)** — lazy EXIF loading for a single photo with cancellation support. Returns `ExifData | null`
+- **useDragImage(photo, onLoad?)** — drag image export. Converts img element via canvas→blob→File, attaches to dataTransfer
+- **useImageZoom()** — zoom and pan management. Ctrl+wheel zoom (1x-5x), drag to pan, double-click reset. Returns `{ scale, resetZoom, zoomStyle, handleWheel, handlers }`
+
+### 6.8 activeFolder Module-level State
+
+`client/src/api/index.ts` maintains a module-level variable `activeFolder`,
+while `AppContext` also manages this value. HomePage sets it then navigates to `/grid`.
+The API layer automatically appends the `folder` parameter to requests.
 
 ## 7. Design Decisions
 
@@ -331,6 +456,14 @@ Rationale: prevents performance issues from excessive DOM nodes.
 - Folder browsing: Windows uses PowerShell for drive detection, macOS reads /Volumes
 - Special handling for drive root directories (Windows drives need trailing backslash)
 
+### 7.8 Virtualized Grid
+GridPage uses `@tanstack/react-virtual` for virtualized rendering with overscan=8.
+Rationale: photo grids may contain thousands of rows; only visible DOM nodes are rendered to avoid performance issues.
+
+### 7.9 Root AppContext
+AppContext provides activeFolder and photos at the top level, shared by GridPage and ReviewPage.
+Rationale: scan results are loaded once and shared across pages to avoid duplicate requests.
+
 ## 8. Development Commands
 
 | Command | Description |
@@ -339,3 +472,13 @@ Rationale: prevents performance issues from excessive DOM nodes.
 | `npm run dev:client` | Frontend only (Vite, port 5173) |
 | `npm run dev:server` | Backend only (tsx watch, port 3001) |
 | `npm run build` | Build both frontend and backend |
+| `npm run test:e2e` | Run E2E tests |
+| `npm run test:e2e:headed` | Run E2E tests (headed mode) |
+| `npm run test:photos` | Generate test photo data |
+| `npm run test:visual-photos` | Generate visual test photos |
+| `npm run test:visual` | Run visual regression tests |
+| `npm run test:report` | Generate test report |
+| `npm run test:full` | Full test pipeline (generate data + E2E + report) |
+| `npm run test:visual-full` | Full visual test pipeline |
+| `npm run screenshot` | Full-page screenshots (browser stays open) |
+| `npm run screenshot:close` | Screenshots with browser auto-close |
