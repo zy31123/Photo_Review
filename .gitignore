@@ -8,12 +8,16 @@ data/
 .claude/
 
 # E2E test outputs
-e2e/reports/screenshots/
-e2e/reports/results.json
-e2e/reports/results-visual.json
-e2e/reports/analysis.json
-e2e/reports/report.html
+e2e/reports/
 test-results/
 report-*.png
 .playwright-mcp/
 .superpowers/
+
+# Screenshot outputs
+e2e/screenshots/
+e2e/screenshot-all.ts
+
+# Root-level screenshots
+*.png
+!docs/**/*.png
