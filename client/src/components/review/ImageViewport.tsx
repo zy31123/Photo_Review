@@ -11,18 +11,26 @@ export default function ImageViewport() {
   const [hoveringLeft, setHoveringLeft] = useState(false)
   const [hoveringRight, setHoveringRight] = useState(false)
   const wheelTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const { resetZoom, zoomStyle, handlers: zoomHandlers } = useImageZoom()
+  const containerRef = useRef<HTMLDivElement>(null)
+  const { resetZoom, zoomStyle, handleWheel: zoomWheel, handlers: zoomHandlers } = useImageZoom()
 
   const handleImageLoad = useCallback(() => setLoaded(true), [])
   const drag = useDragImage(currentPhoto, handleImageLoad)
 
   useEffect(() => { resetZoom() }, [currentPhoto?.id, resetZoom])
 
+  useEffect(() => {
+    const el = containerRef.current
+    if (!el) return
+    el.addEventListener('wheel', zoomWheel, { passive: false })
+    return () => el.removeEventListener('wheel', zoomWheel)
+  }, [zoomWheel])
+
   const handlePrev = useCallback(() => goTo(currentIndex - 1), [currentIndex, goTo])
   const handleNext = useCallback(() => goTo(currentIndex + 1), [currentIndex, goTo])
 
   const handleWheel = useCallback((e: React.WheelEvent) => {
-    if (zoomHandlers.onWheel(e)) return
+    if (e.ctrlKey) return
     if (wheelTimerRef.current) return
     if (e.deltaY > 0) {
       goTo(currentIndex + 1)
@@ -32,7 +40,7 @@ export default function ImageViewport() {
     wheelTimerRef.current = setTimeout(() => {
       wheelTimerRef.current = null
     }, 150)
-  }, [currentIndex, goTo, zoomHandlers])
+  }, [currentIndex, goTo])
 
   if (!currentPhoto) {
     return (
@@ -48,7 +56,7 @@ export default function ImageViewport() {
   }
 
   return (
-    <div className="image-viewport relative flex items-center justify-center bg-bg overflow-hidden" onWheel={handleWheel}>
+    <div ref={containerRef} className="image-viewport relative flex items-center justify-center bg-bg overflow-hidden" onWheel={handleWheel}>
       {/* Prev overlay */}
       <div
         className="absolute left-0 top-0 bottom-0 w-24 z-10 flex items-center justify-start pl-4 cursor-pointer opacity-0 hover:opacity-100 transition-opacity duration-200"

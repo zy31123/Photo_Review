@@ -59,22 +59,28 @@ function GridLayout() {
   useEffect(() => {
     const el = scrollRef.current
     if (!el) return
+    let rafId = 0
     const onScroll = () => {
-      const scrollTop = el.scrollTop
-      for (let i = virtualItems.length - 1; i >= 0; i--) {
-        const item = virtualItems[i]
-        if (item.type === 'header') {
-          const offset = rowVirtualizer.getOffsetForIndex(i, 'start')
-          if (typeof offset === 'number' && offset <= scrollTop + 1) {
+      cancelAnimationFrame(rafId)
+      rafId = requestAnimationFrame(() => {
+        const visibleRows = rowVirtualizer.getVirtualItems()
+        const scrollTop = el.scrollTop
+        for (let i = visibleRows.length - 1; i >= 0; i--) {
+          const vr = visibleRows[i]
+          const item = virtualItems[vr.index]
+          if (item?.type === 'header' && vr.start <= scrollTop + 1) {
             setStickyHeader({ label: item.label, count: item.count })
             return
           }
         }
-      }
-      setStickyHeader(null)
+        setStickyHeader(null)
+      })
     }
     el.addEventListener('scroll', onScroll, { passive: true })
-    return () => el.removeEventListener('scroll', onScroll)
+    return () => {
+      cancelAnimationFrame(rafId)
+      el.removeEventListener('scroll', onScroll)
+    }
   }, [virtualItems, rowVirtualizer])
 
   const handleSingleClick = useCallback((index: number) => {

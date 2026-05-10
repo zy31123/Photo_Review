@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from 'react'
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Image as ImageIcon } from 'lucide-react'
 import { api, getActiveFolder } from '../api'
@@ -20,7 +20,8 @@ export default function RandomPage() {
   const batch = useRandomBatch()
   const exif = useExif(batch.currentPhoto)
   const drag = useDragImage(batch.currentPhoto)
-  const { resetZoom, zoomStyle, handlers: zoomHandlers } = useImageZoom()
+  const { resetZoom, zoomStyle, handleWheel: zoomWheel, handlers: zoomHandlers } = useImageZoom()
+  const containerRef = useRef<HTMLDivElement>(null)
   const [cacheDays, setCacheDays] = useState(7)
   const [started, setStarted] = useState(false)
 
@@ -33,6 +34,13 @@ export default function RandomPage() {
       if (s.random_cache_days) setCacheDays(Number(s.random_cache_days))
     })
   }, [])
+
+  useEffect(() => {
+    const el = containerRef.current
+    if (!el) return
+    el.addEventListener('wheel', zoomWheel, { passive: false })
+    return () => el.removeEventListener('wheel', zoomWheel)
+  }, [zoomWheel])
 
   const handleCacheDaysChange = async (days: number) => {
     setCacheDays(days)
@@ -56,10 +64,6 @@ export default function RandomPage() {
   useKeyboardShortcuts(started && batch.currentPhoto ? shortcuts : {})
 
   useEffect(() => { resetZoom() }, [batch.currentPhoto?.id, resetZoom])
-
-  const handleWheel = useCallback((e: React.WheelEvent) => {
-    zoomHandlers.onWheel(e)
-  }, [zoomHandlers])
 
   const rightW = 'clamp(18.75rem, 18vw, 27.5rem)'
 
@@ -118,7 +122,7 @@ export default function RandomPage() {
       )}
 
       <div className="flex-1 min-h-0 flex">
-        <div className="flex-1 relative flex items-center justify-center bg-bg overflow-hidden" onWheel={handleWheel}>
+        <div ref={containerRef} className="flex-1 relative flex items-center justify-center bg-bg overflow-hidden">
           {!started || !batch.currentPhoto ? placeholder : (
             <>
               <img

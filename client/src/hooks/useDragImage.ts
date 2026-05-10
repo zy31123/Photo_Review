@@ -6,41 +6,45 @@ export function useDragImage(
   externalOnLoad?: () => void,
 ) {
   const blobRef = useRef<Blob | null>(null)
+  const imgElRef = useRef<HTMLImageElement | null>(null)
 
-  const url = photo ? api.fullUrl(photo.id) : null
+  const onDragStart = useCallback(async (e: React.DragEvent<HTMLImageElement>) => {
+    if (!photo) return
 
-  const onLoad = useCallback(() => {
-    externalOnLoad?.()
-    if (!url) return
-    fetch(url)
-      .then(r => r.blob())
-      .then(blob => { blobRef.current = blob })
-      .catch(() => {})
-  }, [url, externalOnLoad])
+    let blob = blobRef.current
+    if (!blob && imgElRef.current) {
+      try {
+        const canvas = document.createElement('canvas')
+        const img = imgElRef.current
+        canvas.width = img.naturalWidth
+        canvas.height = img.naturalHeight
+        const ctx = canvas.getContext('2d')
+        if (ctx) {
+          ctx.drawImage(img, 0, 0)
+          blob = await new Promise<Blob>((resolve, reject) => {
+            canvas.toBlob(b => b ? resolve(b) : reject(new Error('toBlob failed')), 'image/jpeg')
+          })
+          blobRef.current = blob
+        }
+      } catch { /* fallback below */ }
+    }
 
-  const onDragStart = useCallback((e: React.DragEvent<HTMLImageElement>) => {
-    const blob = blobRef.current
-    if (!blob || !photo) return
+    if (blob) {
+      const file = new File([blob], photo.name, { type: 'image/jpeg' })
+      e.dataTransfer.items.add(file)
+    }
 
-    const file = new File([blob], photo.name, { type: 'image/jpeg' })
-    e.dataTransfer.items.add(file)
-
-    const absUrl = new URL(url!, window.location.origin).href
+    const url = api.fullUrl(photo.id)
+    const absUrl = new URL(url, window.location.origin).href
     e.dataTransfer.setData('DownloadURL', `image/jpeg:${photo.name}:${absUrl}`)
-  }, [photo, url])
+  }, [photo])
 
-  const onDragEnd = useCallback(() => {
-    blobRef.current = null
-  }, [])
-
-  if (!photo) {
-    return { onLoad: externalOnLoad }
-  }
-
-  return {
-    draggable: true as const,
-    onLoad,
-    onDragStart,
-    onDragEnd,
-  }
+  return !photo
+    ? { onLoad: externalOnLoad }
+    : {
+        draggable: true as const,
+        onLoad: externalOnLoad,
+        ref: imgElRef,
+        onDragStart,
+      }
 }

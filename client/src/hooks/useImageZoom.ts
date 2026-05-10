@@ -9,46 +9,56 @@ export function useImageZoom() {
   const [position, setPosition] = useState({ x: 0, y: 0 })
   const dragging = useRef(false)
   const dragStart = useRef({ x: 0, y: 0 })
+  const scaleRef = useRef(1)
+  const positionRef = useRef({ x: 0, y: 0 })
 
   const resetZoom = useCallback(() => {
     setScale(1)
     setPosition({ x: 0, y: 0 })
+    scaleRef.current = 1
+    positionRef.current = { x: 0, y: 0 }
   }, [])
 
-  const handleWheel = useCallback((e: React.WheelEvent) => {
+  const handleWheel = useCallback((e: WheelEvent) => {
     if (!e.ctrlKey) return false
 
     e.preventDefault()
+    const currentScale = scaleRef.current
     const delta = e.deltaY > 0 ? -ZOOM_FACTOR : ZOOM_FACTOR
-    const newScale = Math.min(MAX_SCALE, Math.max(MIN_SCALE, scale + delta))
-    if (newScale === scale) return true
+    const newScale = Math.min(MAX_SCALE, Math.max(MIN_SCALE, currentScale + delta))
+    if (newScale === currentScale) return true
 
     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
     const mouseX = e.clientX - rect.left
     const mouseY = e.clientY - rect.top
-    const ratio = newScale / scale
+    const ratio = newScale / currentScale
 
-    setPosition(prev => ({
-      x: mouseX - ratio * (mouseX - prev.x),
-      y: mouseY - ratio * (mouseY - prev.y),
-    }))
+    const newPos = {
+      x: mouseX - ratio * (mouseX - positionRef.current.x),
+      y: mouseY - ratio * (mouseY - positionRef.current.y),
+    }
+    positionRef.current = newPos
+    scaleRef.current = newScale
+    setPosition(newPos)
     setScale(newScale)
     return true
-  }, [scale])
+  }, [])
 
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
-    if (scale <= 1 || e.button !== 0) return
+    if (scaleRef.current <= 1 || e.button !== 0) return
     e.preventDefault()
     dragging.current = true
-    dragStart.current = { x: e.clientX - position.x, y: e.clientY - position.y }
-  }, [scale, position])
+    dragStart.current = { x: e.clientX - positionRef.current.x, y: e.clientY - positionRef.current.y }
+  }, [])
 
   const handleMouseMove = useCallback((e: React.MouseEvent) => {
     if (!dragging.current) return
-    setPosition({
+    const newPos = {
       x: e.clientX - dragStart.current.x,
       y: e.clientY - dragStart.current.y,
-    })
+    }
+    positionRef.current = newPos
+    setPosition(newPos)
   }, [])
 
   const handleMouseUp = useCallback(() => {
@@ -67,8 +77,8 @@ export function useImageZoom() {
     scale,
     resetZoom,
     zoomStyle,
+    handleWheel,
     handlers: {
-      onWheel: handleWheel,
       onMouseDown: handleMouseDown,
       onMouseMove: handleMouseMove,
       onMouseUp: handleMouseUp,

@@ -54,14 +54,16 @@ function buildItems(
 }
 
 export default function YearTimeline() {
-  const { monthGroups, dateSections, scrollToRef } = useGrid()
+  const { monthGroups, dateSections, scrollToRef, selectedDate, setSelectedDate } = useGrid()
 
   const granularity = useMemo(() => pickGranularity(dateSections), [dateSections])
 
   const items = useMemo(() => buildItems(granularity, monthGroups), [granularity, monthGroups])
 
   const handleClick = (date: string) => {
-    if (date) scrollToRef.current(date)
+    if (!date) return
+    setSelectedDate(date)
+    scrollToRef.current(date)
   }
 
   const groupBySecondary = useMemo(() => {
@@ -75,13 +77,22 @@ export default function YearTimeline() {
     return groups
   }, [items, granularity])
 
+  const isItemActive = (item: TimelineItem) => {
+    if (!selectedDate) return false
+    if (granularity === 'year') return selectedDate.startsWith(item.date.slice(0, 4))
+    if (granularity === 'month') return selectedDate.startsWith(item.date.slice(0, 7))
+    return selectedDate === item.date
+  }
+
   return (
     <div className="w-12 shrink-0 border-l border-border bg-bg-deep overflow-y-auto py-3 flex flex-col items-center gap-1">
       {granularity === 'year' && items.map(item => (
         <button
           key={item.label}
           onClick={() => handleClick(item.date)}
-          className="text-text-secondary text-[0.6875rem] font-medium leading-tight hover:text-accent transition-colors cursor-pointer py-1"
+          className={`text-[0.6875rem] font-medium leading-tight transition-colors cursor-pointer py-1 ${
+            isItemActive(item) ? 'text-accent' : 'text-text-secondary hover:text-accent'
+          }`}
         >
           {item.label}
         </button>
@@ -96,7 +107,9 @@ export default function YearTimeline() {
             <button
               key={`${item.label}-${item.date}`}
               onClick={() => handleClick(item.date)}
-              className="text-text-secondary text-[0.625rem] leading-tight hover:text-accent transition-colors cursor-pointer py-0.5"
+              className={`text-[0.625rem] leading-tight transition-colors cursor-pointer py-0.5 ${
+                isItemActive(item) ? 'text-accent font-medium' : 'text-text-secondary hover:text-accent'
+              }`}
             >
               {item.label}
             </button>
