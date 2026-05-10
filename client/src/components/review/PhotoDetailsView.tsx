@@ -10,7 +10,7 @@ interface PhotoDetailsViewProps {
 }
 
 function Card({ children }: { children: React.ReactNode }) {
-  return <div className="mx-4 mb-3 rounded-lg border border-border/40 bg-bg-card shadow-card overflow-hidden">{children}</div>
+  return <div className="mx-4 mb-3 rounded-xl border border-black/[0.04] bg-white/60 shadow-card overflow-hidden">{children}</div>
 }
 
 export default function PhotoDetailsView({ photo, exif, reviewed }: PhotoDetailsViewProps) {
@@ -34,10 +34,9 @@ export default function PhotoDetailsView({ photo, exif, reviewed }: PhotoDetails
           <div className="px-4 py-3 space-y-3">
             <MetaRow label="相机" value={exif.camera} />
             <MetaRow label="镜头" value={exif.lens} />
-            <MetaRow label="焦距" value={exif.focalLength} />
-            <MetaRow label="光圈" value={exif.aperture} />
-            <MetaRow label="快门" value={exif.shutterSpeed} />
-            <MetaRow label="ISO" value={exif.iso} />
+            {exif.focalLength && (
+              <CompactExifBar exif={exif} />
+            )}
             <MetaRow label="文件大小" value={exif.fileSize} />
             {(exif.width > 0 && exif.height > 0) && (
               <MetaRow label="分辨率" value={`${exif.width} × ${exif.height}`} />
@@ -91,6 +90,21 @@ export default function PhotoDetailsView({ photo, exif, reviewed }: PhotoDetails
   )
 }
 
+function CompactExifBar({ exif }: { exif: ExifData }) {
+  const parts = [exif.focalLength, exif.aperture, exif.shutterSpeed, `ISO ${exif.iso}`].filter(Boolean)
+  if (parts.length === 0) return null
+  return (
+    <div className="flex items-center gap-1.5 text-xs text-text-secondary bg-black/[0.03] rounded-lg px-3 py-2">
+      {parts.map((part, i) => (
+        <span key={i} className="flex items-center gap-1.5">
+          {i > 0 && <span className="text-text-muted/50">·</span>}
+          <span className="font-medium text-text">{part}</span>
+        </span>
+      ))}
+    </div>
+  )
+}
+
 function MetaRow({ label, value, mono }: { label: string; value: string; mono?: boolean }) {
   return (
     <div className="grid grid-cols-[auto_1fr] gap-x-4 items-start">
@@ -104,10 +118,10 @@ function MetaRow({ label, value, mono }: { label: string; value: string; mono?: 
 
 function FileStatusBadge({ exists, label }: { exists: boolean; label: string }) {
   return (
-    <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium ${
-      exists ? 'bg-success-bg text-success-text' : 'bg-danger-bg text-danger-text'
+    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${
+      exists ? 'bg-success/10 text-success-dim' : 'bg-danger/10 text-danger-dim'
     }`}>
-      {exists ? <Check className="w-3 h-3" strokeWidth={2} /> : <X className="w-3 h-3" strokeWidth={2} />}
+      {exists ? <Check className="w-3 h-3" strokeWidth={2.5} /> : <X className="w-3 h-3" strokeWidth={2.5} />}
       {label}
     </span>
   )
@@ -116,14 +130,14 @@ function FileStatusBadge({ exists, label }: { exists: boolean; label: string }) 
 function ReviewStatusBadge({ reviewed }: { reviewed: boolean }) {
   if (reviewed) {
     return (
-      <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium bg-success-bg text-success-text">
-        <Check className="w-3 h-3" strokeWidth={2} />
+      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-success/10 text-success-dim">
+        <Check className="w-3 h-3" strokeWidth={2.5} />
         已审阅
       </span>
     )
   }
   return (
-    <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium bg-bg-raised text-text-secondary">
+    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-black/[0.04] text-text-secondary">
       <span className="w-2 h-2 rounded-full bg-text-muted" />
       未审阅
     </span>

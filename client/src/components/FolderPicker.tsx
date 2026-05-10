@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { api, type BrowseResult } from '../api'
+import { X, ChevronRight, Folder, HardDrive, ArrowLeft } from 'lucide-react'
 
 interface FolderPickerProps {
   open: boolean
@@ -32,30 +33,53 @@ export default function FolderPicker({ open, onClose, onSelect }: FolderPickerPr
 
   if (!open) return null
 
+  const currentPath = browse?.current ?? ''
+  const sep = currentPath.includes('/') ? '/' : '\\'
+  const pathParts = currentPath ? currentPath.split(/[/\\]/).filter(Boolean) : []
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
-      <div className="w-[42.5rem] max-h-[80vh] bg-bg-card border border-border rounded-xl shadow-2xl flex flex-col">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-md">
+      <div className="w-[42.5rem] max-h-[80vh] bg-bg-card border border-black/[0.06] rounded-2xl shadow-overlay flex flex-col animate-fade-in">
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-border">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-black/[0.06]">
           <h2 className="text-lg font-semibold text-text">选择文件夹</h2>
           <button
             onClick={onClose}
-            className="text-text-muted hover:text-text text-xl leading-none"
+            className="w-8 h-8 rounded-full flex items-center justify-center text-text-muted hover:text-text hover:bg-black/[0.04] transition-colors"
           >
-            ✕
+            <X className="size-4" />
           </button>
         </div>
 
-        {/* Current path */}
-        <div className="px-5 py-3 border-b border-border">
-          <div className="text-sm text-text-muted mb-1 text-left">当前路径</div>
-          <div className="text-base text-text-secondary font-mono font-medium truncate">
-            {browse?.current === '' ? '此电脑 / 所有驱动器' : (browse?.current || '...')}
+        {/* Breadcrumb path */}
+        <div className="px-5 py-3 border-b border-black/[0.06]">
+          <div className="flex items-center gap-1 text-sm flex-wrap">
+            <button
+              onClick={() => loadDir('')}
+              className="text-accent hover:underline flex items-center gap-1"
+            >
+              <HardDrive className="size-3.5" />
+              此电脑
+            </button>
+            {pathParts.map((part, i) => (
+              <span key={i} className="flex items-center gap-1">
+                <ChevronRight className="size-3 text-text-muted" />
+                <button
+                  onClick={() => {
+                    const path = pathParts.slice(0, i + 1).join(sep)
+                    loadDir(path)
+                  }}
+                  className={`${i === pathParts.length - 1 ? 'text-text font-medium' : 'text-accent hover:underline'}`}
+                >
+                  {part}
+                </button>
+              </span>
+            ))}
           </div>
         </div>
 
         {/* Directory list */}
-        <div className="flex-1 overflow-y-auto px-4 py-2 min-h-[18.75rem]">
+        <div className="flex-1 overflow-y-auto px-3 py-2 min-h-[18.75rem]">
           {loading ? (
             <div className="flex items-center justify-center h-full text-text-muted text-base">
               加载中...
@@ -70,9 +94,9 @@ export default function FolderPicker({ open, onClose, onSelect }: FolderPickerPr
               {browse.parent !== null && (
                 <button
                   onClick={() => loadDir(browse.parent!)}
-                  className="w-full text-left px-4 py-3.5 rounded-lg text-base text-text-secondary hover:bg-bg-hover transition-colors flex items-center gap-2"
+                  className="w-full text-left px-4 py-3 rounded-xl text-base text-text-secondary hover:bg-black/[0.04] transition-colors flex items-center gap-3"
                 >
-                  <span className="text-accent">↑</span>
+                  <ArrowLeft className="size-4 text-text-muted" />
                   <span>..</span>
                   <span className="text-text-muted text-sm ml-auto">
                     {browse.parent === '' ? '所有驱动器' : '上级目录'}
@@ -88,9 +112,9 @@ export default function FolderPicker({ open, onClose, onSelect }: FolderPickerPr
                 <button
                   key={child.path}
                   onClick={() => loadDir(child.path)}
-                  className="w-full text-left px-4 py-3.5 rounded-lg text-base text-text-secondary hover:bg-bg-hover transition-colors flex items-center gap-2"
+                  className="w-full text-left px-4 py-3 rounded-xl text-base text-text-secondary hover:bg-black/[0.04] transition-colors flex items-center gap-3"
                 >
-                  <span className="text-accent text-sm">📁</span>
+                  <Folder className="size-4 text-accent/60" />
                   <span className="truncate">{child.name}</span>
                 </button>
               ))}
@@ -101,10 +125,10 @@ export default function FolderPicker({ open, onClose, onSelect }: FolderPickerPr
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-end gap-3 px-5 py-3 border-t border-border">
+        <div className="flex items-center justify-end gap-3 px-5 py-3 border-t border-black/[0.06]">
           <button
             onClick={onClose}
-            className="px-4 py-3.5 rounded-lg border border-border text-text-secondary hover:bg-bg-hover text-base transition-colors"
+            className="px-4 py-3 rounded-xl text-text-secondary hover:text-text hover:bg-black/[0.04] text-base transition-colors"
           >
             取消
           </button>
@@ -116,7 +140,7 @@ export default function FolderPicker({ open, onClose, onSelect }: FolderPickerPr
               }
             }}
             disabled={!browse?.current}
-            className="px-5 py-3.5 rounded-lg bg-accent text-bg font-semibold text-base hover:bg-accent-dim hover:shadow-lg hover:shadow-accent/20 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            className="px-5 py-3 rounded-xl bg-accent text-white font-semibold text-base hover:bg-accent-dim hover:shadow-lg hover:shadow-accent/15 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
           >
             {browse?.current === '' ? '请选择一个驱动器' : '选择此文件夹'}
           </button>
