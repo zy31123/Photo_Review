@@ -23,17 +23,13 @@
 
 ### 测试
 
+- `npm run test:photos` — 生成测试照片 fixture
 - `npm run test:e2e` — 运行 E2E 测试
 - `npm run test:e2e:headed` — 有头模式运行 E2E 测试
-- `npm run test:photos` — 生成测试照片
-- `npm run test:full` — 生成测试照片 → E2E → 报告
-- `npm run test:visual` — 视觉回归测试
-- `npm run test:visual-full` — 完整视觉测试流程
-- `npm run test:report` — 生成测试报告
 
 ### 截图
 
-- `npm run screenshot` — 全页面截图
+- `npm run screenshot` — 全页面截图（使用真实文件夹）
 - `npm run screenshot:close` — 截图并关闭
 
 ## 目录结构
