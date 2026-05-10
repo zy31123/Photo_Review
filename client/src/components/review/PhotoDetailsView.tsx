@@ -10,7 +10,7 @@ interface PhotoDetailsViewProps {
 }
 
 function Card({ children }: { children: React.ReactNode }) {
-  return <div className="mx-4 mb-3 rounded-xl border border-black/[0.04] bg-white/60 shadow-card overflow-hidden">{children}</div>
+  return <div className="mx-5 mb-3 rounded-xl border border-black/[0.04] bg-white/60 shadow-card overflow-hidden">{children}</div>
 }
 
 export default function PhotoDetailsView({ photo, exif, reviewed }: PhotoDetailsViewProps) {
@@ -21,7 +21,7 @@ export default function PhotoDetailsView({ photo, exif, reviewed }: PhotoDetails
     <>
       <Card>
         <SectionHeader title="文件信息" compact />
-        <div className="px-4 py-3 space-y-3">
+        <div className="px-5 py-3.5 space-y-3">
           <MetaRow label="文件名" value={photo.name} mono />
           <MetaRow label="日期" value={formattedDate} />
           <MetaRow label="文件夹" value={folderName} />
@@ -31,7 +31,7 @@ export default function PhotoDetailsView({ photo, exif, reviewed }: PhotoDetails
       {exif && (
         <Card>
           <SectionHeader title="拍摄参数" compact />
-          <div className="px-4 py-3 space-y-3">
+          <div className="px-5 py-3.5 space-y-3">
             <MetaRow label="相机" value={exif.camera} />
             <MetaRow label="镜头" value={exif.lens} />
             {exif.focalLength && (
@@ -50,7 +50,7 @@ export default function PhotoDetailsView({ photo, exif, reviewed }: PhotoDetails
 
       <Card>
         <SectionHeader title="文件状态" compact />
-        <div className="px-4 py-3 flex flex-wrap items-center gap-2">
+        <div className="px-5 py-3.5 flex flex-wrap items-center gap-2">
           <FileStatusBadge exists={photo.hasJpg} label={photo.hasJpg ? 'JPG 存在' : 'JPG 缺失'} />
           <FileStatusBadge exists={photo.hasRaw} label={photo.hasRaw ? 'RAW 已配对' : 'RAW 缺失'} />
         </div>
@@ -58,7 +58,7 @@ export default function PhotoDetailsView({ photo, exif, reviewed }: PhotoDetails
 
       <Card>
         <SectionHeader title="文件路径" compact />
-        <div className="px-4 py-3 space-y-2">
+        <div className="px-5 py-3.5 space-y-2">
           {photo.jpgPath && (
             <div>
               <p className="text-sm text-text-secondary mb-0.5">JPG</p>
@@ -81,7 +81,7 @@ export default function PhotoDetailsView({ photo, exif, reviewed }: PhotoDetails
       {reviewed !== undefined && (
         <Card>
           <SectionHeader title="审阅状态" compact />
-          <div className="px-4 py-3">
+          <div className="px-5 py-3.5">
             <ReviewStatusBadge reviewed={reviewed} />
           </div>
         </Card>
@@ -94,7 +94,7 @@ function CompactExifBar({ exif }: { exif: ExifData }) {
   const parts = [exif.focalLength, exif.aperture, exif.shutterSpeed, `ISO ${exif.iso}`].filter(Boolean)
   if (parts.length === 0) return null
   return (
-    <div className="flex items-center gap-1.5 text-xs text-text-secondary bg-black/[0.03] rounded-lg px-3 py-2">
+    <div className="flex items-center gap-2 text-xs text-text-secondary bg-black/[0.03] rounded-lg px-4 py-2.5">
       {parts.map((part, i) => (
         <span key={i} className="flex items-center gap-1.5">
           {i > 0 && <span className="text-text-muted/50">·</span>}
@@ -107,9 +107,9 @@ function CompactExifBar({ exif }: { exif: ExifData }) {
 
 function MetaRow({ label, value, mono }: { label: string; value: string; mono?: boolean }) {
   return (
-    <div className="grid grid-cols-[auto_1fr] gap-x-4 items-start">
+    <div className="grid grid-cols-[5.5rem_1fr] gap-x-5 items-start">
       <span className="text-sm text-text-secondary shrink-0">{label}</span>
-      <span className={`text-sm font-medium text-text text-right break-all ${mono ? 'font-mono' : ''}`} title={value}>
+      <span className={`text-sm font-medium text-text text-left break-all ${mono ? 'font-mono' : ''}`} title={value}>
         {value || '—'}
       </span>
     </div>

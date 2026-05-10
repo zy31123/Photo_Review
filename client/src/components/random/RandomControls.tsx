@@ -15,7 +15,7 @@ export default function RandomControls({
 }: RandomControlsProps) {
   return (
     <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-10">
-      <div className="flex items-center gap-3 bg-black/50 backdrop-blur-xl rounded-full px-5 py-3 shadow-overlay">
+      <div className="flex items-center gap-3 bg-black/40 backdrop-blur-xl rounded-full px-5 py-3 shadow-overlay">
         <ActionBtn onClick={onPrev} disabled={!canGoPrev} label="上一张" shortcut="←">
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
