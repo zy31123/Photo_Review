@@ -48,7 +48,7 @@ export function GridProvider({ children }: { children: ReactNode }) {
   const [subfolders, setSubfolders] = useState<SubfolderInfo[]>([])
   const [selectedDate, setSelectedDate] = useState<string | null>(null)
   const [columns, setColumns] = useState(5)
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState(() => !!activeFolder)
 
   const scrollToRef = useRef<(date: string) => void>(() => {})
 
