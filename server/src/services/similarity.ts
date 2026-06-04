@@ -1,3 +1,4 @@
+import fs from 'fs'
 import sharp from 'sharp'
 import crypto from 'crypto'
 import { getDb } from '../db/index.js'
@@ -28,7 +29,9 @@ interface HashRecord {
 // --- dHash computation ---
 
 async function computeDHash(imagePath: string): Promise<{ hash: string; width: number; height: number; fileSize: number }> {
-  const stat = await import('fs').then(fs => fs.statSync(imagePath))
+  // Get original image metadata (before resize)
+  const stat = await fs.promises.stat(imagePath)
+  const metadata = await sharp(imagePath, { failOn: 'none' }).metadata()
   const { data, info } = await sharp(imagePath, { failOn: 'none' })
     .resize(9, 8, { fit: 'cover' })
     .grayscale()
@@ -52,8 +55,8 @@ async function computeDHash(imagePath: string): Promise<{ hash: string; width: n
 
   return {
     hash: hash.toString(16).padStart(16, '0'),
-    width: info.width,
-    height: info.height,
+    width: metadata.width ?? 0,
+    height: metadata.height ?? 0,
     fileSize: stat.size,
   }
 }
@@ -70,6 +73,23 @@ function hammingDistance(a: string, b: string): number {
     xor >>= BigInt(1)
   }
   return count
+}
+
+// --- Query hashes for a folder's photos ---
+
+const getHashesStmt = () =>
+  getDb().prepare('SELECT file_path, dhash, width, height, file_size FROM photo_hashes WHERE file_path = ?')
+
+function loadHashesForPhotos(photos: PhotoGroup[]): Map<string, HashRecord> {
+  const stmt = getHashesStmt()
+  const result = new Map<string, HashRecord>()
+  for (const photo of photos) {
+    const filePath = photo.jpgPath || photo.rawPaths[0]
+    if (!filePath) continue
+    const row = stmt.get(filePath) as HashRecord | undefined
+    if (row) result.set(photo.id, row)
+  }
+  return result
 }
 
 // --- Union-Find ---
@@ -125,12 +145,8 @@ export async function analyzeFolder(
   const photos = getPhotosForFolder(folder)
   const db = getDb()
 
-  // 1. Get existing hashes from DB
-  const existingHashes = new Map<string, HashRecord>()
-  const rows = db.prepare('SELECT file_path, dhash, width, height, file_size FROM photo_hashes').all() as HashRecord[]
-  for (const row of rows) {
-    existingHashes.set(row.filePath, row)
-  }
+  // 1. Load existing hashes for this folder's photos only
+  const existingHashes = loadHashesForPhotos(photos)
 
   // 2. Compute hashes for photos that don't have one yet
   const insertStmt = db.prepare(
@@ -145,7 +161,7 @@ export async function analyzeFolder(
     const filePath = photo.jpgPath || photo.rawPaths[0]
     if (!filePath) continue
 
-    const existing = existingHashes.get(filePath)
+    const existing = existingHashes.get(photo.id)
     if (existing) {
       photoHashMap.set(photo.id, existing)
       skipped++
@@ -185,24 +201,7 @@ export function getSimilarGroups(
   hashThreshold = 10,
 ): SimilarGroup[] {
   const photos = getPhotosForFolder(folder)
-  const db = getDb()
-
-  const rows = db.prepare('SELECT file_path, dhash, width, height, file_size FROM photo_hashes').all() as HashRecord[]
-  const hashByPath = new Map<string, HashRecord>()
-  for (const row of rows) {
-    hashByPath.set(row.filePath, row)
-  }
-
-  const photoHashMap = new Map<string, HashRecord>()
-  for (const photo of photos) {
-    const filePath = photo.jpgPath || photo.rawPaths[0]
-    if (!filePath) continue
-    const record = hashByPath.get(filePath)
-    if (record) {
-      photoHashMap.set(photo.id, record)
-    }
-  }
-
+  const photoHashMap = loadHashesForPhotos(photos)
   return buildGroups(photos, photoHashMap, timeGap, hashThreshold)
 }
 
@@ -247,8 +246,6 @@ function buildGroups(
 
     const ids = session.map(p => p.id)
     const uf = new UnionFind(ids)
-    let totalDist = 0
-    let pairCount = 0
 
     for (let i = 0; i < session.length; i++) {
       const hashA = photoHashMap.get(session[i].id)!.dhash
@@ -257,8 +254,6 @@ function buildGroups(
         const dist = hammingDistance(hashA, hashB)
         if (dist <= hashThreshold) {
           uf.union(session[i].id, session[j].id)
-          totalDist += dist
-          pairCount++
         }
       }
     }
@@ -316,18 +311,8 @@ function buildGroups(
 
 export function getSimilarStats(folder: string): { analyzed: number; total: number; groups: number } {
   const photos = getPhotosForFolder(folder)
-  const db = getDb()
-
-  const rows = db.prepare('SELECT file_path FROM photo_hashes').all() as { file_path: string }[]
-  const hashedPaths = new Set(rows.map(r => r.file_path))
-
-  let analyzed = 0
-  for (const photo of photos) {
-    const filePath = photo.jpgPath || photo.rawPaths[0]
-    if (filePath && hashedPaths.has(filePath)) analyzed++
-  }
-
+  const photoHashMap = loadHashesForPhotos(photos)
   const groups = getSimilarGroups(folder)
 
-  return { analyzed, total: photos.length, groups: groups.length }
+  return { analyzed: photoHashMap.size, total: photos.length, groups: groups.length }
 }
