@@ -91,6 +91,26 @@ export interface ExifData {
   fileSize: string
 }
 
+export interface SimilarGroup {
+  id: string
+  photos: PhotoGroup[]
+  coverIndex: number
+  avgDistance: number
+}
+
+export interface AnalyzeResult {
+  computed: number
+  skipped: number
+  totalGroups: number
+  totalPhotos: number
+}
+
+export interface SimilarStats {
+  analyzed: number
+  total: number
+  groups: number
+}
+
 export const api = {
   browseFolders: (dirPath?: string) =>
     request<BrowseResult>(`/folders/browse${dirPath != null ? `?path=${encodeURIComponent(dirPath)}` : ''}`),
@@ -149,4 +169,27 @@ export const api = {
 
   getExif: (id: string) =>
     request<ExifData | null>(`/photos/${encodeURIComponent(id)}/exif`),
+
+  analyzeSimilar: (params?: { timeGap?: number; hashThreshold?: number }) =>
+    request<AnalyzeResult>('/similarity/analyze', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        folder: activeFolder,
+        ...params,
+      }),
+    }),
+
+  getSimilarGroups: (params?: { page?: number; limit?: number; timeGap?: number; hashThreshold?: number }) => {
+    const qs = new URLSearchParams()
+    qs.set('folder', activeFolder)
+    if (params?.page) qs.set('page', String(params.page))
+    if (params?.limit) qs.set('limit', String(params.limit))
+    if (params?.timeGap) qs.set('timeGap', String(params.timeGap))
+    if (params?.hashThreshold) qs.set('hashThreshold', String(params.hashThreshold))
+    return request<{ groups: SimilarGroup[]; total: number }>(`/similarity/groups?${qs.toString()}`)
+  },
+
+  getSimilarStats: () =>
+    request<SimilarStats>(`/similarity/stats?folder=${encodeURIComponent(activeFolder)}`),
 }

@@ -37,6 +37,15 @@ function initSchema(db: Database.Database) {
       key TEXT PRIMARY KEY,
       value TEXT NOT NULL
     );
+
+    CREATE TABLE IF NOT EXISTS photo_hashes (
+      file_path TEXT PRIMARY KEY,
+      dhash TEXT NOT NULL,
+      width INTEGER NOT NULL,
+      height INTEGER NOT NULL,
+      file_size INTEGER NOT NULL DEFAULT 0,
+      computed_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
   `)
 
   const row = db.prepare("SELECT value FROM settings WHERE key = 'random_cache_days'").get() as { value: string } | undefined

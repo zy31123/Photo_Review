@@ -28,17 +28,25 @@
   - review_records 表, cache_until 随机缓存, settings 表
   - `getCandidates()` 私有辅助函数提取未缓存候选, Fisher-Yates 部分洗牌
 
+### 相似图片聚类
+- `server/src/services/similarity.ts` — `analyzeFolder()`, `getSimilarGroups()`, `getSimilarStats()`
+  - dHash 感知哈希 (64-bit, sharp 9×8 灰度), Hamming 距离比较
+  - 两阶段聚类: 时间预分组 (30s) + Union-Find 哈希聚类
+  - photo_hashes 表持久化, 增量计算 (跳过已有哈希)
+  - `SimilarGroup` 接口 (id, photos, coverIndex, avgDistance)
+
 ### 数据库
 - `server/src/db/index.ts` — `getDb()`
-  - SQLite WAL 模式, review_records + settings 两张表
+  - SQLite WAL 模式, review_records + settings + photo_hashes 三张表
 
 ### 路径工具
 - `server/src/utils/path.ts` — `normalizePath()`, `resolveNormalized()`
 
-### API 路由 (15 端点)
+### API 路由 (18 端点)
 - `server/src/routes/index.ts` — 所有 REST 端点定义
   - 路径白名单 `isPathAllowed()`, `BLOCKED_PREFIXES`
   - Windows 盘符探测 `getWindowsDrives()`, Mac 卷探测 `getMacVolumes()`
+  - 相似度端点: POST `/similarity/analyze`, GET `/similarity/groups`, GET `/similarity/stats`
 
 ### Express 入口
 - `server/src/index.ts` — 应用启动, CORS, 路由挂载, 127.0.0.1:3001
@@ -72,15 +80,22 @@
 - `client/src/components/random/RandomControls.tsx` — 随机模式浮动操作按钮
 - `client/src/components/random/BatchSelector.tsx` — 批次大小选择器
 
+### 相似聚类页
+- `client/src/pages/SimilarPage.tsx` — SimilarProvider 包裹, 分析 → 聚类 → 删除流程
+- `client/src/context/SimilarContext.tsx` — `useSimilar()` 状态管理 (分析/分组/选择/删除)
+- `client/src/components/similar/SimilarToolbar.tsx` — 工具栏 (分析按钮/统计/批量删除)
+- `client/src/components/similar/ClusterCard.tsx` — 相似组卡片 (缩略图 + 保留/删除选择)
+- `client/src/components/similar/ClusterGrid.tsx` — 卡片网格布局
+
 ### 通用组件
 - `client/src/components/ui/SectionHeader.tsx` — 分区标题
 
 ### API 客户端层
-- `client/src/api/index.ts` — `api` 对象 (所有后端调用), 类型定义 (PhotoGroup, ExifData, Stats, BrowseResult, ScanResult)
+- `client/src/api/index.ts` — `api` 对象 (所有后端调用), 类型定义 (PhotoGroup, ExifData, Stats, BrowseResult, ScanResult, SimilarGroup, AnalyzeResult, SimilarStats)
   - GET 自动重试 (3 次), activeFolder 模块级状态
 
 ### 路由
-- `client/src/App.tsx` — 4 条路由: `/` `/review` `/batch` `/random`
+- `client/src/App.tsx` — 5 条路由: `/` `/grid` `/review` `/random` `/similar`
 
 ### 样式
 - `client/src/styles/index.css` — Tailwind 4 @theme 自定义 (Darkroom 配色), 全局样式
@@ -94,10 +109,11 @@
 | 添加图片格式 | scanner.ts (JPG_EXTS/RAW_EXTS) | image.ts, exif.ts |
 | 修改审阅流程 | ReviewContext.tsx | ReviewPage.tsx, ReviewControls.tsx, review.ts |
 | 修改随机浏览 | useRandomBatch.ts | RandomPage.tsx, RandomToolbar.tsx, RandomControls.tsx, review.ts |
+| 修改相似聚类 | SimilarContext.tsx | SimilarPage.tsx, similarity.ts, ClusterCard.tsx |
 | 修改 API 端点 | routes/index.ts | 对应 service 文件, api/index.ts |
 | 修改 UI 样式 | index.css | 对应组件 |
 | 修改快捷键 | useKeyboardShortcuts.ts | ReviewPage.tsx |
-| 修改数据库表 | db/index.ts | review.ts |
+| 修改数据库表 | db/index.ts | review.ts, similarity.ts |
 | 添加新页面 | App.tsx | 参考现有页面, api/index.ts |
 | 修改文件夹浏览 | FolderPicker.tsx | routes/index.ts (browse) |
 | 安全相关 | routes/index.ts (isPathAllowed) | server/src/index.ts (127.0.0.1 绑定) |

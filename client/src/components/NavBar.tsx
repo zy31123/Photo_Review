@@ -1,11 +1,12 @@
 import { useNavigate, useLocation } from 'react-router-dom'
-import { LayoutGrid, Eye, Shuffle, Folder } from 'lucide-react'
+import { LayoutGrid, Eye, Shuffle, Layers, Folder } from 'lucide-react'
 import { useApp } from '../context/AppContext'
 
 const navItems = [
   { path: '/grid', label: '网格总览', icon: LayoutGrid },
   { path: '/review', label: '顺序审阅', icon: Eye },
   { path: '/random', label: '随机浏览', icon: Shuffle },
+  { path: '/similar', label: '相似聚类', icon: Layers },
 ]
 
 export default function NavBar() {
