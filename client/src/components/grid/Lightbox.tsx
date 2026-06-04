@@ -9,7 +9,7 @@ interface LightboxProps {
   onNavigate: (index: number) => void
 }
 
-const overlayBtn = 'w-10 h-10 rounded-lg bg-white/20 backdrop-blur-sm text-white/50 hover:text-white/80 hover:bg-white/30 flex items-center justify-center transition-all z-10'
+const overlayBtn = 'w-10 h-10 rounded-md bg-white/15 backdrop-blur-sm text-white/50 hover:text-white/80 hover:bg-white/25 flex items-center justify-center transition-colors duration-fast z-10'
 
 export default function Lightbox({ photos, currentIndex, onClose, onNavigate }: LightboxProps) {
   const photo = photos[currentIndex]
@@ -31,7 +31,7 @@ export default function Lightbox({ photos, currentIndex, onClose, onNavigate }: 
 
   return (
     <div
-      className="fixed inset-0 z-50 bg-black/85 flex items-center justify-center transition-colors duration-300"
+      className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center"
       onClick={onClose}
     >
       <button
@@ -62,13 +62,13 @@ export default function Lightbox({ photos, currentIndex, onClose, onNavigate }: 
       <img
         src={`/api/photos/${encodeURIComponent(photo.id)}/full`}
         alt={photo.name}
-        className="max-h-[90vh] max-w-[90vw] object-contain rounded-lg"
+        className="max-h-[90vh] max-w-[90vw] object-contain rounded-md"
         onClick={e => e.stopPropagation()}
       />
 
-      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-white/50 text-sm flex items-center gap-3">
+      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-white/40 text-caption flex items-center gap-3">
         <span>{photo.name}</span>
-        <span className="text-white/30">|</span>
+        <span className="text-white/20">|</span>
         <span className="tabular-nums">{currentIndex + 1} / {photos.length}</span>
       </div>
     </div>

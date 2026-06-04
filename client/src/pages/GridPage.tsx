@@ -13,21 +13,21 @@ import Lightbox from '../components/grid/Lightbox'
 function GridToolbar() {
   const { columns, setColumns, filteredPhotos } = useGrid()
   return (
-    <div className="h-10 border-b border-border-faint bg-surface-primary backdrop-blur-xl flex items-center px-4 gap-4 shrink-0">
-      <span className="text-text-muted text-sm">{filteredPhotos.length.toLocaleString()} 张</span>
+    <div className="h-[var(--toolbar-height)] border-b border-border-subtle bg-glass backdrop-blur-xl flex items-center px-4 gap-3 shrink-0">
+      <span className="text-text-tertiary text-caption">{filteredPhotos.length.toLocaleString()} 张</span>
       <div className="ml-auto flex items-center gap-1">
         <button
           onClick={() => setColumns(Math.max(2, columns - 1))}
           disabled={columns <= 2}
-          className="w-7 h-7 rounded-md bg-fill-muted flex items-center justify-center text-text-secondary hover:bg-fill-medium disabled:opacity-30 transition-colors"
+          className="w-7 h-7 rounded-sm bg-fill-subtle flex items-center justify-center text-text-secondary hover:bg-fill disabled:opacity-30 transition-colors duration-fast"
         >
           <Minus className="size-3" strokeWidth={1.5} />
         </button>
-        <span className="text-text-secondary text-xs tabular-nums w-6 text-center font-medium">{columns}</span>
+        <span className="text-text-secondary text-micro tabular-nums w-6 text-center font-medium">{columns}</span>
         <button
           onClick={() => setColumns(Math.min(8, columns + 1))}
           disabled={columns >= 8}
-          className="w-7 h-7 rounded-md bg-fill-muted flex items-center justify-center text-text-secondary hover:bg-fill-medium disabled:opacity-30 transition-colors"
+          className="w-7 h-7 rounded-sm bg-fill-subtle flex items-center justify-center text-text-secondary hover:bg-fill disabled:opacity-30 transition-colors duration-fast"
         >
           <Plus className="size-3" strokeWidth={1.5} />
         </button>
@@ -53,7 +53,7 @@ function GridLayout() {
   }, [filteredPhotos])
 
   const HEADER_HEIGHT_REM = 3.5
-  const GAP_REM = 0.375
+  const GAP_REM = 0.25
 
   const rowVirtualizer = useVirtualizer({
     count: virtualItems.length,
@@ -131,10 +131,10 @@ function GridLayout() {
           className="flex-1 min-h-0 overflow-y-auto"
         >
           {stickyHeader && (
-            <div className="sticky top-0 z-10 backdrop-blur-xl bg-surface-primary border-b border-border-faint px-4 py-2.5 flex items-center gap-3">
-              <span className="text-base font-semibold text-text-heading whitespace-nowrap">{stickyHeader.label}</span>
-              <div className="flex-1 h-px bg-fill-medium" />
-              <span className="text-xs text-text-muted tabular-nums">{stickyHeader.count} 张</span>
+            <div className="sticky top-0 z-10 backdrop-blur-xl bg-glass border-b border-border-subtle px-4 py-2 flex items-center gap-3">
+              <span className="text-body font-semibold text-text">{stickyHeader.label}</span>
+              <div className="flex-1 h-px bg-border-subtle" />
+              <span className="text-micro text-text-tertiary tabular-nums">{stickyHeader.count} 张</span>
             </div>
           )}
 
@@ -164,11 +164,11 @@ function GridLayout() {
                     className="flex items-end px-4 pb-2 pt-6"
                   >
                     <div className="flex items-center gap-3 w-full">
-                      <span className="text-text-heading text-base font-semibold whitespace-nowrap">
+                      <span className="text-text text-body font-semibold whitespace-nowrap">
                         {item.label}
                       </span>
-                      <div className="flex-1 h-px bg-fill-medium" />
-                      <span className="text-text-muted text-xs tabular-nums">
+                      <div className="flex-1 h-px bg-border-subtle" />
+                      <span className="text-text-tertiary text-micro tabular-nums">
                         {item.count} 张
                       </span>
                     </div>
@@ -187,14 +187,14 @@ function GridLayout() {
                     height: `${virtualRow.size}px`,
                     transform: `translateY(${virtualRow.start}px)`,
                   }}
-                  className="flex gap-1.5 px-4"
+                  className="flex gap-1 px-4"
                 >
                   {item.photos.map((photo) => {
                     const photoIndex = photoIndexMap.get(photo.id)!
                     return (
                       <div
                         key={photo.id}
-                        className="relative group cursor-pointer rounded-md overflow-hidden"
+                        className="relative group cursor-pointer rounded-sm overflow-hidden"
                         style={{ width: `calc((100% - ${GAP_REM * (columns + 1)}rem) / ${columns})` }}
                         onClick={() => handleSingleClick(photoIndex)}
                         onDoubleClick={() => handleDoubleClick(photo.id)}
@@ -203,7 +203,7 @@ function GridLayout() {
                           src={api.thumbnailUrl(photo.id)}
                           alt={photo.name}
                           loading="lazy"
-                          className="w-full aspect-square object-cover bg-bg-card transition-all duration-200 group-hover:scale-[1.01]"
+                          className="w-full aspect-square object-cover bg-bg-elevated transition-opacity duration-normal"
                           style={{ opacity: 0 }}
                           onLoad={e => { (e.target as HTMLImageElement).style.opacity = '1' }}
                         />
@@ -241,11 +241,9 @@ function GridInner() {
       <div className="h-screen flex flex-col bg-bg">
         <NavBar />
         <div className="flex-1 flex items-center justify-center">
-          <div className="flex flex-col items-center gap-4">
-            <div className="relative">
-              <div className="w-10 h-10 border-[0.1875rem] border-accent border-t-transparent rounded-full animate-spin" />
-            </div>
-            <span className="text-text-secondary text-sm">加载中...</span>
+          <div className="flex flex-col items-center gap-3">
+            <div className="w-8 h-8 border-2 border-accent border-t-transparent rounded-full animate-spin" />
+            <span className="text-text-secondary text-caption">加载中...</span>
           </div>
         </div>
       </div>

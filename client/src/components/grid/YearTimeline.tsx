@@ -85,13 +85,13 @@ export default function YearTimeline() {
   }
 
   return (
-    <div className="w-16 shrink-0 border-l border-border-light bg-surface-secondary backdrop-blur-xl overflow-y-auto py-4 flex flex-col items-center gap-2">
+    <div className="w-14 shrink-0 border-l border-border-subtle bg-glass-thin backdrop-blur-xl overflow-y-auto py-3 flex flex-col items-center gap-1">
       {granularity === 'year' && items.map(item => (
         <button
           key={item.label}
           onClick={() => handleClick(item.date)}
-          className={`text-sm font-medium leading-tight transition-colors cursor-pointer py-1.5 px-3 rounded ${
-            isItemActive(item) ? 'text-accent font-semibold' : 'text-text-secondary hover:text-accent hover:bg-accent/5'
+          className={`text-caption font-medium leading-tight transition-colors duration-fast cursor-pointer py-1 px-2 rounded-sm ${
+            isItemActive(item) ? 'text-accent font-semibold' : 'text-text-secondary hover:text-accent hover:bg-accent-subtle'
           }`}
         >
           {item.label}
@@ -99,22 +99,22 @@ export default function YearTimeline() {
       ))}
 
       {granularity !== 'year' && groupBySecondary && Array.from(groupBySecondary.entries()).map(([header, subItems]) => (
-        <div key={header} className="flex flex-col items-center gap-1 w-full">
-          <div className="text-text-muted text-xs font-semibold leading-none py-1">
+        <div key={header} className="flex flex-col items-center gap-0.5 w-full">
+          <div className="text-text-tertiary text-micro font-medium leading-none py-1">
             {granularity === 'month' ? header : header.slice(5)}
           </div>
           {subItems.map(item => (
             <button
               key={`${item.label}-${item.date}`}
               onClick={() => handleClick(item.date)}
-              className={`text-sm leading-tight transition-colors cursor-pointer py-1 px-2.5 rounded ${
-                isItemActive(item) ? 'text-accent font-semibold' : 'text-text-secondary hover:text-accent hover:bg-accent/5'
+              className={`text-caption leading-tight transition-colors duration-fast cursor-pointer py-1 px-2 rounded-sm ${
+                isItemActive(item) ? 'text-accent font-semibold' : 'text-text-secondary hover:text-accent hover:bg-accent-subtle'
               }`}
             >
               {item.label}
             </button>
           ))}
-          <div className="w-6 h-px bg-fill-medium" />
+          <div className="w-5 h-px bg-border-subtle" />
         </div>
       ))}
     </div>

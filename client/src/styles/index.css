@@ -1,60 +1,78 @@
 @import "tailwindcss";
 
 @theme {
-  --color-bg: #F5F5F7;
-  --color-bg-deep: #FFFFFF;
-  --color-bg-card: #FFFFFF;
-  --color-bg-raised: #EFEFF0;
-  --color-bg-hover: #E5E5E7;
+  /* ── 背景 ── */
+  --color-bg: #F2F2F7;
+  --color-bg-elevated: #FFFFFF;
 
-  --color-border-subtle: rgba(0, 0, 0, 0.03);
-  --color-border-faint: rgba(0, 0, 0, 0.04);
-  --color-border-light: rgba(0, 0, 0, 0.06);
+  /* ── 边框 (2 级) ── */
   --color-border: rgba(0, 0, 0, 0.08);
+  --color-border-subtle: rgba(0, 0, 0, 0.04);
 
-  --color-fill-subtle: rgba(0, 0, 0, 0.02);
-  --color-fill-quiet: rgba(0, 0, 0, 0.03);
-  --color-fill-muted: rgba(0, 0, 0, 0.04);
-  --color-fill-medium: rgba(0, 0, 0, 0.06);
+  /* ── 填充 (2 级) ── */
+  --color-fill: rgba(0, 0, 0, 0.06);
+  --color-fill-subtle: rgba(0, 0, 0, 0.03);
 
-  --color-surface-primary: rgba(255, 255, 255, 0.80);
-  --color-surface-secondary: rgba(255, 255, 255, 0.60);
+  /* ── 毛玻璃 ── */
+  --color-glass: rgba(255, 255, 255, 0.72);
+  --color-glass-thin: rgba(255, 255, 255, 0.50);
 
+  /* ── 语义色 (Apple 系统色) ── */
   --color-accent: #007AFF;
-  --color-accent-dim: #0066D6;
-  --color-accent-subtle: rgba(0, 122, 255, 0.07);
+  --color-accent-hover: #0066D6;
+  --color-accent-subtle: rgba(0, 122, 255, 0.08);
   --color-danger: #FF3B30;
-  --color-danger-dim: #D63029;
+  --color-danger-subtle: rgba(255, 59, 48, 0.08);
   --color-success: #34C759;
-  --color-success-dim: #28A745;
+  --color-success-subtle: rgba(52, 199, 89, 0.08);
+  --color-warning: #FF9500;
+
+  /* ── 文字 (3 级) ── */
   --color-text: #1D1D1F;
-  --color-text-heading: #1D1D1F;
   --color-text-secondary: #86868B;
-  --color-text-muted: #AEAEB2;
+  --color-text-tertiary: #AEAEB2;
 
+  /* ── 圆角 ── */
   --radius-sm: 0.375rem;
-  --radius-md: 0.75rem;
-  --radius-lg: 1rem;
+  --radius-md: 0.625rem;
+  --radius-lg: 0.875rem;
+  --radius-xl: 1.25rem;
 
-  --duration-fast: 150ms;
+  /* ── 动效 ── */
+  --duration-fast: 120ms;
   --duration-normal: 200ms;
   --duration-slow: 300ms;
   --ease-out: cubic-bezier(0.25, 0.46, 0.45, 0.94);
-  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
 
+  /* ── 字体 ── */
   --font-display: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", system-ui, sans-serif;
   --font-body: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", system-ui, sans-serif;
   --font-mono: "SF Mono", "Cascadia Code", ui-monospace, monospace;
 
-  --text-display: 3.5rem;
-  --text-title-1: 2rem;
-  --text-title-2: 1.5rem;
-  --text-title-3: 1.125rem;
+  /* ── Typography 层级 ── */
+  --text-display: 2.5rem;
+  --text-title-1: 1.5rem;
+  --text-title-2: 1.0625rem;
   --text-body: 1rem;
-  --text-caption: 0.875rem;
-  --text-micro: 0.75rem;
+  --text-caption: 0.8125rem;
+  --text-micro: 0.6875rem;
+
+  /* ── 间距 ── */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2rem;
+
+  /* ── 布局 ── */
+  --nav-height: 2.75rem;
+  --toolbar-height: 2.75rem;
+  --sidebar-width: 15rem;
+  --detail-width: 20rem;
 }
 
+/* ── 基础重置 ── */
 html {
   font-size: clamp(16px, 1vw, 20px);
 }
@@ -79,6 +97,7 @@ body {
   height: 100vh;
 }
 
+/* ── 滚动条 ── */
 ::-webkit-scrollbar {
   width: 0.375rem;
   height: 0.375rem;
@@ -89,97 +108,44 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--color-fill-medium);
+  background: var(--color-fill);
   border-radius: 0.1875rem;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--color-text-muted);
+  background: var(--color-text-tertiary);
 }
 
+/* ── 选区 ── */
 ::selection {
   background: var(--color-accent);
   color: #FFFFFF;
 }
 
+/* ── Focus ── */
 button:focus-visible {
   outline: 2px solid var(--color-accent);
   outline-offset: 2px;
 }
 
-@keyframes pulse-ring {
-  0% { transform: scale(0.8); opacity: 0.5; }
-  100% { transform: scale(1.4); opacity: 0; }
-}
-.spinner-pulse::before {
-  content: '';
-  position: absolute;
-  inset: -0.375rem;
-  border: 0.125rem solid var(--color-accent);
-  border-radius: 50%;
-  animation: pulse-ring 1.2s ease-out infinite;
-}
-
-.image-viewport {
-  position: relative;
-}
-.image-viewport::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: radial-gradient(ellipse at center, transparent 50%, rgba(0, 0, 0, 0.08) 100%);
-  pointer-events: none;
-}
-
-.date-item {
-  position: relative;
-  overflow: hidden;
-}
-.date-item::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 0;
-  bottom: 0;
-  width: 0;
-  background: var(--color-accent-subtle);
-  transition: width 200ms ease;
-}
-.date-item:hover::before {
-  width: 100%;
-}
-
+/* ── 动画 ── */
 @keyframes fade-in {
-  from { opacity: 0; transform: translateY(8px); }
+  from { opacity: 0; transform: translateY(4px); }
   to { opacity: 1; transform: translateY(0); }
 }
 .animate-fade-in {
-  animation: fade-in 0.3s ease-out;
+  animation: fade-in 0.25s var(--ease-out);
 }
 
 @keyframes scale-in {
-  from { opacity: 0; transform: scale(0.95); }
+  from { opacity: 0; transform: scale(0.97); }
   to { opacity: 1; transform: scale(1); }
 }
 .animate-scale-in {
   animation: scale-in var(--duration-normal) var(--ease-out);
 }
 
-@keyframes slide-up {
-  from { opacity: 0; transform: translateY(12px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-.animate-slide-up {
-  animation: slide-up var(--duration-slow) var(--ease-out);
-}
-
-.hover-lift {
-  transition: transform var(--duration-normal) var(--ease-out);
-}
-.hover-lift:hover {
-  transform: translateY(-1px);
-}
-
+/* ── 减弱动效 ── */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;

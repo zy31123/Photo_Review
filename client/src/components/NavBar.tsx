@@ -15,15 +15,16 @@ export default function NavBar() {
   const { activeFolder, isLoaded } = useApp()
 
   return (
-    <div className="h-12 bg-surface-primary backdrop-blur-xl border-b border-border-light flex items-center px-4 shrink-0">
+    <div className="h-[var(--nav-height)] bg-glass backdrop-blur-xl border-b border-border-subtle flex items-center px-4 shrink-0">
       <button
         onClick={() => navigate('/')}
-        className="text-text-heading font-semibold text-base tracking-tight hover:text-accent transition-colors"
+        className="text-text font-semibold text-title-2 tracking-tight hover:text-accent transition-colors duration-fast"
+        style={{ fontFamily: 'var(--font-display)' }}
       >
         Photo Review
       </button>
 
-      <div className="flex items-center bg-fill-muted rounded-lg p-1 ml-6">
+      <div className="flex items-center bg-fill-subtle rounded-sm p-0.5 ml-5">
         {navItems.map(item => {
           const Icon = item.icon
           const active = pathname === item.path
@@ -32,15 +33,15 @@ export default function NavBar() {
               key={item.path}
               onClick={() => navigate(item.path)}
               disabled={!isLoaded}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+              className={`flex items-center gap-1.5 px-3 py-1 rounded-sm text-caption font-medium transition-colors duration-fast ${
                 active
-                  ? 'bg-white text-text-heading shadow-sm'
+                  ? 'bg-bg-elevated text-text shadow-[0_1px_3px_rgba(0,0,0,0.08)]'
                   : isLoaded
-                    ? 'text-text-muted hover:text-text-secondary'
-                    : 'text-text-muted/40 cursor-not-allowed'
+                    ? 'text-text-tertiary hover:text-text-secondary'
+                    : 'text-text-tertiary/40 cursor-not-allowed'
               }`}
             >
-              <Icon className="size-4" strokeWidth={1.5} />
+              <Icon className="size-3.5" strokeWidth={1.5} />
               {item.label}
             </button>
           )
@@ -48,8 +49,8 @@ export default function NavBar() {
       </div>
 
       {activeFolder && (
-        <span className="ml-auto text-text-muted text-sm flex items-center gap-1.5">
-          <Folder className="size-3.5" strokeWidth={1.5} />
+        <span className="ml-auto text-text-tertiary text-caption flex items-center gap-1.5">
+          <Folder className="size-3" strokeWidth={1.5} />
           <span className="truncate max-w-[12rem]">{activeFolder}</span>
         </span>
       )}
