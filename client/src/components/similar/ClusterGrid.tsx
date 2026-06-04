@@ -8,7 +8,7 @@ export default function ClusterGrid() {
 
   return (
     <div className="flex-1 overflow-y-auto p-4">
-      <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))' }}>
+      <div className="grid gap-3" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))' }}>
         {groups.map(group => (
           <ClusterCard key={group.id} group={group} />
         ))}

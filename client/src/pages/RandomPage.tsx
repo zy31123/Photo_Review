@@ -71,26 +71,26 @@ export default function RandomPage() {
   const placeholder = batch.loading
     ? (
       <div className="flex items-center justify-center h-full">
-        <div className="w-10 h-10 border-[0.1875rem] border-accent border-t-transparent rounded-full animate-spin" />
+        <div className="w-8 h-8 border-2 border-accent border-t-transparent rounded-full animate-spin" />
       </div>
     )
     : batch.batchComplete && batch.photos.length === 0
       ? (
-        <div className="flex flex-col items-center justify-center h-full gap-4">
-          <p className="text-white/50">所有照片已审阅完毕</p>
+        <div className="flex flex-col items-center justify-center h-full gap-3">
+          <p className="text-white/50 text-caption">所有照片已审阅完毕</p>
           <button
             onClick={() => batch.loadBatch()}
-            className="px-4 py-2 rounded-xl bg-accent text-white text-sm font-medium hover:bg-accent-dim transition-colors"
+            className="px-4 py-2 rounded-md bg-accent text-white text-caption font-medium hover:bg-accent-hover transition-colors duration-fast"
           >
             加载下一批
           </button>
         </div>
       )
-      : <div className="flex flex-col items-center justify-center gap-6">
-          <ImageIcon className="w-16 h-16 text-text-muted/30" />
+      : <div className="flex flex-col items-center justify-center gap-5">
+          <ImageIcon className="w-14 h-14 text-text-tertiary/30" />
           <div className="text-center">
-            <p className="text-3xl font-bold text-text-heading mb-2">随机浏览你的照片</p>
-            <p className="text-text-secondary">选择一个批次大小，随机抽取照片进行审阅</p>
+            <p className="text-title-1 font-bold text-text mb-2">随机浏览你的照片</p>
+            <p className="text-text-secondary text-caption">选择一个批次大小，随机抽取照片进行审阅</p>
           </div>
           <BatchSelector
             batchSize={batch.batchSize}
@@ -117,31 +117,31 @@ export default function RandomPage() {
       <NavBar />
 
       {/* Inline toolbar */}
-      <div className="h-10 border-b border-border-faint bg-surface-primary backdrop-blur-xl flex items-center px-4 gap-4 shrink-0">
-        <span className="text-text-secondary text-sm font-mono truncate max-w-[10rem]">
+      <div className="h-[var(--toolbar-height)] border-b border-border-subtle bg-glass backdrop-blur-xl flex items-center px-4 gap-3 shrink-0">
+        <span className="text-text-secondary text-caption font-mono truncate max-w-[10rem]">
           {batch.currentPhoto?.name || ''}
         </span>
         <ToolbarDivider />
         {batch.batchTotal > 0 && (
-          <span className="text-text-muted text-sm tabular-nums">
-            <span className="text-text-heading font-medium">{batch.batchReviewed}</span>
-            <span className="mx-0.5 text-text-muted/60">/</span>
+          <span className="text-text-tertiary text-caption tabular-nums">
+            <span className="text-text font-medium">{batch.batchReviewed}</span>
+            <span className="mx-0.5 text-text-tertiary/60">/</span>
             <span>{batch.batchTotal}</span>
           </span>
         )}
         {batch.sessionReviewed > 0 && (
-          <span className="text-text-muted text-xs tabular-nums">
+          <span className="text-text-tertiary text-micro tabular-nums">
             本次已审阅 {batch.sessionReviewed}
           </span>
         )}
-        <div className="ml-auto flex items-center gap-4">
-          <div className="flex items-center gap-2">
-            <Timer className="size-3.5 text-text-muted" strokeWidth={1.5} />
-            <span className="text-text-muted text-xs">缓存</span>
+        <div className="ml-auto flex items-center gap-3">
+          <div className="flex items-center gap-1.5">
+            <Timer className="size-3 text-text-tertiary" strokeWidth={1.5} />
+            <span className="text-text-tertiary text-micro">缓存</span>
             <select
               value={cacheDays}
               onChange={e => handleCacheDaysChange(Number(e.target.value))}
-              className="bg-fill-quiet border border-border-light rounded-lg px-2 py-1 text-text-secondary text-xs focus:outline-none focus:border-accent/50 transition-colors"
+              className="bg-fill-subtle border border-border-subtle rounded-sm px-2 py-1 text-text-secondary text-micro focus:outline-none focus:border-accent/50 transition-colors duration-fast"
             >
               <option value={7}>7 天</option>
               <option value={30}>30 天</option>
@@ -149,8 +149,8 @@ export default function RandomPage() {
           </div>
           <button
             onClick={batch.toggleRightPanel}
-            className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${
-              batch.rightPanelOpen ? 'text-accent' : 'text-text-muted hover:text-text-secondary'
+            className={`w-8 h-8 rounded-sm flex items-center justify-center transition-colors duration-fast ${
+              batch.rightPanelOpen ? 'text-accent' : 'text-text-tertiary hover:text-text-secondary'
             }`}
             title="详细信息 ( ] )"
           >
@@ -160,7 +160,7 @@ export default function RandomPage() {
       </div>
 
       {batch.error && (
-        <div className="mx-5 mt-2 px-4 py-2.5 rounded-xl bg-danger/10 border border-danger/20 text-danger text-sm text-center">
+        <div className="mx-4 mt-2 px-3 py-2 rounded-md bg-danger-subtle border border-danger/20 text-danger text-caption text-center">
           {batch.error}
         </div>
       )}
@@ -176,7 +176,7 @@ export default function RandomPage() {
                 key={batch.currentPhoto.id}
                 src={api.fullUrl(batch.currentPhoto.id)}
                 alt={batch.currentPhoto.name}
-                className="max-h-full max-w-full object-contain rounded-lg"
+                className="max-h-full max-w-full object-contain rounded-md"
                 style={{ ...zoomStyle, transformOrigin: '0 0' }}
                 {...drag}
                 onMouseDown={zoomHandlers.onMouseDown}
@@ -199,7 +199,7 @@ export default function RandomPage() {
               {batch.batchTotal > 0 && (
                 <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-white/10">
                   <div
-                    className="h-full bg-accent/60 transition-all duration-300"
+                    className="h-full bg-accent/60 transition-all duration-slow"
                     style={{ width: `${(batch.batchReviewed / batch.batchTotal) * 100}%` }}
                   />
                 </div>
@@ -209,7 +209,7 @@ export default function RandomPage() {
         </div>
 
         {batch.rightPanelOpen && batch.currentPhoto && (
-          <div className="h-full bg-surface-secondary backdrop-blur-xl border-l border-border-faint overflow-y-auto" style={{ width: rightW, paddingRight: '0.75rem' }}>
+          <div className="h-full bg-glass-thin backdrop-blur-xl border-l border-border-subtle overflow-y-auto" style={{ width: rightW, paddingRight: '0.75rem' }}>
             <PhotoDetailsView
               photo={batch.currentPhoto}
               exif={exif}

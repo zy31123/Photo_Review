@@ -18,19 +18,16 @@ function SimilarLayout() {
         <NavBar />
         <SimilarToolbar />
         <div className="flex-1 flex items-center justify-center">
-          <div className="flex flex-col items-center gap-5 w-64">
-            <div className="relative">
-              <div className="w-10 h-10 border-[0.1875rem] border-accent border-t-transparent rounded-full animate-spin" />
-              <div className="absolute inset-0 w-10 h-10 border-2 border-accent/30 rounded-full spinner-pulse" />
-            </div>
+          <div className="flex flex-col items-center gap-4 w-60">
+            <div className="w-8 h-8 border-2 border-accent border-t-transparent rounded-full animate-spin" />
             <div className="w-full flex flex-col items-center gap-2">
-              <div className="w-full h-1.5 bg-bg-deep rounded-full overflow-hidden">
+              <div className="w-full h-1 bg-fill rounded-full overflow-hidden">
                 <div
-                  className="h-full bg-accent rounded-full transition-all duration-200 ease-out"
+                  className="h-full bg-accent rounded-full transition-all duration-fast ease-out"
                   style={{ width: `${pct}%` }}
                 />
               </div>
-              <span className="text-text-secondary text-sm tracking-wide">
+              <span className="text-text-secondary text-caption">
                 {progress
                   ? `正在分析 ${progress.current}/${progress.total} 张照片...`
                   : '正在准备分析...'}
@@ -48,11 +45,11 @@ function SimilarLayout() {
         <NavBar />
         <SimilarToolbar />
         <div className="flex-1 flex flex-col items-center justify-center">
-          <svg className="w-14 h-14 text-text-muted mb-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="w-12 h-12 text-text-tertiary mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
-          <p className="text-text-secondary text-lg mb-2">未发现相似照片</p>
-          <p className="text-text-muted text-sm">所有照片都足够独特，无需清理</p>
+          <p className="text-text-secondary text-title-2 mb-1.5">未发现相似照片</p>
+          <p className="text-text-tertiary text-caption">所有照片都足够独特，无需清理</p>
         </div>
       </div>
     )
@@ -64,11 +61,11 @@ function SimilarLayout() {
         <NavBar />
         <SimilarToolbar />
         <div className="flex-1 flex flex-col items-center justify-center">
-          <svg className="w-14 h-14 text-text-muted mb-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="w-12 h-12 text-text-tertiary mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
           </svg>
-          <p className="text-text-secondary text-lg mb-2">相似照片聚类</p>
-          <p className="text-text-muted text-sm">点击「分析相似照片」开始检测连拍和相似图片</p>
+          <p className="text-text-secondary text-title-2 mb-1.5">相似照片聚类</p>
+          <p className="text-text-tertiary text-caption">点击「分析相似照片」开始检测连拍和相似图片</p>
         </div>
       </div>
     )

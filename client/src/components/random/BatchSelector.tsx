@@ -19,28 +19,28 @@ export default function BatchSelector({
       {exhausted ? (
         <>
           <CheckCircle className="size-10 text-success mx-auto mb-3" strokeWidth={1.5} />
-          <p className="text-text-secondary text-lg mb-2">
+          <p className="text-text-secondary text-title-2 mb-2">
             {sessionReviewed > 0 ? '所有照片已审阅完毕' : '暂无可用的照片'}
           </p>
           {sessionReviewed > 0 && (
-            <p className="text-text-muted text-sm mb-6">本次共审阅 {sessionReviewed} 张</p>
+            <p className="text-text-tertiary text-caption mb-5">本次共审阅 {sessionReviewed} 张</p>
           )}
         </>
       ) : (
-        <div className="inline-block bg-surface-secondary backdrop-blur-xl rounded-2xl border border-border-faint shadow-card px-10 py-8 max-w-lg mx-auto">
-          <div className="relative inline-flex items-center justify-center w-28 h-28 rounded-2xl bg-accent/5 mb-6 mx-auto">
-            <Shuffle className="w-14 h-14 text-accent/40" />
+        <div className="inline-block bg-bg-elevated rounded-md border border-border px-8 py-6 max-w-lg mx-auto">
+          <div className="relative inline-flex items-center justify-center w-24 h-24 rounded-md bg-accent-subtle mb-5 mx-auto">
+            <Shuffle className="w-12 h-12 text-accent/40" />
           </div>
-          <p className="text-text-secondary text-lg mb-5">选择每批浏览数量</p>
-          <div className="flex items-center justify-center gap-6 mb-8">
+          <p className="text-text-secondary text-caption mb-4">选择每批浏览数量</p>
+          <div className="flex items-center justify-center gap-4 mb-6">
             {SIZES.map(size => (
               <button
                 key={size}
                 onClick={() => onBatchSizeChange(size)}
-                className={`w-[4.5rem] h-[4.5rem] rounded-2xl text-xl font-semibold transition-all duration-200 ${
+                className={`w-16 h-16 rounded-md text-body font-semibold transition-colors duration-fast ${
                   batchSize === size
-                    ? 'bg-accent text-white font-bold border-2 border-accent'
-                    : 'bg-fill-muted text-text-secondary hover:bg-fill-medium hover:text-text'
+                    ? 'bg-accent text-white font-bold'
+                    : 'bg-fill-subtle text-text-secondary hover:bg-fill hover:text-text'
                 }`}
               >
                 {size}
@@ -54,7 +54,7 @@ export default function BatchSelector({
         <button
           onClick={onStart}
           disabled={loading}
-          className="px-14 py-4 rounded-2xl bg-accent text-white font-semibold text-base hover:bg-accent-dim transition-all disabled:opacity-50 active:scale-[0.98]"
+          className="px-10 py-2.5 rounded-md bg-accent text-white font-semibold text-caption hover:bg-accent-hover transition-colors duration-fast disabled:opacity-50"
         >
           {loading ? '加载中...' : '开始浏览'}
         </button>
