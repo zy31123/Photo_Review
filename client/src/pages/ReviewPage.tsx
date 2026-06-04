@@ -151,8 +151,10 @@ function ReviewLayout() {
         }}
       >
         <DateSidebar />
-        <div className="relative overflow-hidden">
-          <ImageViewport />
+        <div className="flex flex-col min-h-0 overflow-hidden">
+          <div className="flex-1 min-h-0">
+            <ImageViewport />
+          </div>
           <Filmstrip />
         </div>
         <DetailsPanel />
@@ -166,13 +168,14 @@ export default function ReviewPage() {
   const [searchParams] = useSearchParams()
   const { isLoaded } = useApp()
   const startId = searchParams.get('startId') ?? undefined
+  const initialSubfolder = searchParams.get('subfolder') ?? undefined
 
   useEffect(() => {
     if (!isLoaded) navigate('/')
   }, [navigate, isLoaded])
 
   return (
-    <ReviewProvider startId={startId}>
+    <ReviewProvider startId={startId} initialSubfolder={initialSubfolder}>
       <ReviewInner />
     </ReviewProvider>
   )

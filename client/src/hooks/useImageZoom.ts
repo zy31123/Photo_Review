@@ -20,8 +20,6 @@ export function useImageZoom() {
   }, [])
 
   const handleWheel = useCallback((e: WheelEvent) => {
-    if (!e.ctrlKey) return false
-
     e.preventDefault()
     const currentScale = scaleRef.current
     const delta = e.deltaY > 0 ? -ZOOM_FACTOR : ZOOM_FACTOR

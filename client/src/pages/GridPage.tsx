@@ -39,7 +39,7 @@ function GridToolbar() {
 function GridLayout() {
   const navigate = useNavigate()
   const {
-    virtualItems, dateIndexMap, columns, filteredPhotos, scrollToRef,
+    virtualItems, dateIndexMap, columns, filteredPhotos, subfolderFilter, scrollToRef,
   } = useGrid()
 
   const scrollRef = useRef<HTMLDivElement>(null)
@@ -114,8 +114,10 @@ function GridLayout() {
   }, [])
 
   const handleDoubleClick = useCallback((photoId: string) => {
-    navigate(`/review?startId=${encodeURIComponent(photoId)}`)
-  }, [navigate])
+    const params = new URLSearchParams({ startId: photoId })
+    if (subfolderFilter) params.set('subfolder', subfolderFilter)
+    navigate(`/review?${params}`)
+  }, [navigate, subfolderFilter])
 
   return (
     <div className="h-screen flex flex-col bg-bg overflow-hidden">

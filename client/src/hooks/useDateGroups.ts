@@ -70,11 +70,14 @@ export function useDateGroups(photos: PhotoGroup[], selectedDate: string | null,
   }, [photos, subfolderFilter])
 
   const filteredPhotos = useMemo(() => {
-    const source = selectedDate
-      ? monthGroups.flatMap(m => m.dates).find(dg => dg.date === selectedDate)?.photos ?? photos
+    const subfolderSource = subfolderFilter
+      ? photos.filter(p => p.subfolder === subfolderFilter)
       : photos
+    const source = selectedDate
+      ? monthGroups.flatMap(m => m.dates).find(dg => dg.date === selectedDate)?.photos ?? subfolderSource
+      : subfolderSource
     return applyStatusFilter(source, statusFilter)
-  }, [photos, selectedDate, monthGroups, statusFilter])
+  }, [photos, selectedDate, monthGroups, statusFilter, subfolderFilter])
 
   const dateOfIndex = useMemo(() => {
     const map = new Map<number, string>()

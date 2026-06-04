@@ -11,7 +11,6 @@ export default function ImageViewport() {
   const [loaded, setLoaded] = useState(false)
   const [hoveringLeft, setHoveringLeft] = useState(false)
   const [hoveringRight, setHoveringRight] = useState(false)
-  const wheelTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const { resetZoom, zoomStyle, handleWheel: zoomWheel, handlers: zoomHandlers } = useImageZoom()
 
@@ -30,22 +29,9 @@ export default function ImageViewport() {
   const handlePrev = useCallback(() => goTo(currentIndex - 1), [currentIndex, goTo])
   const handleNext = useCallback(() => goTo(currentIndex + 1), [currentIndex, goTo])
 
-  const handleWheel = useCallback((e: React.WheelEvent) => {
-    if (e.ctrlKey) return
-    if (wheelTimerRef.current) return
-    if (e.deltaY > 0) {
-      goTo(currentIndex + 1)
-    } else if (e.deltaY < 0) {
-      goTo(currentIndex - 1)
-    }
-    wheelTimerRef.current = setTimeout(() => {
-      wheelTimerRef.current = null
-    }, 150)
-  }, [currentIndex, goTo])
-
   if (!currentPhoto) {
     return (
-      <div className="relative flex items-center justify-center bg-[#1D1D1F] overflow-hidden">
+      <div className="h-full relative flex items-center justify-center bg-[#1D1D1F] overflow-hidden">
         <div className="flex flex-col items-center gap-3 text-white/30">
           <ImageIcon className="size-12" strokeWidth={1} />
           <span className="text-caption">选择一张照片开始审阅</span>
@@ -55,7 +41,7 @@ export default function ImageViewport() {
   }
 
   return (
-    <div ref={containerRef} className="relative flex items-center justify-center bg-[#1D1D1F] overflow-hidden" onWheel={handleWheel}>
+    <div ref={containerRef} className="h-full relative flex items-center justify-center bg-[#1D1D1F] overflow-hidden">
       {/* Prev overlay */}
       <div
         className="absolute left-0 top-0 bottom-0 w-24 z-10 flex items-center justify-start pl-4 cursor-pointer opacity-0 hover:opacity-100 transition-opacity duration-fast"

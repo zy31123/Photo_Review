@@ -41,13 +41,13 @@ export function useReview(): ReviewContext {
   return ctx
 }
 
-export function ReviewProvider({ startId, children }: { startId?: string; children: ReactNode }) {
+export function ReviewProvider({ startId, initialSubfolder, children }: { startId?: string; initialSubfolder?: string; children: ReactNode }) {
   const { photos: appPhotos } = useApp()
   const [photos, setPhotos] = useState<PhotoGroup[]>([])
   const [currentIndex, setCurrentIndex] = useState(0)
   const [selectedDate, setSelectedDate] = useState<string | null>(null)
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
-  const [subfolderFilter, setSubfolderFilter] = useState<string | null>(null)
+  const [subfolderFilter, setSubfolderFilter] = useState<string | null>(initialSubfolder ?? null)
   const [subfolders, setSubfolders] = useState<SubfolderInfo[]>([])
   const [leftSidebarOpen, setLeftSidebarOpen] = useState(true)
   const [rightPanelOpen, setRightPanelOpen] = useState(true)

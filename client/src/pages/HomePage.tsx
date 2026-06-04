@@ -1,81 +1,225 @@
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useApp } from '../context/AppContext'
-import { FolderOpen } from 'lucide-react'
+import { FolderOpen, Settings, Clock, CircleDot, FolderPlus } from 'lucide-react'
 import FolderPicker from '../components/FolderPicker'
+
+const RECENT_KEY = 'photo-review:recent-folders'
+const MAX_RECENT = 10
+
+function getRecentFolders(): string[] {
+  try {
+    return JSON.parse(localStorage.getItem(RECENT_KEY) || '[]')
+  } catch {
+    return []
+  }
+}
+
+function addRecentFolder(path: string) {
+  const recent = getRecentFolders().filter(p => p !== path)
+  recent.unshift(path)
+  localStorage.setItem(RECENT_KEY, JSON.stringify(recent.slice(0, MAX_RECENT)))
+}
 
 export default function HomePage() {
   const navigate = useNavigate()
   const { loadPhotos } = useApp()
-  const [folderPath, setFolderPath] = useState('')
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState<string | null>(null)
   const [error, setError] = useState('')
   const [pickerOpen, setPickerOpen] = useState(false)
+  const [dragOver, setDragOver] = useState(false)
 
-  const handleScan = async () => {
-    if (!folderPath.trim()) return
-    setLoading(true)
+  const recentFolders = getRecentFolders()
+
+  const handleScan = useCallback(async (path: string) => {
+    if (!path.trim()) return
+    setLoading(path)
     setError('')
     try {
-      await loadPhotos(folderPath.trim())
+      await loadPhotos(path.trim())
+      addRecentFolder(path.trim())
       navigate('/grid')
     } catch (e: any) {
       setError(e.message || '扫描失败')
     } finally {
-      setLoading(false)
+      setLoading(null)
     }
-  }
+  }, [loadPhotos, navigate])
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault()
+    setDragOver(false)
+    const items = e.dataTransfer.items
+    if (items && items.length > 0) {
+      const entry = items[0].webkitGetAsEntry?.()
+      if (entry?.isDirectory) {
+        const file = e.dataTransfer.files[0]
+        if (file && (file as any).path) {
+          handleScan((file as any).path as string)
+        }
+        return
+      }
+    }
+    const file = e.dataTransfer.files[0]
+    if (file) {
+      const path = (file as any).path || file.name
+      handleScan(path)
+    }
+  }, [handleScan])
+
+  const handlePickerSelect = useCallback((path: string) => {
+    handleScan(path)
+  }, [handleScan])
 
   return (
-    <div className="h-screen flex flex-col items-center justify-center px-6 bg-bg relative">
-      <div className="relative z-10 flex flex-col items-center">
-        <h1
-          className="font-bold text-text tracking-[-0.03em] leading-[1.1] mb-3"
-          style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--text-display)' }}
-        >
-          Photo Review
-        </h1>
-        <div className="w-12 h-px bg-border mb-3" />
-        <p className="text-text-secondary text-caption mb-10">
-          选择你的图库文件夹开始审阅
-        </p>
-
-        <div className="w-full max-w-xl space-y-3">
-          <div
-            className={`flex items-center bg-bg-elevated border rounded-md overflow-hidden cursor-pointer transition-colors duration-fast ${folderPath ? 'border-accent/30' : 'border-border'}`}
-            onClick={() => setPickerOpen(true)}
+    <div
+      className="h-screen flex flex-col bg-bg"
+      onDragOver={(e) => { e.preventDefault(); setDragOver(true) }}
+      onDragLeave={() => setDragOver(false)}
+      onDrop={handleDrop}
+    >
+      {/* ── Toolbar ── */}
+      <header className="h-11 bg-bg-elevated border-b border-border flex items-center justify-between px-4 shrink-0">
+        <div className="flex items-center gap-2">
+          <h1
+            className="font-semibold text-text tracking-tight"
+            style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--text-body)' }}
           >
-            <div className="flex-1 px-4 py-3 text-body truncate flex items-center gap-2.5">
-              <FolderOpen className="size-4 text-accent/60 shrink-0" />
-              {folderPath ? (
-                <span className="text-text font-medium">{folderPath}</span>
-              ) : (
-                <span className="text-text-secondary">点击选择文件夹...</span>
-              )}
-            </div>
-            <button className="px-4 py-3 text-accent font-medium text-caption border-l border-border-subtle hover:bg-accent-subtle transition-colors duration-fast">
-              浏览
-            </button>
-          </div>
-
-          {error && (
-            <p className="text-danger text-micro bg-danger-subtle px-3 py-2 rounded-md border border-danger/20">{error}</p>
-          )}
-
-          <button
-            onClick={handleScan}
-            disabled={loading || !folderPath.trim()}
-            className="w-full py-2.5 rounded-md bg-accent text-white font-semibold text-caption hover:bg-accent-hover disabled:opacity-40 disabled:cursor-not-allowed transition-colors duration-fast"
-          >
-            {loading ? '扫描中...' : '开始审阅'}
+            Photo Review
+          </h1>
+        </div>
+        <div className="flex items-center gap-3">
+          <span className="flex items-center gap-1.5 text-text-tertiary text-micro">
+            <CircleDot className="size-1.5 text-success fill-success" />
+            已连接
+          </span>
+          <button className="w-7 h-7 rounded-md flex items-center justify-center text-text-tertiary hover:text-text hover:bg-fill-subtle transition-colors duration-fast">
+            <Settings className="size-3.5" strokeWidth={1.5} />
           </button>
         </div>
+      </header>
+
+      <div className="flex-1 flex overflow-hidden">
+        {/* ── Sidebar ── */}
+        <aside className="w-52 bg-bg-elevated/60 border-r border-border flex flex-col shrink-0">
+          {/* Favorites */}
+          <div className="px-3 pt-4 pb-2">
+            <span className="text-micro font-semibold text-text-tertiary uppercase tracking-wider">
+              收藏
+            </span>
+          </div>
+          <nav className="px-2 flex-1">
+            <button
+              onClick={() => setPickerOpen(true)}
+              className="w-full flex items-center gap-2.5 px-3 py-1.5 rounded-md text-caption text-text-secondary hover:bg-fill-subtle transition-colors duration-fast"
+            >
+              <FolderPlus className="size-3.5 text-accent" strokeWidth={1.5} />
+              选择文件夹
+            </button>
+          </nav>
+
+          {/* Recent section */}
+          <div className="px-3 pt-4 pb-2">
+            <span className="text-micro font-semibold text-text-tertiary uppercase tracking-wider">
+              最近使用
+            </span>
+          </div>
+          <nav className="px-2 flex-1 overflow-y-auto pb-4">
+            {recentFolders.length === 0 ? (
+              <p className="px-3 text-micro text-text-tertiary">暂无记录</p>
+            ) : (
+              recentFolders.map((p) => {
+                const name = p.split(/[/\\]/).filter(Boolean).pop() || p
+                return (
+                  <button
+                    key={p}
+                    onClick={() => handleScan(p)}
+                    disabled={loading !== null}
+                    className="w-full flex items-center gap-2.5 px-3 py-1.5 rounded-md text-caption text-text-secondary hover:bg-fill-subtle transition-colors duration-fast disabled:opacity-40"
+                    title={p}
+                  >
+                    <Clock className="size-3 text-text-tertiary shrink-0" strokeWidth={1.5} />
+                    <span className="truncate">{name}</span>
+                  </button>
+                )
+              })
+            )}
+          </nav>
+        </aside>
+
+        {/* ── Main Content ── */}
+        <main
+          className={`flex-1 flex items-center justify-center transition-colors duration-normal ${dragOver ? 'bg-accent-subtle' : 'bg-bg'}`}
+        >
+          {error && (
+            <div className="absolute top-14 left-1/2 -translate-x-1/2 z-10">
+              <p className="text-danger text-caption bg-danger-subtle px-4 py-2 rounded-md border border-danger/20 shadow-sm">{error}</p>
+            </div>
+          )}
+
+          {recentFolders.length === 0 ? (
+            /* Empty state */
+            <div className="flex flex-col items-center gap-4 text-center">
+              <div className="w-16 h-16 rounded-2xl bg-fill-subtle flex items-center justify-center">
+                <FolderOpen className="size-8 text-text-tertiary" strokeWidth={1.25} />
+              </div>
+              <div>
+                <p className="text-caption font-medium text-text mb-1">尚未打开过文件夹</p>
+                <p className="text-micro text-text-tertiary">选择一个文件夹开始审阅照片</p>
+              </div>
+              <button
+                onClick={() => setPickerOpen(true)}
+                className="px-5 py-2 rounded-md bg-accent text-white font-semibold text-caption hover:bg-accent-hover transition-colors duration-fast"
+              >
+                选择文件夹
+              </button>
+            </div>
+          ) : (
+            /* Folder grid */
+            <div className="w-full h-full overflow-y-auto p-6">
+              <div className="grid gap-5" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))' }}>
+                {/* Add new folder card */}
+                <button
+                  onClick={() => setPickerOpen(true)}
+                  className="flex flex-col items-center gap-2 p-4 rounded-lg border border-dashed border-border hover:border-accent/40 hover:bg-accent-subtle/50 transition-colors duration-fast group"
+                >
+                  <div className="w-12 h-12 rounded-xl bg-fill-subtle group-hover:bg-accent-subtle flex items-center justify-center transition-colors duration-fast">
+                    <FolderPlus className="size-5 text-text-tertiary group-hover:text-accent transition-colors duration-fast" strokeWidth={1.5} />
+                  </div>
+                  <span className="text-micro text-text-tertiary group-hover:text-accent transition-colors duration-fast">添加文件夹</span>
+                </button>
+
+                {/* Recent folder cards */}
+                {recentFolders.map((p) => {
+                  const name = p.split(/[/\\]/).filter(Boolean).pop() || p
+                  const isLoading = loading === p
+                  return (
+                    <button
+                      key={p}
+                      onClick={() => handleScan(p)}
+                      disabled={loading !== null}
+                      className="flex flex-col items-center gap-2 p-4 rounded-lg hover:bg-fill-subtle transition-colors duration-fast disabled:opacity-40 group"
+                      title={p}
+                    >
+                      <div className="w-12 h-12 rounded-xl bg-accent-subtle flex items-center justify-center">
+                        <FolderOpen className="size-5 text-accent" strokeWidth={1.5} />
+                      </div>
+                      <span className="text-micro text-text font-medium truncate max-w-full">
+                        {isLoading ? '扫描中...' : name}
+                      </span>
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+        </main>
       </div>
 
       <FolderPicker
         open={pickerOpen}
         onClose={() => setPickerOpen(false)}
-        onSelect={(path) => setFolderPath(path)}
+        onSelect={handlePickerSelect}
       />
     </div>
   )

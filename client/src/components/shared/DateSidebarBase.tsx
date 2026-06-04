@@ -114,6 +114,9 @@ export function DateSidebarBase({
         )}
       </div>
       <div className="border-b border-border-subtle mx-3" />
+      <div className="px-4 pt-3 pb-1">
+        <span className="text-micro font-semibold text-text-tertiary uppercase tracking-wider">日期</span>
+      </div>
 
       <div className={monthListClassName}>
         {monthGroups.map(month => (
