@@ -29,45 +29,47 @@ export default function HomePage() {
   return (
     <div className="h-screen flex flex-col items-center justify-center px-6 bg-bg relative">
       <div className="relative z-10 flex flex-col items-center">
-        <h1 className="text-[3.5rem] font-bold text-text-heading tracking-[-0.04em] leading-[1.1] mb-4" style={{ fontFamily: 'var(--font-display)' }}>
+        <h1
+          className="font-bold text-text tracking-[-0.03em] leading-[1.1] mb-3"
+          style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--text-display)' }}
+        >
           Photo Review
         </h1>
-        <div className="w-16 h-px bg-border-light mb-4" />
-        <p className="text-text-secondary text-lg mb-12">
+        <div className="w-12 h-px bg-border mb-3" />
+        <p className="text-text-secondary text-caption mb-10">
           选择你的图库文件夹开始审阅
         </p>
 
-        <div className="w-full max-w-xl space-y-4">
+        <div className="w-full max-w-xl space-y-3">
           <div
-            className={`flex items-center bg-surface-primary backdrop-blur-xl border rounded-2xl overflow-hidden cursor-pointer transition-all duration-200 ${folderPath ? 'border-accent/30' : 'border-border-light'}`}
+            className={`flex items-center bg-bg-elevated border rounded-md overflow-hidden cursor-pointer transition-colors duration-fast ${folderPath ? 'border-accent/30' : 'border-border'}`}
             onClick={() => setPickerOpen(true)}
           >
-            <div className="flex-1 px-5 py-4 text-base truncate flex items-center gap-3">
-              <FolderOpen className="size-5 text-accent/60 shrink-0" />
+            <div className="flex-1 px-4 py-3 text-body truncate flex items-center gap-2.5">
+              <FolderOpen className="size-4 text-accent/60 shrink-0" />
               {folderPath ? (
                 <span className="text-text font-medium">{folderPath}</span>
               ) : (
                 <span className="text-text-secondary">点击选择文件夹...</span>
               )}
             </div>
-            <button className="px-5 py-4 text-accent font-medium text-base border-l border-border-faint hover:bg-accent/5 transition-colors">
+            <button className="px-4 py-3 text-accent font-medium text-caption border-l border-border-subtle hover:bg-accent-subtle transition-colors duration-fast">
               浏览
             </button>
           </div>
 
           {error && (
-            <p className="text-danger text-sm bg-danger/5 px-4 py-2.5 rounded-xl border border-danger/20">{error}</p>
+            <p className="text-danger text-micro bg-danger-subtle px-3 py-2 rounded-md border border-danger/20">{error}</p>
           )}
 
           <button
             onClick={handleScan}
             disabled={loading || !folderPath.trim()}
-            className="w-full py-4 rounded-xl bg-accent text-white font-semibold text-lg hover:bg-accent-dim disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-200 active:scale-[0.98]"
+            className="w-full py-2.5 rounded-md bg-accent text-white font-semibold text-caption hover:bg-accent-hover disabled:opacity-40 disabled:cursor-not-allowed transition-colors duration-fast"
           >
             {loading ? '扫描中...' : '开始审阅'}
           </button>
         </div>
-
       </div>
 
       <FolderPicker
