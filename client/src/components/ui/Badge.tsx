@@ -1,27 +1,20 @@
 type BadgeVariant = 'success' | 'danger' | 'neutral' | 'info'
-type BadgeSize = 'sm' | 'md'
 
 const VARIANT_CLASSES: Record<BadgeVariant, string> = {
-  success: 'border-success/30 bg-success/5 text-success-dim',
-  danger: 'border-danger/30 bg-danger/5 text-danger-dim',
-  neutral: 'border-border-faint bg-fill-subtle text-text-secondary',
-  info: 'border-accent/30 bg-accent/5 text-accent-dim',
-}
-
-const SIZE_CLASSES: Record<BadgeSize, string> = {
-  sm: 'px-2 py-0.5 text-[0.6875rem]',
-  md: 'px-2.5 py-1 text-xs',
+  success: 'border-success/30 bg-success-subtle text-success-dim',
+  danger: 'border-danger/30 bg-danger-subtle text-danger-dim',
+  neutral: 'border-border-subtle bg-fill-subtle text-text-secondary',
+  info: 'border-accent/30 bg-accent-subtle text-accent-hover',
 }
 
 interface BadgeProps {
   variant?: BadgeVariant
-  size?: BadgeSize
   children: React.ReactNode
 }
 
-export default function Badge({ variant = 'neutral', size = 'sm', children }: BadgeProps) {
+export default function Badge({ variant = 'neutral', children }: BadgeProps) {
   return (
-    <span className={`inline-flex items-center gap-1 rounded-md border font-medium ${VARIANT_CLASSES[variant]} ${SIZE_CLASSES[size]}`}>
+    <span className={`inline-flex items-center gap-1 rounded-sm border px-2 py-0.5 text-micro font-medium ${VARIANT_CLASSES[variant]}`}>
       {children}
     </span>
   )

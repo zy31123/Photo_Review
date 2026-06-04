@@ -14,7 +14,7 @@ export default function Tooltip({ label, shortcut, position = 'top', children }:
     <span className="group/tooltip relative inline-flex">
       {children}
       <span
-        className={`${positionClass} absolute rounded-lg bg-black/75 px-2.5 py-1 text-xs whitespace-nowrap text-white opacity-0 pointer-events-none transition-opacity duration-150 group-hover/tooltip:opacity-100 z-50`}
+        className={`${positionClass} absolute rounded-sm bg-black/75 px-2 py-1 text-micro whitespace-nowrap text-white opacity-0 pointer-events-none transition-opacity duration-fast group-hover/tooltip:opacity-100 z-50`}
       >
         {label}
         {shortcut && (

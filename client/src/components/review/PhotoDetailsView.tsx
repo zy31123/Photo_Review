@@ -119,7 +119,7 @@ function MetaRow({ label, value, mono }: { label: string; value: string; mono?: 
 
 function FileStatusBadge({ exists, label }: { exists: boolean; label: string }) {
   return (
-    <Badge variant={exists ? 'success' : 'danger'} size="sm">
+    <Badge variant={exists ? 'success' : 'danger'} >
       {exists ? <Check className="size-3" strokeWidth={2.5} /> : <X className="size-3" strokeWidth={2.5} />}
       {label}
     </Badge>
@@ -129,14 +129,14 @@ function FileStatusBadge({ exists, label }: { exists: boolean; label: string }) 
 function ReviewStatusBadge({ reviewed }: { reviewed: boolean }) {
   if (reviewed) {
     return (
-      <Badge variant="success" size="sm">
+      <Badge variant="success" >
         <Check className="size-3" strokeWidth={2.5} />
         已审阅
       </Badge>
     )
   }
   return (
-    <Badge variant="neutral" size="sm">
+    <Badge variant="neutral" >
       <span className="w-1.5 h-1.5 rounded-full bg-text-muted" />
       未审阅
     </Badge>
