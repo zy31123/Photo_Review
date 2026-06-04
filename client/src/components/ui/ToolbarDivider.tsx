@@ -1,3 +1,3 @@
 export default function ToolbarDivider() {
-  return <div className="w-px h-6 bg-black/[0.06]" />
+  return <div className="w-px h-6 bg-fill-medium" />
 }

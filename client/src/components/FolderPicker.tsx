@@ -39,20 +39,20 @@ export default function FolderPicker({ open, onClose, onSelect }: FolderPickerPr
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-md">
-      <div className="w-[42.5rem] max-h-[80vh] bg-bg-card border border-black/[0.06] rounded-2xl shadow-overlay flex flex-col animate-fade-in">
+      <div className="w-[42.5rem] max-h-[80vh] bg-bg-card border border-border-light rounded-2xl flex flex-col animate-fade-in">
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-black/[0.06]">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-border-light">
           <h2 className="text-lg font-semibold text-text">选择文件夹</h2>
           <button
             onClick={onClose}
-            className="w-8 h-8 rounded-full flex items-center justify-center text-text-muted hover:text-text hover:bg-black/[0.04] transition-colors"
+            className="w-8 h-8 rounded-lg flex items-center justify-center text-text-muted hover:text-text hover:bg-fill-muted transition-colors"
           >
             <X className="size-4" />
           </button>
         </div>
 
         {/* Breadcrumb path */}
-        <div className="px-5 py-3 border-b border-black/[0.06]">
+        <div className="px-5 py-3 border-b border-border-light">
           <div className="flex items-center gap-1 text-sm flex-wrap">
             <button
               onClick={() => loadDir('')}
@@ -94,7 +94,7 @@ export default function FolderPicker({ open, onClose, onSelect }: FolderPickerPr
               {browse.parent !== null && (
                 <button
                   onClick={() => loadDir(browse.parent!)}
-                  className="w-full text-left px-4 py-3 rounded-xl text-base text-text-secondary hover:bg-black/[0.04] transition-colors flex items-center gap-3"
+                  className="w-full text-left px-4 py-3 rounded-xl text-base text-text-secondary hover:bg-fill-muted transition-colors flex items-center gap-3"
                 >
                   <ArrowLeft className="size-4 text-text-muted" />
                   <span>..</span>
@@ -112,7 +112,7 @@ export default function FolderPicker({ open, onClose, onSelect }: FolderPickerPr
                 <button
                   key={child.path}
                   onClick={() => loadDir(child.path)}
-                  className="w-full text-left px-4 py-3 rounded-xl text-base text-text-secondary hover:bg-black/[0.04] transition-colors flex items-center gap-3"
+                  className="w-full text-left px-4 py-3 rounded-xl text-base text-text-secondary hover:bg-fill-muted transition-colors flex items-center gap-3"
                 >
                   <Folder className="size-4 text-accent/60" />
                   <span className="truncate">{child.name}</span>
@@ -125,10 +125,10 @@ export default function FolderPicker({ open, onClose, onSelect }: FolderPickerPr
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-end gap-3 px-5 py-3 border-t border-black/[0.06]">
+        <div className="flex items-center justify-end gap-3 px-5 py-3 border-t border-border-light">
           <button
             onClick={onClose}
-            className="px-4 py-3 rounded-xl text-text-secondary hover:text-text hover:bg-black/[0.04] text-base transition-colors"
+            className="px-4 py-3 rounded-xl text-text-secondary hover:text-text hover:bg-fill-muted text-base transition-colors"
           >
             取消
           </button>
@@ -140,7 +140,7 @@ export default function FolderPicker({ open, onClose, onSelect }: FolderPickerPr
               }
             }}
             disabled={!browse?.current}
-            className="px-5 py-3 rounded-xl bg-accent text-white font-semibold text-base hover:bg-accent-dim hover:shadow-lg hover:shadow-accent/15 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            className="px-5 py-3 rounded-xl bg-accent text-white font-semibold text-base hover:bg-accent-dim transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
           >
             {browse?.current === '' ? '请选择一个驱动器' : '选择此文件夹'}
           </button>

@@ -9,7 +9,7 @@ interface LightboxProps {
   onNavigate: (index: number) => void
 }
 
-const overlayBtn = 'w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm text-white/50 hover:text-white/80 hover:bg-white/30 flex items-center justify-center transition-all z-10'
+const overlayBtn = 'w-10 h-10 rounded-lg bg-white/20 backdrop-blur-sm text-white/50 hover:text-white/80 hover:bg-white/30 flex items-center justify-center transition-all z-10'
 
 export default function Lightbox({ photos, currentIndex, onClose, onNavigate }: LightboxProps) {
   const photo = photos[currentIndex]
@@ -62,7 +62,7 @@ export default function Lightbox({ photos, currentIndex, onClose, onNavigate }: 
       <img
         src={`/api/photos/${encodeURIComponent(photo.id)}/full`}
         alt={photo.name}
-        className="max-h-[90vh] max-w-[90vw] object-contain rounded-lg shadow-overlay"
+        className="max-h-[90vh] max-w-[90vw] object-contain rounded-lg"
         onClick={e => e.stopPropagation()}
       />
 

@@ -18,7 +18,7 @@ export default function RandomToolbar({
   rightPanelOpen, onToggleRightPanel, cacheDays, onCacheDaysChange,
 }: RandomToolbarProps) {
   return (
-    <div className="h-13 bg-white/80 backdrop-blur-xl border-b border-black/[0.06] flex items-center px-4 shrink-0">
+    <div className="h-12 bg-surface-primary backdrop-blur-xl border-b border-border-light flex items-center px-4 shrink-0">
       <div className="flex-1" />
 
       <div className="flex-1 text-center px-4">
@@ -49,7 +49,7 @@ export default function RandomToolbar({
           <select
             value={cacheDays}
             onChange={e => onCacheDaysChange(Number(e.target.value))}
-            className="bg-black/[0.03] border border-black/[0.06] rounded-lg px-2 py-1 text-text-secondary text-xs focus:outline-none focus:border-accent/50 transition-colors"
+            className="bg-fill-quiet border border-border-light rounded-lg px-2 py-1 text-text-secondary text-xs focus:outline-none focus:border-accent/50 transition-colors"
           >
             <option value={7}>7 天</option>
             <option value={30}>30 天</option>

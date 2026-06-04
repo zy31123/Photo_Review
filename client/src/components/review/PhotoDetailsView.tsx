@@ -2,6 +2,7 @@ import { Check, X } from 'lucide-react'
 import type { PhotoGroup, ExifData } from '../../api'
 import { formatChineseDate } from '../../utils/date'
 import SectionHeader from '../ui/SectionHeader'
+import Badge from '../ui/Badge'
 
 interface PhotoDetailsViewProps {
   photo: PhotoGroup
@@ -10,7 +11,7 @@ interface PhotoDetailsViewProps {
 }
 
 function Card({ children }: { children: React.ReactNode }) {
-  return <div className="mx-5 mb-3 rounded-xl border border-black/[0.04] bg-white/60 shadow-card overflow-hidden">{children}</div>
+  return <div className="mx-5 mb-4 rounded-xl border border-border-faint bg-surface-secondary shadow-card overflow-hidden">{children}</div>
 }
 
 export default function PhotoDetailsView({ photo, exif, reviewed }: PhotoDetailsViewProps) {
@@ -21,7 +22,7 @@ export default function PhotoDetailsView({ photo, exif, reviewed }: PhotoDetails
     <>
       <Card>
         <SectionHeader title="文件信息" compact />
-        <div className="px-5 py-3.5 space-y-3">
+        <div className="px-5 py-4 space-y-3">
           <MetaRow label="文件名" value={photo.name} mono />
           <MetaRow label="日期" value={formattedDate} />
           <MetaRow label="文件夹" value={folderName} />
@@ -31,7 +32,7 @@ export default function PhotoDetailsView({ photo, exif, reviewed }: PhotoDetails
       {exif && (
         <Card>
           <SectionHeader title="拍摄参数" compact />
-          <div className="px-5 py-3.5 space-y-3">
+          <div className="px-5 py-4 space-y-3">
             <MetaRow label="相机" value={exif.camera} />
             <MetaRow label="镜头" value={exif.lens} />
             {exif.focalLength && (
@@ -94,7 +95,7 @@ function CompactExifBar({ exif }: { exif: ExifData }) {
   const parts = [exif.focalLength, exif.aperture, exif.shutterSpeed, `ISO ${exif.iso}`].filter(Boolean)
   if (parts.length === 0) return null
   return (
-    <div className="flex items-center gap-2 text-xs text-text-secondary bg-black/[0.03] rounded-lg px-4 py-2.5">
+    <div className="flex items-center gap-2 text-xs text-text-secondary bg-fill-quiet rounded-lg px-4 py-2.5">
       {parts.map((part, i) => (
         <span key={i} className="flex items-center gap-1.5">
           {i > 0 && <span className="text-text-muted/50">·</span>}
@@ -118,28 +119,26 @@ function MetaRow({ label, value, mono }: { label: string; value: string; mono?: 
 
 function FileStatusBadge({ exists, label }: { exists: boolean; label: string }) {
   return (
-    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${
-      exists ? 'bg-success/10 text-success-dim' : 'bg-danger/10 text-danger-dim'
-    }`}>
-      {exists ? <Check className="w-3 h-3" strokeWidth={2.5} /> : <X className="w-3 h-3" strokeWidth={2.5} />}
+    <Badge variant={exists ? 'success' : 'danger'} size="sm">
+      {exists ? <Check className="size-3" strokeWidth={2.5} /> : <X className="size-3" strokeWidth={2.5} />}
       {label}
-    </span>
+    </Badge>
   )
 }
 
 function ReviewStatusBadge({ reviewed }: { reviewed: boolean }) {
   if (reviewed) {
     return (
-      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-success/10 text-success-dim">
-        <Check className="w-3 h-3" strokeWidth={2.5} />
+      <Badge variant="success" size="sm">
+        <Check className="size-3" strokeWidth={2.5} />
         已审阅
-      </span>
+      </Badge>
     )
   }
   return (
-    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-black/[0.04] text-text-secondary">
-      <span className="w-2 h-2 rounded-full bg-text-muted" />
+    <Badge variant="neutral" size="sm">
+      <span className="w-1.5 h-1.5 rounded-full bg-text-muted" />
       未审阅
-    </span>
+    </Badge>
   )
 }

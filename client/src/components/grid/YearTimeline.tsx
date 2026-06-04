@@ -85,7 +85,7 @@ export default function YearTimeline() {
   }
 
   return (
-    <div className="w-16 shrink-0 border-l border-black/[0.06] bg-white/60 backdrop-blur-xl overflow-y-auto py-4 flex flex-col items-center gap-2">
+    <div className="w-16 shrink-0 border-l border-border-light bg-surface-secondary backdrop-blur-xl overflow-y-auto py-4 flex flex-col items-center gap-2">
       {granularity === 'year' && items.map(item => (
         <button
           key={item.label}
@@ -114,7 +114,7 @@ export default function YearTimeline() {
               {item.label}
             </button>
           ))}
-          <div className="w-6 h-px bg-black/[0.06]" />
+          <div className="w-6 h-px bg-fill-medium" />
         </div>
       ))}
     </div>

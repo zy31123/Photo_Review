@@ -1,6 +1,7 @@
 import { useEffect, useCallback, useRef, useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useVirtualizer } from '@tanstack/react-virtual'
+import { Minus, Plus } from 'lucide-react'
 import { useApp } from '../context/AppContext'
 import { GridProvider, useGrid, type VirtualItem } from '../context/GridContext'
 import { api } from '../api'
@@ -8,6 +9,32 @@ import NavBar from '../components/NavBar'
 import FolderSidebar from '../components/grid/FolderSidebar'
 import YearTimeline from '../components/grid/YearTimeline'
 import Lightbox from '../components/grid/Lightbox'
+
+function GridToolbar() {
+  const { columns, setColumns, filteredPhotos } = useGrid()
+  return (
+    <div className="h-10 border-b border-border-faint bg-surface-primary backdrop-blur-xl flex items-center px-4 gap-4 shrink-0">
+      <span className="text-text-muted text-sm">{filteredPhotos.length.toLocaleString()} 张</span>
+      <div className="ml-auto flex items-center gap-1">
+        <button
+          onClick={() => setColumns(Math.max(2, columns - 1))}
+          disabled={columns <= 2}
+          className="w-7 h-7 rounded-md bg-fill-muted flex items-center justify-center text-text-secondary hover:bg-fill-medium disabled:opacity-30 transition-colors"
+        >
+          <Minus className="size-3" strokeWidth={1.5} />
+        </button>
+        <span className="text-text-secondary text-xs tabular-nums w-6 text-center font-medium">{columns}</span>
+        <button
+          onClick={() => setColumns(Math.min(8, columns + 1))}
+          disabled={columns >= 8}
+          className="w-7 h-7 rounded-md bg-fill-muted flex items-center justify-center text-text-secondary hover:bg-fill-medium disabled:opacity-30 transition-colors"
+        >
+          <Plus className="size-3" strokeWidth={1.5} />
+        </button>
+      </div>
+    </div>
+  )
+}
 
 function GridLayout() {
   const navigate = useNavigate()
@@ -93,6 +120,7 @@ function GridLayout() {
   return (
     <div className="h-screen flex flex-col bg-bg overflow-hidden">
       <NavBar />
+      <GridToolbar />
 
       <div className="flex-1 min-h-0 flex">
         <FolderSidebar />
@@ -103,9 +131,9 @@ function GridLayout() {
           className="flex-1 min-h-0 overflow-y-auto"
         >
           {stickyHeader && (
-            <div className="sticky top-0 z-10 backdrop-blur-xl bg-white/80 border-b border-black/[0.04] px-4 py-2.5 flex items-center gap-3">
+            <div className="sticky top-0 z-10 backdrop-blur-xl bg-surface-primary border-b border-border-faint px-4 py-2.5 flex items-center gap-3">
               <span className="text-base font-semibold text-text-heading whitespace-nowrap">{stickyHeader.label}</span>
-              <div className="flex-1 h-px bg-black/[0.06]" />
+              <div className="flex-1 h-px bg-fill-medium" />
               <span className="text-xs text-text-muted tabular-nums">{stickyHeader.count} 张</span>
             </div>
           )}
@@ -139,7 +167,7 @@ function GridLayout() {
                       <span className="text-text-heading text-base font-semibold whitespace-nowrap">
                         {item.label}
                       </span>
-                      <div className="flex-1 h-px bg-black/[0.06]" />
+                      <div className="flex-1 h-px bg-fill-medium" />
                       <span className="text-text-muted text-xs tabular-nums">
                         {item.count} 张
                       </span>
@@ -175,7 +203,7 @@ function GridLayout() {
                           src={api.thumbnailUrl(photo.id)}
                           alt={photo.name}
                           loading="lazy"
-                          className="w-full aspect-square object-cover bg-bg-card transition-all duration-200 group-hover:scale-[1.02] group-hover:shadow-raised"
+                          className="w-full aspect-square object-cover bg-bg-card transition-all duration-200 group-hover:scale-[1.01]"
                           style={{ opacity: 0 }}
                           onLoad={e => { (e.target as HTMLImageElement).style.opacity = '1' }}
                         />

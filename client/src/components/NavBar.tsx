@@ -1,8 +1,6 @@
 import { useNavigate, useLocation } from 'react-router-dom'
-import { LayoutGrid, Eye, Shuffle, Layers, Folder, PanelLeft, LayoutList, Minus, Plus } from 'lucide-react'
+import { LayoutGrid, Eye, Shuffle, Layers, Folder } from 'lucide-react'
 import { useApp } from '../context/AppContext'
-import { useGrid } from '../context/GridContext'
-import { useReview } from '../context/ReviewContext'
 
 const navItems = [
   { path: '/grid', label: '网格总览', icon: LayoutGrid },
@@ -11,20 +9,50 @@ const navItems = [
   { path: '/similar', label: '相似聚类', icon: Layers },
 ]
 
-function GridControls() {
-  const { columns, setColumns, filteredPhotos } = useGrid()
+export default function NavBar() {
+  const navigate = useNavigate()
+  const { pathname } = useLocation()
+  const { activeFolder, isLoaded } = useApp()
+
   return (
-    <div className="flex items-center gap-3">
-      <span className="text-text-muted text-sm">{filteredPhotos.length.toLocaleString()} 张</span>
-      <div className="flex items-center gap-1">
-        <button
-          onClick={() => setColumns(Math.max(2, columns - 1))}
-          disabled={columns <= 2}
-          className="w-8 h-8 rounded-lg bg-black/[0.04] flex items-center justify-center text-text-secondary hover:bg-black/[0.06] disabled:opacity-30 transition-colors"
-        >
-          <Minus className="size-3" />
-        </button>
-        <span className="text-text-secondary text-xs tabular-nums w-6 text-center font-medium">{columns}</span>
-        <button
-          onClick={() => setColumns(Math.min(8, columns + 1))}
-          disabled={columns >= 8}
+    <div className="h-12 bg-surface-primary backdrop-blur-xl border-b border-border-light flex items-center px-4 shrink-0">
+      <button
+        onClick={() => navigate('/')}
+        className="text-text-heading font-semibold text-base tracking-tight hover:text-accent transition-colors"
+      >
+        Photo Review
+      </button>
+
+      <div className="flex items-center bg-fill-muted rounded-lg p-1 ml-6">
+        {navItems.map(item => {
+          const Icon = item.icon
+          const active = pathname === item.path
+          return (
+            <button
+              key={item.path}
+              onClick={() => navigate(item.path)}
+              disabled={!isLoaded}
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                active
+                  ? 'bg-white text-text-heading shadow-sm'
+                  : isLoaded
+                    ? 'text-text-muted hover:text-text-secondary'
+                    : 'text-text-muted/40 cursor-not-allowed'
+              }`}
+            >
+              <Icon className="size-4" strokeWidth={1.5} />
+              {item.label}
+            </button>
+          )
+        })}
+      </div>
+
+      {activeFolder && (
+        <span className="ml-auto text-text-muted text-sm flex items-center gap-1.5">
+          <Folder className="size-3.5" strokeWidth={1.5} />
+          <span className="truncate max-w-[12rem]">{activeFolder}</span>
+        </span>
+      )}
+    </div>
+  )
+}

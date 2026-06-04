@@ -3,6 +3,7 @@ import { api } from '../../api'
 import { useReview } from '../../context/ReviewContext'
 import { useDragImage } from '../../hooks/useDragImage'
 import { useImageZoom } from '../../hooks/useImageZoom'
+import { ChevronLeft, ChevronRight, ImageIcon } from 'lucide-react'
 import ReviewControls from './ReviewControls'
 
 export default function ImageViewport() {
@@ -46,9 +47,7 @@ export default function ImageViewport() {
     return (
       <div className="relative flex items-center justify-center bg-[#1D1D1F] overflow-hidden">
         <div className="flex flex-col items-center gap-4 text-white/30">
-          <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-          </svg>
+          <ImageIcon className="size-12" strokeWidth={1} />
           <span className="text-sm">选择一张照片开始审阅</span>
         </div>
       </div>
@@ -65,10 +64,8 @@ export default function ImageViewport() {
         onMouseLeave={() => setHoveringLeft(false)}
       >
         {hoveringLeft && currentIndex > 0 && (
-          <div className="w-10 h-10 rounded-full bg-white/15 backdrop-blur-sm flex items-center justify-center">
-            <svg className="w-5 h-5 text-white/70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-            </svg>
+          <div className="w-10 h-10 rounded-lg bg-white/15 backdrop-blur-sm flex items-center justify-center">
+            <ChevronLeft className="size-5 text-white/70" strokeWidth={1.5} />
           </div>
         )}
       </div>
@@ -98,10 +95,8 @@ export default function ImageViewport() {
         onMouseLeave={() => setHoveringRight(false)}
       >
         {hoveringRight && currentIndex < filteredPhotos.length - 1 && (
-          <div className="w-10 h-10 rounded-full bg-white/15 backdrop-blur-sm flex items-center justify-center">
-            <svg className="w-5 h-5 text-white/70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-            </svg>
+          <div className="w-10 h-10 rounded-lg bg-white/15 backdrop-blur-sm flex items-center justify-center">
+            <ChevronRight className="size-5 text-white/70" strokeWidth={1.5} />
           </div>
         )}
       </div>
