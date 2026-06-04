@@ -9,6 +9,7 @@ import { getThumbnail, getFullImage, getImageMimeType } from '../services/image.
 import { deletePhoto, deleteOrphanedFiles } from '../services/deleter.js'
 import { extractExif } from '../services/exif.js'
 import { resolveNormalized } from '../utils/path.js'
+import { analyzeFolder, getSimilarGroups, getSimilarStats } from '../services/similarity.js'
 
 const BLOCKED_PREFIXES = [
   '/etc', '/usr', '/bin', '/sbin', '/var', '/System', '/Library',
@@ -323,7 +324,7 @@ router.get('/stats', (req, res) => {
 })
 
 // Get settings
-router.get('/settings', (req, res) => {
+router.get('/settings', (_req, res) => {
   const cacheDays = getCacheDays()
   res.json({ random_cache_days: String(cacheDays) })
 })
@@ -337,6 +338,49 @@ router.put('/settings', (req, res) => {
     setCacheDays(days)
   }
   res.json({ success: true })
+})
+
+// --- Similarity endpoints ---
+
+// Analyze folder for similar photos
+router.post('/similarity/analyze', async (req, res) => {
+  const { folder, timeGap, hashThreshold } = req.body
+  if (!folder) return res.status(400).json({ message: '缺少 folder 参数' })
+  if (!isPathAllowed(folder)) return res.status(403).json({ message: '不允许访问此路径' })
+
+  try {
+    const result = await analyzeFolder(folder, timeGap, hashThreshold)
+    res.json(result)
+  } catch (e: any) {
+    res.status(500).json({ message: e.message })
+  }
+})
+
+// Get similar groups
+router.get('/similarity/groups', (req, res) => {
+  const folder = req.query.folder as string
+  if (!folder) return res.status(400).json({ message: '缺少 folder 参数' })
+  if (!isPathAllowed(folder)) return res.status(403).json({ message: '不允许访问此路径' })
+
+  const timeGap = Number(req.query.timeGap) || undefined
+  const hashThreshold = Number(req.query.hashThreshold) || undefined
+  const page = Number(req.query.page) || 1
+  const limit = Number(req.query.limit) || 50
+
+  const groups = getSimilarGroups(folder, timeGap, hashThreshold)
+  const start = (page - 1) * limit
+  const paged = groups.slice(start, start + limit)
+
+  res.json({ groups: paged, total: groups.length })
+})
+
+// Get similarity stats
+router.get('/similarity/stats', (req, res) => {
+  const folder = req.query.folder as string
+  if (!folder) return res.status(400).json({ message: '缺少 folder 参数' })
+
+  const stats = getSimilarStats(folder)
+  res.json(stats)
 })
 
 export default router
