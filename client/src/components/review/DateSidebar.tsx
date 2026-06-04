@@ -7,7 +7,7 @@ function getRowClass(active: boolean, isCurrent: boolean, fullyReviewed: boolean
   if (active) return 'border-l-2 border-accent bg-accent-subtle text-accent font-semibold'
   if (isCurrent) return 'border-l-2 border-accent/40 text-text-secondary'
   if (fullyReviewed) return 'text-text-tertiary hover:text-text-secondary'
-  return 'text-text hover:text-text-heading'
+  return 'text-text hover:text-text'
 }
 
 function getCountColor(active: boolean, fullyReviewed: boolean): string {

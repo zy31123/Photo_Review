@@ -189,7 +189,7 @@ const SimpleDateRow = memo(function SimpleDateRow({
       className={`w-full flex items-center justify-between pl-5 pr-3 py-2.5 text-caption rounded-r transition-colors duration-fast ${
         active
           ? 'border-l-2 border-accent bg-accent-subtle text-accent font-semibold'
-          : 'text-text hover:text-text-heading hover:bg-fill-subtle'
+          : 'text-text hover:text-text hover:bg-fill-subtle'
       }`}
     >
       <span>{label}</span>
