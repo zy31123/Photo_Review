@@ -6,8 +6,8 @@ export default function ReviewControls() {
   const { currentIndex, filteredPhotos, goTo, handleAction } = useReview()
 
   return (
-    <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-10">
-      <div className="flex items-center gap-4 bg-[#1D1D1F]/80 backdrop-blur-xl rounded-xl px-5 py-3">
+    <div className="absolute bottom-5 left-1/2 -translate-x-1/2 z-10">
+      <div className="flex items-center gap-3 bg-[#1D1D1F]/80 backdrop-blur-xl rounded-lg px-4 py-2">
         <ActionBtn
           onClick={() => goTo(currentIndex - 1)}
           disabled={currentIndex === 0}

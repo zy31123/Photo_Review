@@ -46,9 +46,9 @@ export default function ImageViewport() {
   if (!currentPhoto) {
     return (
       <div className="relative flex items-center justify-center bg-[#1D1D1F] overflow-hidden">
-        <div className="flex flex-col items-center gap-4 text-white/30">
+        <div className="flex flex-col items-center gap-3 text-white/30">
           <ImageIcon className="size-12" strokeWidth={1} />
-          <span className="text-sm">选择一张照片开始审阅</span>
+          <span className="text-caption">选择一张照片开始审阅</span>
         </div>
       </div>
     )
@@ -58,13 +58,13 @@ export default function ImageViewport() {
     <div ref={containerRef} className="relative flex items-center justify-center bg-[#1D1D1F] overflow-hidden" onWheel={handleWheel}>
       {/* Prev overlay */}
       <div
-        className="absolute left-0 top-0 bottom-0 w-24 z-10 flex items-center justify-start pl-4 cursor-pointer opacity-0 hover:opacity-100 transition-opacity duration-200"
+        className="absolute left-0 top-0 bottom-0 w-24 z-10 flex items-center justify-start pl-4 cursor-pointer opacity-0 hover:opacity-100 transition-opacity duration-fast"
         onClick={handlePrev}
         onMouseEnter={() => setHoveringLeft(true)}
         onMouseLeave={() => setHoveringLeft(false)}
       >
         {hoveringLeft && currentIndex > 0 && (
-          <div className="w-10 h-10 rounded-lg bg-white/15 backdrop-blur-sm flex items-center justify-center">
+          <div className="w-10 h-10 rounded-md bg-white/15 backdrop-blur-sm flex items-center justify-center">
             <ChevronLeft className="size-5 text-white/70" strokeWidth={1.5} />
           </div>
         )}
@@ -82,20 +82,18 @@ export default function ImageViewport() {
         onMouseUp={zoomHandlers.onMouseUp}
         onMouseLeave={zoomHandlers.onMouseLeave}
         onDoubleClick={zoomHandlers.onDoubleClick}
-        className={`max-h-full max-w-full object-contain rounded-lg transition-opacity duration-300 ease-out ${
-          loaded ? 'opacity-100' : 'opacity-0'
-        }`}
+        className={`max-h-full max-w-full object-contain rounded-md transition-opacity duration-normal ${loaded ? 'opacity-100' : 'opacity-0'}`}
       />
 
       {/* Next overlay */}
       <div
-        className="absolute right-0 top-0 bottom-0 w-24 z-10 flex items-center justify-end pr-4 cursor-pointer opacity-0 hover:opacity-100 transition-opacity duration-200"
+        className="absolute right-0 top-0 bottom-0 w-24 z-10 flex items-center justify-end pr-4 cursor-pointer opacity-0 hover:opacity-100 transition-opacity duration-fast"
         onClick={handleNext}
         onMouseEnter={() => setHoveringRight(true)}
         onMouseLeave={() => setHoveringRight(false)}
       >
         {hoveringRight && currentIndex < filteredPhotos.length - 1 && (
-          <div className="w-10 h-10 rounded-lg bg-white/15 backdrop-blur-sm flex items-center justify-center">
+          <div className="w-10 h-10 rounded-md bg-white/15 backdrop-blur-sm flex items-center justify-center">
             <ChevronRight className="size-5 text-white/70" strokeWidth={1.5} />
           </div>
         )}
@@ -106,7 +104,7 @@ export default function ImageViewport() {
 
       {/* Error toast */}
       {error && (
-        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-20 px-4 py-2 rounded-xl bg-danger/20 border border-danger/30 text-danger text-sm backdrop-blur-sm">
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-20 px-3 py-1.5 rounded-md bg-danger/20 border border-danger/30 text-danger text-caption backdrop-blur-sm">
           {error}
         </div>
       )}

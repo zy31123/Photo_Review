@@ -27,16 +27,16 @@ function ReviewToolbar() {
   const progressPct = totalCount > 0 ? Math.round((reviewedCount / totalCount) * 100) : 0
 
   return (
-    <div className="h-10 border-b border-border-faint bg-surface-primary backdrop-blur-xl flex items-center px-4 gap-4 shrink-0">
-      <span className="text-text-secondary text-sm font-mono truncate max-w-[10rem]">
+    <div className="h-[var(--toolbar-height)] border-b border-border-subtle bg-glass backdrop-blur-xl flex items-center px-4 gap-3 shrink-0">
+      <span className="text-text-secondary text-caption font-mono truncate max-w-[10rem]">
         {currentPhoto?.name || ''}
       </span>
       <ToolbarDivider />
       <div className="flex items-center gap-2">
-        <div className="w-20 h-1.5 bg-fill-medium rounded-full overflow-hidden">
-          <div className="h-full bg-accent rounded-full transition-all duration-300" style={{ width: `${progressPct}%` }} />
+        <div className="w-20 h-1 bg-fill rounded-full overflow-hidden">
+          <div className="h-full bg-accent rounded-full transition-all duration-slow" style={{ width: `${progressPct}%` }} />
         </div>
-        <span className="text-text-muted text-xs tabular-nums">{reviewedCount}/{totalCount}</span>
+        <span className="text-text-tertiary text-micro tabular-nums">{reviewedCount}/{totalCount}</span>
       </div>
       <SegmentedControl
         options={[
@@ -48,16 +48,16 @@ function ReviewToolbar() {
         onChange={setStatusFilter}
       />
       <ToolbarDivider />
-      <span className="text-text-muted text-sm tabular-nums">
-        <span className="text-text-heading font-medium">{position.toLocaleString()}</span>
-        <span className="mx-0.5 text-text-muted/60">/</span>
+      <span className="text-text-tertiary text-caption tabular-nums">
+        <span className="text-text font-medium">{position.toLocaleString()}</span>
+        <span className="mx-0.5 text-text-tertiary/60">/</span>
         <span>{total.toLocaleString()}</span>
       </span>
       <div className="ml-auto flex items-center gap-1">
         <button
           onClick={toggleLeftSidebar}
-          className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${
-            leftSidebarOpen ? 'text-accent' : 'text-text-muted hover:text-text-secondary'
+          className={`w-8 h-8 rounded-sm flex items-center justify-center transition-colors duration-fast ${
+            leftSidebarOpen ? 'text-accent' : 'text-text-tertiary hover:text-text-secondary'
           }`}
           title="日期导航 ( [ )"
         >
@@ -65,8 +65,8 @@ function ReviewToolbar() {
         </button>
         <button
           onClick={toggleRightPanel}
-          className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${
-            rightPanelOpen ? 'text-accent' : 'text-text-muted hover:text-text-secondary'
+          className={`w-8 h-8 rounded-sm flex items-center justify-center transition-colors duration-fast ${
+            rightPanelOpen ? 'text-accent' : 'text-text-tertiary hover:text-text-secondary'
           }`}
           title="详细信息 ( ] )"
         >
@@ -100,12 +100,9 @@ function ReviewLayout() {
       <div className="h-screen flex flex-col bg-bg">
         <NavBar />
         <div className="flex-1 flex items-center justify-center bg-bg">
-          <div className="flex flex-col items-center gap-4">
-            <div className="relative">
-              <div className="w-10 h-10 border-[0.1875rem] border-accent border-t-transparent rounded-full animate-spin" />
-              <div className="absolute inset-0 w-10 h-10 border-2 border-accent/30 rounded-full spinner-pulse" />
-            </div>
-            <span className="text-text-secondary text-sm tracking-wide">加载中...</span>
+          <div className="flex flex-col items-center gap-3">
+            <div className="w-8 h-8 border-2 border-accent border-t-transparent rounded-full animate-spin" />
+            <span className="text-text-secondary text-caption">加载中...</span>
           </div>
         </div>
       </div>

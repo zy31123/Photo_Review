@@ -39,12 +39,12 @@ export default function Filmstrip() {
       onMouseEnter={show}
       onMouseLeave={hide}
     >
-      <div className={`bg-surface-primary backdrop-blur-xl border-t border-border-faint flex items-center px-4 h-20 overflow-hidden transition-all duration-300 ease-out ${
+      <div className={`bg-glass backdrop-blur-xl border-t border-border-subtle flex items-center px-4 h-[4.5rem] overflow-hidden transition-all duration-normal ${
         visible ? 'translate-y-0 opacity-100' : 'translate-y-full opacity-0'
       }`}>
-        <div ref={scrollRef} className="flex gap-2 overflow-x-auto">
+        <div ref={scrollRef} className="flex gap-1.5 overflow-x-auto">
           {start > 0 && (
-            <div className="flex-shrink-0 w-16 h-16 flex items-center justify-center text-[0.625rem] text-text-muted">
+            <div className="flex-shrink-0 w-14 h-14 flex items-center justify-center text-micro text-text-tertiary">
               ···
             </div>
           )}
@@ -61,7 +61,7 @@ export default function Filmstrip() {
             )
           })}
           {end < filteredPhotos.length && (
-            <div className="flex-shrink-0 w-16 h-16 flex items-center justify-center text-[0.625rem] text-text-muted">
+            <div className="flex-shrink-0 w-14 h-14 flex items-center justify-center text-micro text-text-tertiary">
               ···
             </div>
           )}
@@ -84,15 +84,15 @@ const FilmstripItem = memo(function FilmstripItem({
     <button
       data-active={active}
       onClick={() => onSelect(index)}
-      className={`relative flex-shrink-0 w-16 h-16 rounded-md overflow-hidden transition-all duration-150 ${
+      className={`relative flex-shrink-0 w-14 h-14 rounded-sm overflow-hidden transition-opacity duration-fast ${
         active
-          ? 'opacity-100 ring-2 ring-accent ring-offset-1 ring-offset-white scale-105 z-10'
-          : 'border border-transparent opacity-60 hover:opacity-80'
+          ? 'opacity-100 ring-2 ring-accent ring-offset-1 ring-offset-[#1D1D1F] scale-105 z-10'
+          : 'opacity-60 hover:opacity-80'
       }`}
     >
       <img src={api.thumbnailUrl(photo.id)} alt="" className="w-full h-full object-cover" loading="lazy" />
       {reviewed && !active && (
-        <div className="absolute bottom-0.5 right-0.5 w-3 h-3 rounded-full bg-accent/80 border border-white/50" />
+        <div className="absolute bottom-0.5 right-0.5 w-2 h-2 rounded-full bg-accent/80 border border-white/50" />
       )}
     </button>
   )

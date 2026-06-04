@@ -4,16 +4,16 @@ import { DateSidebarBase, type DateRowCommonProps } from '../shared/DateSidebarB
 import { useCollapsedMonths } from '../shared/useCollapsedMonths'
 
 function getRowClass(active: boolean, isCurrent: boolean, fullyReviewed: boolean): string {
-  if (active) return 'border-l-[3px] border-accent bg-accent-subtle text-accent font-semibold'
-  if (isCurrent) return 'border-l-[3px] border-accent/40 text-text-secondary'
-  if (fullyReviewed) return 'text-text-muted hover:text-text-secondary'
+  if (active) return 'border-l-2 border-accent bg-accent-subtle text-accent font-semibold'
+  if (isCurrent) return 'border-l-2 border-accent/40 text-text-secondary'
+  if (fullyReviewed) return 'text-text-tertiary hover:text-text-secondary'
   return 'text-text hover:text-text-heading'
 }
 
 function getCountColor(active: boolean, fullyReviewed: boolean): string {
   if (active) return 'text-accent/70'
   if (fullyReviewed) return 'text-accent/50'
-  return 'text-text-muted'
+  return 'text-text-tertiary'
 }
 
 export default function DateSidebar() {
@@ -24,9 +24,9 @@ export default function DateSidebar() {
   return (
     <DateSidebarBase
       collapsed={!leftSidebarOpen}
-      monthHeaderPadding="px-3 py-2.5"
+      monthHeaderPadding="px-3 py-2"
       allPhotosPadding="px-4 py-3"
-      monthListClassName="flex-1 overflow-y-auto px-3 pb-6 space-y-1"
+      monthListClassName="flex-1 overflow-y-auto px-3 pb-6 space-y-0.5"
       monthGroups={monthGroups}
       selectedDate={selectedDate}
       photoCount={photos.length}
@@ -53,10 +53,10 @@ const ReviewDateRow = memo(function ReviewDateRow({
   return (
     <button
       onClick={() => onSelect(active ? null : date)}
-      className={`date-item w-full flex items-center justify-between pl-5 pr-3 py-3 text-sm rounded-r transition-all duration-200 ${rowClass}`}
+      className={`date-item w-full flex items-center justify-between pl-5 pr-3 py-2.5 text-caption rounded-r transition-colors duration-fast ${rowClass}`}
     >
       <span className="relative z-10">{label}</span>
-      <span className={`relative z-10 text-xs tabular-nums ${countColor}`}>
+      <span className={`relative z-10 text-micro tabular-nums ${countColor}`}>
         {reviewedCount > 0 ? `${reviewedCount}/${count}` : count}
       </span>
     </button>
