@@ -111,6 +111,11 @@ export interface SimilarStats {
   groups: number
 }
 
+export interface AnalyzeProgress {
+  current: number
+  total: number
+}
+
 export const api = {
   browseFolders: (dirPath?: string) =>
     request<BrowseResult>(`/folders/browse${dirPath != null ? `?path=${encodeURIComponent(dirPath)}` : ''}`),
@@ -170,15 +175,58 @@ export const api = {
   getExif: (id: string) =>
     request<ExifData | null>(`/photos/${encodeURIComponent(id)}/exif`),
 
-  analyzeSimilar: (params?: { timeGap?: number; hashThreshold?: number }) =>
-    request<AnalyzeResult>('/similarity/analyze', {
+  analyzeSimilarStream: (
+    callbacks: {
+      onProgress?: (progress: AnalyzeProgress) => void
+      onComplete?: (result: AnalyzeResult) => void
+      onError?: (message: string) => void
+    },
+    params?: { timeGap?: number; hashThreshold?: number },
+  ) => {
+    const controller = new AbortController()
+    fetch(`${BASE}/similarity/analyze`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        folder: activeFolder,
-        ...params,
-      }),
-    }),
+      body: JSON.stringify({ folder: activeFolder, ...params }),
+      signal: controller.signal,
+    })
+      .then(async (res) => {
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({ message: res.statusText }))
+          callbacks.onError?.(err.message || `请求失败: ${res.status}`)
+          return
+        }
+        const reader = res.body?.getReader()
+        if (!reader) { callbacks.onError?.('无法读取响应流'); return }
+        const decoder = new TextDecoder()
+        let buffer = ''
+        while (true) {
+          const { done, value } = await reader.read()
+          if (done) break
+          buffer += decoder.decode(value, { stream: true })
+          const lines = buffer.split('\n')
+          buffer = lines.pop() ?? ''
+          let currentEvent = ''
+          for (const line of lines) {
+            if (line.startsWith('event: ')) {
+              currentEvent = line.slice(7)
+            } else if (line.startsWith('data: ') && currentEvent) {
+              try {
+                const data = JSON.parse(line.slice(6))
+                if (currentEvent === 'progress') callbacks.onProgress?.(data)
+                else if (currentEvent === 'complete') callbacks.onComplete?.(data)
+                else if (currentEvent === 'error') callbacks.onError?.(data.message)
+              } catch { /* ignore malformed data */ }
+              currentEvent = ''
+            }
+          }
+        }
+      })
+      .catch((e) => {
+        if (e.name !== 'AbortError') callbacks.onError?.(e.message)
+      })
+    return () => controller.abort()
+  },
 
   getSimilarGroups: (params?: { page?: number; limit?: number; timeGap?: number; hashThreshold?: number }) => {
     const qs = new URLSearchParams()

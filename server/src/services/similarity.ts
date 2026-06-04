@@ -141,6 +141,7 @@ export async function analyzeFolder(
   folder: string,
   timeGap = 30,
   hashThreshold = 10,
+  onProgress?: (current: number, total: number) => void,
 ): Promise<AnalyzeResult> {
   const photos = getPhotosForFolder(folder)
   const db = getDb()
@@ -155,6 +156,8 @@ export async function analyzeFolder(
   let computed = 0
   let skipped = 0
 
+  const total = photos.length
+  let processed = 0
   const photoHashMap = new Map<string, HashRecord>()
 
   for (const photo of photos) {
@@ -182,6 +185,8 @@ export async function analyzeFolder(
         // Skip photos that fail to process
       }
     }
+    processed++
+    onProgress?.(processed, total)
   }
 
   // 3. Build similar groups

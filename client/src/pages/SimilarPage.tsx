@@ -7,22 +7,35 @@ import SimilarToolbar from '../components/similar/SimilarToolbar'
 import ClusterGrid from '../components/similar/ClusterGrid'
 
 function SimilarLayout() {
-  const { status, groups, refreshStats } = useSimilar()
+  const { status, groups, progress, refreshStats } = useSimilar()
 
   useEffect(() => { refreshStats() }, [refreshStats])
 
   if (status === 'analyzing') {
+    const pct = progress ? Math.round((progress.current / progress.total) * 100) : 0
     return (
       <div className="h-screen flex flex-col bg-bg">
         <NavBar />
         <SimilarToolbar />
         <div className="flex-1 flex items-center justify-center">
-          <div className="flex flex-col items-center gap-4">
+          <div className="flex flex-col items-center gap-5 w-64">
             <div className="relative">
               <div className="w-10 h-10 border-[0.1875rem] border-accent border-t-transparent rounded-full animate-spin" />
               <div className="absolute inset-0 w-10 h-10 border-2 border-accent/30 rounded-full spinner-pulse" />
             </div>
-            <span className="text-text-secondary text-sm tracking-wide">正在分析照片相似度...</span>
+            <div className="w-full flex flex-col items-center gap-2">
+              <div className="w-full h-1.5 bg-bg-deep rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-accent rounded-full transition-all duration-200 ease-out"
+                  style={{ width: `${pct}%` }}
+                />
+              </div>
+              <span className="text-text-secondary text-sm tracking-wide">
+                {progress
+                  ? `正在分析 ${progress.current}/${progress.total} 张照片...`
+                  : '正在准备分析...'}
+              </span>
+            </div>
           </div>
         </div>
       </div>

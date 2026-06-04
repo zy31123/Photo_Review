@@ -342,18 +342,30 @@ router.put('/settings', (req, res) => {
 
 // --- Similarity endpoints ---
 
-// Analyze folder for similar photos
+// Analyze folder for similar photos (SSE streaming progress)
 router.post('/similarity/analyze', async (req, res) => {
   const { folder, timeGap, hashThreshold } = req.body
   if (!folder) return res.status(400).json({ message: '缺少 folder 参数' })
   if (!isPathAllowed(folder)) return res.status(403).json({ message: '不允许访问此路径' })
 
-  try {
-    const result = await analyzeFolder(folder, timeGap, hashThreshold)
-    res.json(result)
-  } catch (e: any) {
-    res.status(500).json({ message: e.message })
+  res.setHeader('Content-Type', 'text/event-stream')
+  res.setHeader('Cache-Control', 'no-cache')
+  res.setHeader('Connection', 'keep-alive')
+  res.flushHeaders()
+
+  const send = (event: string, data: unknown) => {
+    res.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`)
   }
+
+  try {
+    const result = await analyzeFolder(folder, timeGap, hashThreshold, (current, total) => {
+      send('progress', { current, total })
+    })
+    send('complete', result)
+  } catch (e: any) {
+    send('error', { message: e.message })
+  }
+  res.end()
 })
 
 // Get similar groups
