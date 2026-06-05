@@ -54,10 +54,15 @@ docs/architecture/ # 架构文档
 ## 工作流
 
 - 新功能前询问是否保存修改、新建分支。
-- 修改后询问是否提交，自动生成提交描述。
 - 3+ 独立子任务时建议多 agent 并行。
 - 功能完成后提醒使用 `/code-review` 审查代码。
-- 更改提交到新分支后合并，推送前确认。
+
+### 提交流程（用户发出提交指令时严格执行）
+
+1. **按功能新建分支**：根据变更内容的功能类型，从当前 main 新建描述性分支（如 `feat/navbar-style`、`fix/lightbox-zoom`、`style/homepage-layout`）。
+2. **在功能分支上提交**：将所有相关变更提交到该功能分支，自动生成提交描述。
+3. **合并到 main**：将功能分支合并回 main 分支。
+4. **提示推送**：合并完成后询问用户是否推送到远程仓库，不主动推送。
 
 ## 原则
 
@@ -84,12 +89,10 @@ docs/architecture/ # 架构文档
 
 ## 架构文档
 
-自动维护 `docs/architecture/`，包含：
-- `agent-index.md` — Agent 路由索引
-- `guide.zh-CN.md` — 中文架构说明
-- `guide.en.md` — 英文架构说明
-
-阅读源码前先看 ``docs/architecture/agent-index.md`，如果不存在，则提醒我初始化文档。新增文件/接口/模块职责变更时同步更新。
+- 收到代码任务时，**第一步**先读 `docs/architecture/agent-index.md` 的任务路由表，按表定位文件。**禁止**用 Glob/Grep 全局搜索来发现文件结构。
+- `agent-index.md` — 任务路由表 + 文件索引（每次任务必读）
+- `guide.zh-CN.md` / `guide.en.md` — 详细架构参考（仅在需要了解数据模型、API 细节、设计决策时查阅，不要在任务开始时读）
+- 新增文件/接口/模块职责变更时同步更新 agent-index.md。
 
 ## Immich API 参考
 

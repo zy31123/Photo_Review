@@ -26,27 +26,26 @@ export default function NavBar() {
         </button>
       </div>
 
-      <div className="flex items-center">
+      <div className="flex items-center gap-0.5">
         {navItems.map(item => {
           const Icon = item.icon
           const active = pathname === item.path
           return (
-            <div key={item.path} className="flex-1 flex justify-center">
-              <button
-                onClick={() => navigate(item.path)}
-                disabled={!isLoaded}
-                className={`flex items-center gap-1.5 px-6 py-2 rounded-md text-caption font-medium transition-colors duration-fast ${
-                  active
-                    ? 'bg-bg-elevated text-text shadow-[0_1px_3px_rgba(0,0,0,0.08)]'
-                    : isLoaded
-                      ? 'text-text-tertiary hover:text-text-secondary hover:bg-fill-subtle'
-                      : 'text-text-tertiary/40 cursor-not-allowed'
-                }`}
-              >
-                <Icon className="size-3.5" strokeWidth={1.5} />
-                {item.label}
-              </button>
-            </div>
+            <button
+              key={item.path}
+              onClick={() => navigate(item.path)}
+              disabled={!isLoaded}
+              className={`flex items-center gap-1.5 px-4 py-1.5 rounded-md text-caption font-medium transition-all duration-fast ${
+                active
+                  ? 'bg-bg-elevated text-text shadow-[0_0.5px_2px_rgba(0,0,0,0.06),0_1px_3px_rgba(0,0,0,0.04)]'
+                  : isLoaded
+                    ? 'text-text-tertiary hover:text-text-secondary hover:bg-fill-subtle'
+                    : 'text-text-tertiary/40 cursor-not-allowed'
+              }`}
+            >
+              <Icon className="size-3.5" strokeWidth={1.5} />
+              {item.label}
+            </button>
           )
         })}
       </div>

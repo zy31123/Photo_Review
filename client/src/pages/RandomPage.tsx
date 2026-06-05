@@ -138,8 +138,8 @@ export default function RandomPage() {
         </div>
         <button
           onClick={batch.toggleRightPanel}
-          className={`w-8 h-8 rounded-sm flex items-center justify-center transition-colors duration-fast ${
-            batch.rightPanelOpen ? 'text-accent' : 'text-text-tertiary hover:text-text-secondary'
+          className={`w-8 h-8 rounded-md flex items-center justify-center transition-colors duration-fast ${
+            batch.rightPanelOpen ? 'text-accent bg-accent-subtle' : 'text-text-tertiary hover:text-text-secondary hover:bg-fill-subtle'
           }`}
           title="详细信息 ( ] )"
         >

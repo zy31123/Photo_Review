@@ -33,10 +33,10 @@ function ReviewToolbar() {
       </span>
       <ToolbarDivider />
       <div className="flex items-center gap-2">
-        <div className="w-20 h-1 bg-fill rounded-full overflow-hidden">
+        <div className="w-24 h-1.5 bg-fill rounded-full overflow-hidden">
           <div className="h-full bg-accent rounded-full transition-all duration-slow" style={{ width: `${progressPct}%` }} />
         </div>
-        <span className="text-text-tertiary text-micro tabular-nums">{reviewedCount}/{totalCount}</span>
+        <span className="text-text-secondary text-micro tabular-nums font-medium">{reviewedCount}/{totalCount}</span>
       </div>
       <SegmentedControl
         options={[
@@ -56,8 +56,8 @@ function ReviewToolbar() {
       <div className="ml-auto flex items-center gap-1">
         <button
           onClick={toggleLeftSidebar}
-          className={`w-8 h-8 rounded-sm flex items-center justify-center transition-colors duration-fast ${
-            leftSidebarOpen ? 'text-accent' : 'text-text-tertiary hover:text-text-secondary'
+          className={`w-8 h-8 rounded-md flex items-center justify-center transition-colors duration-fast ${
+            leftSidebarOpen ? 'text-accent bg-accent-subtle' : 'text-text-tertiary hover:text-text-secondary hover:bg-fill-subtle'
           }`}
           title="日期导航 ( [ )"
         >
@@ -65,8 +65,8 @@ function ReviewToolbar() {
         </button>
         <button
           onClick={toggleRightPanel}
-          className={`w-8 h-8 rounded-sm flex items-center justify-center transition-colors duration-fast ${
-            rightPanelOpen ? 'text-accent' : 'text-text-tertiary hover:text-text-secondary'
+          className={`w-8 h-8 rounded-md flex items-center justify-center transition-colors duration-fast ${
+            rightPanelOpen ? 'text-accent bg-accent-subtle' : 'text-text-tertiary hover:text-text-secondary hover:bg-fill-subtle'
           }`}
           title="详细信息 ( ] )"
         >

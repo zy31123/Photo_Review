@@ -7,7 +7,7 @@ export default function ReviewControls() {
 
   return (
     <div className="absolute bottom-5 left-1/2 -translate-x-1/2 z-10">
-      <div className="flex items-center gap-3 bg-[#1D1D1F]/80 backdrop-blur-xl rounded-lg px-4 py-2">
+      <div className="flex items-center gap-2.5 bg-[#1D1D1F]/85 backdrop-blur-xl rounded-xl px-3 py-2 shadow-lg">
         <ActionBtn
           onClick={() => goTo(currentIndex - 1)}
           disabled={currentIndex === 0}
@@ -15,6 +15,7 @@ export default function ReviewControls() {
           shortcut="←"
           icon={ChevronLeft}
         />
+        <div className="w-px h-5 bg-white/10" />
         <ActionBtn
           onClick={() => handleAction('deleted')}
           variant="danger"
@@ -29,6 +30,7 @@ export default function ReviewControls() {
           shortcut="空格"
           icon={Check}
         />
+        <div className="w-px h-5 bg-white/10" />
         <ActionBtn
           onClick={() => goTo(currentIndex + 1)}
           disabled={currentIndex >= filteredPhotos.length - 1}

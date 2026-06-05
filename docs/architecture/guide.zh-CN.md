@@ -40,24 +40,28 @@ Photo_Review/
 │   ├── package.json                # type: module
 │   └── src/
 │       ├── main.tsx                # 渲染入口：StrictMode + BrowserRouter
-│       ├── App.tsx                 # 路由定义：/ /grid /review /random，AppProvider 包裹
-│       ├── api/index.ts            # API 客户端层，所有后端调用封装 (PhotoGroup, SubfolderInfo, ExifData, Stats, BrowseResult, ScanResult)
+│       ├── App.tsx                 # 路由定义：/ /grid /review /random /similar，AppProvider 包裹
+│       ├── api/index.ts            # API 客户端层，所有后端调用封装 (PhotoGroup, SubfolderInfo, ExifData, Stats, BrowseResult, ScanResult, SimilarGroup, AnalyzeResult, SimilarStats)
 │       ├── context/
 │       │   ├── AppContext.tsx       # 根级状态 (activeFolder, photos, settings, isLoaded, loadPhotos)
 │       │   ├── GridContext.tsx      # 网格页状态 (dateSections, virtualItems, subfolder 过滤, 列数)
-│       │   └── ReviewContext.tsx    # 审阅页状态管理 (ReviewProvider + useReview)
+│       │   ├── ReviewContext.tsx    # 审阅页状态管理 (ReviewProvider + useReview)
+│       │   ├── RandomNavContext.tsx # 随机页导航状态
+│       │   └── SimilarContext.tsx   # 相似页状态管理 (SimilarProvider + useSimilar)
 │       ├── hooks/
 │       │   ├── useDateGroups.ts    # 日期分组计算 (月→日二级分组，支持状态和子文件夹筛选)
 │       │   ├── useKeyboardShortcuts.ts # 全局快捷键
 │       │   ├── useRandomBatch.ts   # 随机批次状态管理
 │       │   ├── useExif.ts          # 单张照片 EXIF 懒加载
 │       │   ├── useDragImage.ts     # 拖拽图片导出 (canvas→blob→File)
-│       │   └── useImageZoom.ts     # 缩放与平移 (Ctrl+滚轮/拖拽/双击重置)
+│       │   ├── useImageZoom.ts     # 缩放与平移 (Ctrl+滚轮/拖拽/双击重置)
+│       │   └── useStaggeredReveal.ts # IntersectionObserver 交错渐入动画
 │       ├── pages/
 │       │   ├── HomePage.tsx        # 首页：文件夹选择 + 扫描触发
 │       │   ├── GridPage.tsx        # 网格浏览：虚拟化照片网格 + Lightbox + 文件夹/日期导航
 │       │   ├── ReviewPage.tsx      # 审阅页：三栏布局，核心页面
-│       │   └── RandomPage.tsx      # 随机浏览：批次随机 + 详情面板
+│       │   ├── RandomPage.tsx      # 随机浏览：批次随机 + 详情面板
+│       │   └── SimilarPage.tsx     # 相似聚类：分析 → 聚类 → 删除流程
 │       ├── components/
 │       │   ├── FolderPicker.tsx    # 文件夹浏览器 (模态框)
 │       │   ├── NavBar.tsx          # 全局导航栏 (tab 路由切换, GridControls, ReviewControls)
@@ -76,14 +80,21 @@ Photo_Review/
 │       │   │   ├── BatchSelector.tsx     # 批次大小选择器
 │       │   │   ├── RandomControls.tsx    # 随机模式浮动操作按钮
 │       │   │   └── RandomToolbar.tsx     # 随机模式顶部工具栏
+│       │   ├── similar/
+│       │   │   ├── SimilarToolbar.tsx    # 工具栏 (分析按钮/统计/批量删除)
+│       │   │   ├── ClusterCard.tsx       # 相似组卡片 (缩略图 + 保留/删除选择)
+│       │   │   └── ClusterGrid.tsx       # 卡片网格布局
 │       │   ├── shared/
 │       │   │   ├── DateSidebarBase.tsx   # 日期侧栏共享基组件
 │       │   │   └── useCollapsedMonths.ts # 月折叠状态 hook
 │       │   └── ui/
 │       │       ├── ActionBtn.tsx         # 可复用圆形操作按钮
-│       │       ├── LoadingSpinner.tsx    # 带脉冲动画加载旋转器
+│       │       ├── Badge.tsx             # 状态标签 (success/danger/neutral/info)
+│       │       ├── EmptyState.tsx        # 空状态占位组件
 │       │       ├── SectionHeader.tsx     # 通用分区标题
-│       │       └── ToolbarDivider.tsx    # 垂直分隔线
+│       │       ├── SegmentedControl.tsx  # 分段选择器
+│       │       ├── ToolbarDivider.tsx    # 垂直分隔线
+│       │       └── Tooltip.tsx           # 悬浮提示 (支持快捷键显示)
 │       ├── utils/
 │       │   └── date.ts              # formatChineseDate() 日期格式化
 │       └── styles/
@@ -93,12 +104,13 @@ Photo_Review/
 │   └── src/
 │       ├── index.ts                # Express 入口，CORS，端口 127.0.0.1:3001
 │       ├── db/index.ts             # SQLite 连接 (WAL)，建表逻辑
-│       ├── routes/index.ts         # 16 个 API 端点 + 路径安全白名单
+│       ├── routes/index.ts         # 19 个 API 端点 + 路径安全白名单
 │       ├── services/
 │       │   ├── scanner.ts          # 文件扫描 + JPG/RAW 配对 + 子文件夹
 │       │   ├── image.ts            # 缩略图生成 + LRU 缓存
 │       │   ├── exif.ts             # EXIF 元数据提取
 │       │   ├── review.ts           # 审阅记录 + 随机选取 + 批量状态 + 统计
+│       │   ├── similarity.ts       # dHash 感知哈希 + Union-Find 聚类 (增量计算, photo_hashes 持久化)
 │       │   └── deleter.ts          # 删除到回收站
 │       └── utils/
 │           └── path.ts             # 路径标准化工具
@@ -219,6 +231,55 @@ CREATE TABLE settings (
 
 当前仅有一个设置项：`random_cache_days`（默认 "7"）。
 
+### 4.7 photo_hashes（照片哈希）— 数据库表
+
+```sql
+CREATE TABLE photo_hashes (
+  file_path TEXT PRIMARY KEY,
+  dhash TEXT NOT NULL,
+  width INTEGER NOT NULL,
+  height INTEGER NOT NULL,
+  file_size INTEGER NOT NULL DEFAULT 0,
+  computed_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+存储每张照片的 dHash 感知哈希（64-bit），用于相似图片聚类。`similarity.ts` 增量计算时跳过已有哈希的记录。
+
+### 4.8 SimilarGroup（相似组）
+
+```typescript
+interface SimilarGroup {
+  id: string           // MD5(排序后的 photo IDs 拼接) 前 12 位
+  photos: PhotoGroup[] // 组内照片
+  coverIndex: number   // 推荐保留的索引 (最大文件×分辨率)
+  avgDistance: number   // 组内平均 Hamming 距离
+}
+```
+
+两阶段聚类：先按拍摄时间预分组（默认 30s 间隔），再用 Union-Find 按哈希距离（默认 ≤10）合并。
+
+### 4.9 AnalyzeResult（分析结果）
+
+```typescript
+interface AnalyzeResult {
+  computed: number    // 新计算哈希数
+  skipped: number     // 已有哈希跳过数
+  totalGroups: number // 聚类组数
+  totalPhotos: number // 聚类照片总数
+}
+```
+
+### 4.10 SimilarStats（相似统计）
+
+```typescript
+interface SimilarStats {
+  analyzed: number // 已计算哈希的照片数
+  total: number    // 文件夹总照片数
+  groups: number   // 当前聚类组数
+}
+```
+
 ## 5. API 接口
 
 所有端点前缀 `/api`。Vite 开发代理转发到 `http://127.0.0.1:3001`。
@@ -263,6 +324,14 @@ CREATE TABLE settings (
 | GET | `/stats?folder=` | 审阅统计 `{ total, reviewed, pending, orphanJpg, orphanRaw }` |
 | GET | `/settings` | 获取设置 `{ random_cache_days }` |
 | PUT | `/settings` | 更新设置。Body: `{ random_cache_days }` |
+
+### 5.6 相似聚类
+
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| POST | `/similarity/analyze` | 分析文件夹相似图片。Body: `{ folder, timeGap?, hashThreshold? }`。SSE 流式返回进度事件 `progress`/`complete`/`error` |
+| GET | `/similarity/groups?folder=&page=&limit=&timeGap=&hashThreshold=` | 获取相似组列表（分页，默认 50）。返回 `{ groups: SimilarGroup[], total }` |
+| GET | `/similarity/stats?folder=` | 获取相似分析统计。返回 `{ analyzed, total, groups }` |
 
 ## 6. 状态管理
 
@@ -420,6 +489,38 @@ GridPage 使用 `@tanstack/react-virtual` 的 `useVirtualizer`，overscan=8。
 `client/src/api/index.ts` 中维护模块级变量 `activeFolder`，
 同时 `AppContext` 也管理此值。HomePage 设置后跳转到 `/grid`。
 API 层自动在请求中附加 `folder` 参数。
+
+### 6.9 相似聚类页 — SimilarContext
+
+`SimilarContext` 是相似聚类页 (`/similar`) 的核心状态管理器，使用 React Context + useState。
+依赖 `useApp()` 获取根级 activeFolder。
+
+**状态**：
+- `status: 'idle' | 'analyzing' | 'done'` — 分析阶段
+- `result: AnalyzeResult | null` — 分析结果
+- `stats: SimilarStats | null` — 统计信息
+- `progress: AnalyzeProgress | null` — SSE 进度
+- `groups: SimilarGroup[]` — 聚类分组
+- `selections: Map<groupId, Map<photoId, 'keep'|'delete'|null>>` — 每张照片的选择状态
+
+**操作**：
+- `analyze()` — 触发分析（SSE 流式），完成后加载分组
+- `abortAnalyze()` — 中止分析
+- `refreshStats()` — 刷新统计
+- `toggleSelection(groupId, photoId)` — 切换单张删除选择
+- `keepRecommended(groupId)` — 保留推荐照片，其余标记删除
+- `deleteAllExceptRecommended(groupId)` — 同 keepRecommended
+- `deleteSelected()` — 批量删除所有标记为 delete 的照片
+
+**推荐策略**：组内选择 `fileSize * 10000 + width * height` 最大的照片为推荐保留项。
+
+### 6.10 useStaggeredReveal
+
+`useStaggeredReveal(staggerMs?)` 使用 IntersectionObserver 检测元素进入视口后触发子元素交错渐入动画。
+
+**参数**：`staggerMs` — 子元素间延迟（默认 50ms）
+
+**返回**：`{ ref, visible, childStyle }` — `childStyle(index)` 生成带 `transition-delay` 的样式对象。
 
 ## 7. 设计决策
 

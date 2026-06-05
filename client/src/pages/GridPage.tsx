@@ -14,20 +14,20 @@ function GridToolbar() {
   const { columns, setColumns, filteredPhotos } = useGrid()
   return (
     <div className="h-[var(--toolbar-height)] border-b border-border-subtle bg-glass backdrop-blur-xl flex items-center px-4 gap-3 shrink-0">
-      <span className="text-text-tertiary text-caption">{filteredPhotos.length.toLocaleString()} 张</span>
-      <div className="ml-auto flex items-center gap-1">
+      <span className="text-text-secondary text-caption font-medium">{filteredPhotos.length.toLocaleString()} 张照片</span>
+      <div className="ml-auto flex items-center gap-1 bg-fill-subtle rounded-md p-0.5">
         <button
           onClick={() => setColumns(Math.max(2, columns - 1))}
           disabled={columns <= 2}
-          className="w-7 h-7 rounded-sm bg-fill-subtle flex items-center justify-center text-text-secondary hover:bg-fill disabled:opacity-30 transition-colors duration-fast"
+          className="w-7 h-7 rounded-sm flex items-center justify-center text-text-secondary hover:bg-bg-elevated disabled:opacity-30 transition-colors duration-fast"
         >
           <Minus className="size-3" strokeWidth={1.5} />
         </button>
-        <span className="text-text-secondary text-micro tabular-nums w-6 text-center font-medium">{columns}</span>
+        <span className="text-text text-caption tabular-nums w-5 text-center font-semibold">{columns}</span>
         <button
           onClick={() => setColumns(Math.min(8, columns + 1))}
           disabled={columns >= 8}
-          className="w-7 h-7 rounded-sm bg-fill-subtle flex items-center justify-center text-text-secondary hover:bg-fill disabled:opacity-30 transition-colors duration-fast"
+          className="w-7 h-7 rounded-sm flex items-center justify-center text-text-secondary hover:bg-bg-elevated disabled:opacity-30 transition-colors duration-fast"
         >
           <Plus className="size-3" strokeWidth={1.5} />
         </button>

@@ -9,7 +9,7 @@ interface LightboxProps {
   onNavigate: (index: number) => void
 }
 
-const overlayBtn = 'w-10 h-10 rounded-md bg-white/15 backdrop-blur-sm text-white/50 hover:text-white/80 hover:bg-white/25 flex items-center justify-center transition-colors duration-fast z-10'
+const overlayBtn = 'w-14 h-14 rounded-2xl bg-white/8 backdrop-blur-md text-white/70 hover:text-white hover:bg-white/15 flex items-center justify-center transition-all duration-fast z-10'
 
 export default function Lightbox({ photos, currentIndex, onClose, onNavigate }: LightboxProps) {
   const photo = photos[currentIndex]
@@ -36,26 +36,26 @@ export default function Lightbox({ photos, currentIndex, onClose, onNavigate }: 
     >
       <button
         onClick={(e) => { e.stopPropagation(); onClose() }}
-        className={`absolute top-4 right-4 ${overlayBtn}`}
+        className={`absolute top-5 right-5 ${overlayBtn}`}
       >
-        <X className="size-4" />
+        <X className="size-6" />
       </button>
 
       {canPrev && (
         <button
           onClick={(e) => { e.stopPropagation(); onNavigate(currentIndex - 1) }}
-          className={`absolute left-4 top-1/2 -translate-y-1/2 ${overlayBtn}`}
+          className={`absolute left-5 top-1/2 -translate-y-1/2 ${overlayBtn}`}
         >
-          <ChevronLeft className="size-5" />
+          <ChevronLeft className="size-7" />
         </button>
       )}
 
       {canNext && (
         <button
           onClick={(e) => { e.stopPropagation(); onNavigate(currentIndex + 1) }}
-          className={`absolute right-4 top-1/2 -translate-y-1/2 ${overlayBtn}`}
+          className={`absolute right-5 top-1/2 -translate-y-1/2 ${overlayBtn}`}
         >
-          <ChevronRight className="size-5" />
+          <ChevronRight className="size-7" />
         </button>
       )}
 
@@ -66,10 +66,10 @@ export default function Lightbox({ photos, currentIndex, onClose, onNavigate }: 
         onClick={e => e.stopPropagation()}
       />
 
-      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-white/40 text-caption flex items-center gap-3">
+      <div className="absolute bottom-5 left-1/2 -translate-x-1/2 text-white/70 text-caption flex items-center gap-3">
         <span>{photo.name}</span>
-        <span className="text-white/20">|</span>
-        <span className="tabular-nums">{currentIndex + 1} / {photos.length}</span>
+        <span className="text-white/25">|</span>
+        <span className="tabular-nums font-medium">{currentIndex + 1} / {photos.length}</span>
       </div>
     </div>
   )

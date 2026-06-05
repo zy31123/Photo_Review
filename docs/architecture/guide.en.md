@@ -40,24 +40,28 @@ Photo_Review/
 │   ├── package.json                # type: module
 │   └── src/
 │       ├── main.tsx                # Render entry: StrictMode + BrowserRouter
-│       ├── App.tsx                 # Route definitions: / /grid /review /random, AppProvider wrapper
-│       ├── api/index.ts            # API client layer, all backend call wrappers (PhotoGroup, SubfolderInfo, ExifData, Stats, BrowseResult, ScanResult)
+│       ├── App.tsx                 # Route definitions: / /grid /review /random /similar, AppProvider wrapper
+│       ├── api/index.ts            # API client layer, all backend call wrappers (PhotoGroup, SubfolderInfo, ExifData, Stats, BrowseResult, ScanResult, SimilarGroup, AnalyzeResult, SimilarStats)
 │       ├── context/
 │       │   ├── AppContext.tsx       # Root state (activeFolder, photos, settings, isLoaded, loadPhotos)
 │       │   ├── GridContext.tsx      # Grid page state (dateSections, virtualItems, subfolder filter, column count)
-│       │   └── ReviewContext.tsx    # Review page state management (ReviewProvider + useReview)
+│       │   ├── ReviewContext.tsx    # Review page state management (ReviewProvider + useReview)
+│       │   ├── RandomNavContext.tsx # Random page navigation state
+│       │   └── SimilarContext.tsx   # Similar page state management (SimilarProvider + useSimilar)
 │       ├── hooks/
 │       │   ├── useDateGroups.ts    # Date grouping calculation (month→day two-level, with status and subfolder filtering)
 │       │   ├── useKeyboardShortcuts.ts # Global keyboard shortcuts
 │       │   ├── useRandomBatch.ts   # Random batch state management
 │       │   ├── useExif.ts          # Lazy EXIF loading for a single photo
 │       │   ├── useDragImage.ts     # Drag image export (canvas→blob→File)
-│       │   └── useImageZoom.ts     # Zoom and pan (Ctrl+wheel/drag/double-click reset)
+│       │   ├── useImageZoom.ts     # Zoom and pan (Ctrl+wheel/drag/double-click reset)
+│       │   └── useStaggeredReveal.ts # IntersectionObserver staggered reveal animation
 │       ├── pages/
 │       │   ├── HomePage.tsx        # Home: folder selection + scan trigger
 │       │   ├── GridPage.tsx        # Grid: virtualized photo grid + Lightbox + folder/date navigation
 │       │   ├── ReviewPage.tsx      # Review: three-column layout, core page
-│       │   └── RandomPage.tsx      # Random browse: batch random + details panel
+│       │   ├── RandomPage.tsx      # Random browse: batch random + details panel
+│       │   └── SimilarPage.tsx     # Similar: analyze → cluster → delete workflow
 │       ├── components/
 │       │   ├── FolderPicker.tsx    # Folder browser (modal)
 │       │   ├── NavBar.tsx          # Global navigation bar (tab-style route switcher, GridControls, ReviewControls)
@@ -76,14 +80,21 @@ Photo_Review/
 │       │   │   ├── BatchSelector.tsx     # Batch size selector
 │       │   │   ├── RandomControls.tsx    # Random mode floating action buttons
 │       │   │   └── RandomToolbar.tsx     # Random mode top toolbar
+│       │   ├── similar/
+│       │   │   ├── SimilarToolbar.tsx    # Toolbar (analyze button/stats/batch delete)
+│       │   │   ├── ClusterCard.tsx       # Similar group card (thumbnails + keep/delete selection)
+│       │   │   └── ClusterGrid.tsx       # Card grid layout
 │       │   ├── shared/
 │       │   │   ├── DateSidebarBase.tsx   # Shared date sidebar base component
 │       │   │   └── useCollapsedMonths.ts # Collapsed month state hook
 │       │   └── ui/
 │       │       ├── ActionBtn.tsx         # Reusable circular action button
-│       │       ├── LoadingSpinner.tsx    # Spinner with pulse animation
+│       │       ├── Badge.tsx             # Status badge (success/danger/neutral/info)
+│       │       ├── EmptyState.tsx        # Empty state placeholder
 │       │       ├── SectionHeader.tsx     # Generic section title
-│       │       └── ToolbarDivider.tsx    # Vertical divider
+│       │       ├── SegmentedControl.tsx  # Segmented selector
+│       │       ├── ToolbarDivider.tsx    # Vertical divider
+│       │       └── Tooltip.tsx           # Hover tooltip (with shortcut display)
 │       ├── utils/
 │       │   └── date.ts              # formatChineseDate() date formatting
 │       └── styles/
@@ -93,12 +104,13 @@ Photo_Review/
 │   └── src/
 │       ├── index.ts                # Express entry, CORS, port 127.0.0.1:3001
 │       ├── db/index.ts             # SQLite connection (WAL), schema initialization
-│       ├── routes/index.ts         # 16 API endpoints + path security whitelist
+│       ├── routes/index.ts         # 19 API endpoints + path security whitelist
 │       ├── services/
 │       │   ├── scanner.ts          # File scanning + JPG/RAW pairing + subfolders
 │       │   ├── image.ts            # Thumbnail generation + LRU cache
 │       │   ├── exif.ts             # EXIF metadata extraction
 │       │   ├── review.ts           # Review records + random selection + batch status + stats
+│       │   ├── similarity.ts       # dHash perceptual hash + Union-Find clustering (incremental, photo_hashes persistence)
 │       │   └── deleter.ts          # Delete to system trash
 │       └── utils/
 │           └── path.ts             # Path normalization utilities
@@ -219,6 +231,55 @@ CREATE TABLE settings (
 
 Currently has one setting: `random_cache_days` (default "7").
 
+### 4.7 photo_hashes — Database Table
+
+```sql
+CREATE TABLE photo_hashes (
+  file_path TEXT PRIMARY KEY,
+  dhash TEXT NOT NULL,
+  width INTEGER NOT NULL,
+  height INTEGER NOT NULL,
+  file_size INTEGER NOT NULL DEFAULT 0,
+  computed_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+Stores dHash perceptual hashes (64-bit) for each photo, used for similar image clustering. `similarity.ts` skips photos with existing hashes during incremental computation.
+
+### 4.8 SimilarGroup
+
+```typescript
+interface SimilarGroup {
+  id: string           // First 12 chars of MD5(sorted photo IDs joined)
+  photos: PhotoGroup[] // Photos in the group
+  coverIndex: number   // Recommended keep index (largest file × resolution)
+  avgDistance: number   // Average Hamming distance within group
+}
+```
+
+Two-phase clustering: time-based pre-grouping (default 30s gap), then Union-Find by hash distance (default ≤10).
+
+### 4.9 AnalyzeResult
+
+```typescript
+interface AnalyzeResult {
+  computed: number    // Newly computed hashes
+  skipped: number     // Skipped (already had hash)
+  totalGroups: number // Number of clusters
+  totalPhotos: number // Total photos in clusters
+}
+```
+
+### 4.10 SimilarStats
+
+```typescript
+interface SimilarStats {
+  analyzed: number // Photos with computed hashes
+  total: number    // Total photos in folder
+  groups: number   // Current cluster count
+}
+```
+
 ## 5. API Endpoints
 
 All endpoints prefixed with `/api`. Vite dev proxy forwards to `http://127.0.0.1:3001`.
@@ -263,6 +324,14 @@ All endpoints prefixed with `/api`. Vite dev proxy forwards to `http://127.0.0.1
 | GET | `/stats?folder=` | Review statistics `{ total, reviewed, pending, orphanJpg, orphanRaw }` |
 | GET | `/settings` | Get settings `{ random_cache_days }` |
 | PUT | `/settings` | Update settings. Body: `{ random_cache_days }` |
+
+### 5.6 Similarity Clustering
+
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/similarity/analyze` | Analyze folder for similar photos. Body: `{ folder, timeGap?, hashThreshold? }`. SSE streaming with `progress`/`complete`/`error` events |
+| GET | `/similarity/groups?folder=&page=&limit=&timeGap=&hashThreshold=` | List similar groups (paginated, default 50). Response: `{ groups: SimilarGroup[], total }` |
+| GET | `/similarity/stats?folder=` | Get similarity analysis stats. Response: `{ analyzed, total, groups }` |
 
 ## 6. State Management
 
@@ -420,6 +489,38 @@ GridPage uses `@tanstack/react-virtual`'s `useVirtualizer` with overscan=8.
 `client/src/api/index.ts` maintains a module-level variable `activeFolder`,
 while `AppContext` also manages this value. HomePage sets it then navigates to `/grid`.
 The API layer automatically appends the `folder` parameter to requests.
+
+### 6.9 Similar Page — SimilarContext
+
+`SimilarContext` is the core state manager for the similar page (`/similar`), using React Context + useState.
+Depends on `useApp()` for root-level activeFolder.
+
+**State**:
+- `status: 'idle' | 'analyzing' | 'done'` — analysis phase
+- `result: AnalyzeResult | null` — analysis result
+- `stats: SimilarStats | null` — statistics
+- `progress: AnalyzeProgress | null` — SSE progress
+- `groups: SimilarGroup[]` — clustered groups
+- `selections: Map<groupId, Map<photoId, 'keep'|'delete'|null>>` — per-photo selection state
+
+**Actions**:
+- `analyze()` — trigger analysis (SSE streaming), load groups on completion
+- `abortAnalyze()` — abort analysis
+- `refreshStats()` — refresh statistics
+- `toggleSelection(groupId, photoId)` — toggle single photo delete selection
+- `keepRecommended(groupId)` — keep recommended photo, mark others for deletion
+- `deleteAllExceptRecommended(groupId)` — same as keepRecommended
+- `deleteSelected()` — batch delete all photos marked for deletion
+
+**Recommendation strategy**: photo with highest `fileSize * 10000 + width * height` in the group is the recommended keep.
+
+### 6.10 useStaggeredReveal
+
+`useStaggeredReveal(staggerMs?)` uses IntersectionObserver to detect element entering viewport and trigger staggered fade-in animation on children.
+
+**Parameter**: `staggerMs` — delay between children (default 50ms)
+
+**Returns**: `{ ref, visible, childStyle }` — `childStyle(index)` generates a style object with `transition-delay`.
 
 ## 7. Design Decisions
 
