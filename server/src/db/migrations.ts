@@ -29,4 +29,66 @@ export const migrations = [
       );
     `,
   },
+  {
+    version: 2,
+    up: `ALTER TABLE photo_hashes ADD COLUMN color_hist TEXT;`,
+  },
+  {
+    version: 3,
+    up: `
+      CREATE TABLE IF NOT EXISTS photo_meta (
+        photo_path TEXT PRIMARY KEY,
+        rating INTEGER DEFAULT 0,
+        favorite INTEGER DEFAULT 0,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      );
+
+      CREATE TABLE IF NOT EXISTS tags (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT UNIQUE NOT NULL,
+        color TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      );
+
+      CREATE TABLE IF NOT EXISTS photo_tags (
+        photo_path TEXT NOT NULL,
+        tag_id INTEGER NOT NULL,
+        PRIMARY KEY (photo_path, tag_id),
+        FOREIGN KEY (tag_id) REFERENCES tags(id) ON DELETE CASCADE
+      );
+
+      CREATE TABLE IF NOT EXISTS collections (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        type TEXT NOT NULL CHECK(type IN ('manual','smart')),
+        smart_rules TEXT,
+        cover_path TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      );
+
+      CREATE TABLE IF NOT EXISTS collection_photos (
+        collection_id INTEGER NOT NULL,
+        photo_path TEXT NOT NULL,
+        sort_order INTEGER DEFAULT 0,
+        PRIMARY KEY (collection_id, photo_path),
+        FOREIGN KEY (collection_id) REFERENCES collections(id) ON DELETE CASCADE
+      );
+
+      CREATE TABLE IF NOT EXISTS photo_exif_index (
+        photo_path TEXT PRIMARY KEY,
+        camera TEXT,
+        lens TEXT,
+        focal REAL,
+        aperture REAL,
+        shutter REAL,
+        iso INTEGER,
+        date_taken TEXT
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_exif_camera ON photo_exif_index(camera);
+      CREATE INDEX IF NOT EXISTS idx_exif_lens ON photo_exif_index(lens);
+      CREATE INDEX IF NOT EXISTS idx_exif_date ON photo_exif_index(date_taken);
+    `,
+  },
 ]
