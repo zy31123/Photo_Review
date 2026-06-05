@@ -2,6 +2,7 @@ import Database from 'better-sqlite3'
 import fs from 'fs'
 import path from 'path'
 import { fileURLToPath } from 'url'
+import { migrations } from './migrations.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const DB_PATH = path.join(__dirname, '..', '..', 'data', 'photo-review.db')
@@ -14,40 +15,23 @@ export function getDb(): Database.Database {
     db = new Database(DB_PATH)
     db.pragma('journal_mode = WAL')
     db.pragma('foreign_keys = ON')
-    initSchema(db)
+    runMigrations(db)
   }
   return db
 }
 
-function initSchema(db: Database.Database) {
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS review_records (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      file_path TEXT UNIQUE NOT NULL,
-      file_name TEXT NOT NULL,
-      action TEXT NOT NULL CHECK(action IN ('keep', 'deleted')),
-      review_mode TEXT NOT NULL CHECK(review_mode IN ('sequential', 'random')),
-      reviewed_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      cache_until DATETIME
-    );
+function runMigrations(db: Database.Database): void {
+  db.exec('CREATE TABLE IF NOT EXISTS _migrations (version INTEGER PRIMARY KEY)')
+  const { v } = db.prepare('SELECT COALESCE(MAX(version), 0) as v FROM _migrations').get() as { v: number }
 
-    CREATE INDEX IF NOT EXISTS idx_review_records_cache ON review_records(cache_until);
+  for (const m of migrations) {
+    if (m.version > v) {
+      db.exec(m.up)
+      db.prepare('INSERT INTO _migrations (version) VALUES (?)').run(m.version)
+    }
+  }
 
-    CREATE TABLE IF NOT EXISTS settings (
-      key TEXT PRIMARY KEY,
-      value TEXT NOT NULL
-    );
-
-    CREATE TABLE IF NOT EXISTS photo_hashes (
-      file_path TEXT PRIMARY KEY,
-      dhash TEXT NOT NULL,
-      width INTEGER NOT NULL,
-      height INTEGER NOT NULL,
-      file_size INTEGER NOT NULL DEFAULT 0,
-      computed_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    );
-  `)
-
+  // Seed default settings if not present
   const row = db.prepare("SELECT value FROM settings WHERE key = 'random_cache_days'").get() as { value: string } | undefined
   if (!row) {
     db.prepare("INSERT INTO settings (key, value) VALUES ('random_cache_days', '7')").run()

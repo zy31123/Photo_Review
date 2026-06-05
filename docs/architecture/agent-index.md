@@ -6,22 +6,22 @@
 
 | 任务 | 先读 | 再读 | 说明 |
 |------|------|------|------|
-| 修改扫描逻辑 | scanner.ts | routes/index.ts, api/index.ts | 扫描配对在 scanner，端点在 routes，客户端在 api |
+| 修改扫描逻辑 | scanner.ts | routes/folders.ts, api/index.ts | 扫描配对在 scanner，端点在 folders，客户端在 api |
 | 添加图片格式 | scanner.ts (JPG_EXTS/RAW_EXTS) | image.ts, exif.ts | 格式定义在 scanner，处理在 image/exif |
 | 修改审阅流程 | ReviewContext.tsx | ReviewPage.tsx, ReviewControls.tsx, NavBar.tsx, review.ts | 前端状态在 Context，后端逻辑在 review.ts |
 | 修改网格浏览 | GridContext.tsx | GridPage.tsx, FolderSidebar.tsx, YearTimeline.tsx, Lightbox.tsx | 前端状态在 Context，四个子组件 |
 | 修改随机浏览 | useRandomBatch.ts | RandomPage.tsx, RandomToolbar.tsx, RandomControls.tsx, review.ts | hook 管理批次状态，后端用 review.ts |
 | 修改相似聚类 | SimilarContext.tsx | SimilarPage.tsx, similarity.ts, ClusterCard.tsx | 前端状态在 Context，后端算法在 similarity.ts |
-| 修改 API 端点 | routes/index.ts | 对应 service 文件, api/index.ts | 端点定义在 routes，客户端封装在 api |
+| 修改 API 端点 | routes/对应文件.ts | 对应 service 文件, api/index.ts | 端点分布在 6 个路由文件，客户端封装在 api |
 | 修改 UI 样式 | index.css | 对应组件 | Tailwind 4 @theme 配色在 index.css |
 | 修改快捷键 | useKeyboardShortcuts.ts | ReviewPage.tsx | 快捷键定义在 hook，绑定在 ReviewPage |
 | 修改数据库表 | db/index.ts | review.ts, similarity.ts | 建表在 db，消费方在两个 service |
 | 添加新页面 | App.tsx | 参考现有页面, api/index.ts | 路由注册在 App，参考最接近的现有页面 |
-| 修改文件夹浏览 | FolderPicker.tsx | routes/index.ts (browse) | 前端模态框 + 后端浏览端点 |
-| 修改子文件夹 | scanner.ts (getSubfolders) | GridContext.tsx, FolderSidebar.tsx, routes/index.ts | 扫描器提供数据，网格页消费 |
+| 修改文件夹浏览 | FolderPicker.tsx | routes/folders.ts (browse) | 前端模态框 + 后端浏览端点 |
+| 修改子文件夹 | scanner.ts (getSubfolders) | GridContext.tsx, FolderSidebar.tsx, routes/folders.ts | 扫描器提供数据，网格页消费 |
 | 修改全局导航 | NavBar.tsx | App.tsx | 导航栏组件 + 路由定义 |
 | 修改通用 UI | ui/ActionBtn.tsx | ui/Tooltip.tsx, ui/Badge.tsx, ui/SegmentedControl.tsx | ui/ 下所有共享组件 |
-| 安全相关 | routes/index.ts (isPathAllowed) | server/src/index.ts (127.0.0.1 绑定) | 路径白名单 + 网络绑定 |
+| 安全相关 | utils/security.ts (isPathAllowed) | server/src/index.ts (127.0.0.1 绑定) | 路径白名单 + 网络绑定 |
 | 修改 e2e 测试 | playwright.config.ts | e2e/helpers.ts, 对应 spec 文件 | Playwright 配置在根目录，辅助函数在 helpers，每页面一个 spec |
 | 修改根级状态 | AppContext.tsx | api/index.ts, HomePage.tsx | 根 Context + API 层 + 首页初始化 |
 
@@ -29,16 +29,31 @@
 
 ### 服务端 (`server/src/`)
 
-- `services/scanner.ts` — 文件扫描 + JPG/RAW 配对 + MD5 ID + 子文件夹 + 孤立文件检测
-- `services/image.ts` — 缩略图生成 (sharp) + LRU 缓存 (500) + RAW 转 JPEG
-- `services/exif.ts` — EXIF 提取 (exifr) + JPG/RAW 文件大小合并
+- `services/scanner.ts` — 异步文件扫描 (fs.promises) + JPG/RAW 配对 + MD5 ID + 子文件夹 + 孤立文件检测
+- `services/image.ts` — 缩略图 (委托 thumbnailCache) + 全图 (RAW 转 JPEG / JPG 流式)
+- `services/exif.ts` — EXIF 提取 (exifr, 仅读前 256KB) + 内存缓存
 - `services/review.ts` — 审阅记录 + 随机选取 (Fisher-Yates) + 缓存 + 统计
-- `services/similarity.ts` — dHash 感知哈希 + Union-Find 聚类 + 增量计算 + 持久化
+- `services/similarity.ts` — dHash 感知哈希 (p-limit 并行) + Union-Find 聚类 + 增量计算 + 持久化
 - `services/deleter.ts` — 删除到回收站 (trash)
-- `db/index.ts` — SQLite WAL + 建表 (review_records, settings, photo_hashes)
-- `routes/index.ts` — 18 个 REST 端点 + 路径白名单 + 盘符探测
+- `middleware/errorHandler.ts` — AppError 类 (NotFound/Forbidden/ValidationError) + 全局错误中间件
+- `middleware/asyncHandler.ts` — async 路由 handler 包装 (自动 catch → errorHandler)
+- `middleware/validate.ts` — zod schema 校验中间件 (query/body/params)
+- `middleware/loadPhoto.ts` — param(:id) → getPhotoById + 404 + req.photo 注入
+- `routes/index.ts` — 路由注册入口 (挂载 6 个子路由)
+- `routes/folders.ts` — 文件夹浏览 + 扫描 + 子文件夹 (3 端点)
+- `routes/photos.ts` — 照片列表 + 缩略图 + 全图 + EXIF + 删除 (5 端点)
+- `routes/reviews.ts` — 审阅提交 + 随机照片 + 随机批次 (3 端点)
+- `routes/similarity.ts` — 相似分析 SSE + 分组 + 统计 (3 端点)
+- `routes/settings.ts` — 设置读写 (2 端点)
+- `routes/batch.ts` — 批量孤立文件操作 (2 端点)
+- `cache/thumbnailCache.ts` — 内存 LRU (500) + 磁盘双层缩略图缓存 (sharp)
+- `cache/exifCache.ts` — EXIF 结果内存 LRU 缓存 (200)
+- `db/index.ts` — SQLite WAL + 版本迁移机制
+- `db/migrations.ts` — 迁移定义数组 (version + SQL)
 - `utils/path.ts` — normalizePath(), resolveNormalized()
-- `index.ts` — Express 入口, CORS, 127.0.0.1:3001
+- `utils/security.ts` — isPathAllowed() 路径白名单检查
+- `utils/cleanupPort.ts` — killPortOccupant() 端口清理
+- `index.ts` — Express 入口, CORS, errorHandler, 127.0.0.1:3001
 
 ### 客户端 (`client/src/`)
 
