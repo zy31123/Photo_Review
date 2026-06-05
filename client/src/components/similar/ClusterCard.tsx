@@ -3,7 +3,7 @@ import { api, type SimilarGroup } from '../../api'
 import { useSimilar } from '../../context/SimilarContext'
 
 export default function ClusterCard({ group }: { group: SimilarGroup }) {
-  const { selections, toggleSelection, keepRecommended } = useSimilar()
+  const { selections, openLightbox, keepRecommended } = useSimilar()
   const groupSel = selections.get(group.id)
 
   const deleteCount = groupSel
@@ -11,7 +11,10 @@ export default function ClusterCard({ group }: { group: SimilarGroup }) {
     : 0
 
   return (
-    <div className="bg-bg-elevated rounded-xl shadow-card hover:shadow-card-hover transition-all duration-fast overflow-hidden">
+    <div
+      className="bg-bg-elevated rounded-xl shadow-card hover:shadow-card-hover transition-all duration-fast overflow-hidden cursor-pointer"
+      onClick={() => openLightbox(group.id)}
+    >
       {/* Header */}
       <div className="flex items-center gap-2 px-4 py-2.5 border-b border-border-subtle">
         <span className="text-text text-body font-semibold">
@@ -21,7 +24,7 @@ export default function ClusterCard({ group }: { group: SimilarGroup }) {
           距离 {group.avgDistance}
         </span>
         <button
-          onClick={() => keepRecommended(group.id)}
+          onClick={e => { e.stopPropagation(); keepRecommended(group.id) }}
           className="ml-auto text-caption text-text-tertiary hover:text-accent transition-colors duration-fast flex items-center gap-1"
         >
           <Star className="size-3" />
@@ -38,8 +41,7 @@ export default function ClusterCard({ group }: { group: SimilarGroup }) {
           return (
             <div
               key={photo.id}
-              className="relative flex-shrink-0 cursor-pointer group/thumb"
-              onClick={() => toggleSelection(group.id, photo.id)}
+              className="relative flex-shrink-0"
             >
               <img
                 src={api.thumbnailUrl(photo.id)}

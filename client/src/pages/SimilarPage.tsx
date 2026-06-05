@@ -5,6 +5,7 @@ import { SimilarProvider, useSimilar } from '../context/SimilarContext'
 import NavBar from '../components/NavBar'
 import SimilarToolbar from '../components/similar/SimilarToolbar'
 import ClusterGrid from '../components/similar/ClusterGrid'
+import ClusterLightbox from '../components/similar/ClusterLightbox'
 
 function SimilarLayout() {
   const { status, groups, progress, refreshStats, analyze } = useSimilar()
@@ -88,6 +89,7 @@ function SimilarLayout() {
       <NavBar />
       <SimilarToolbar />
       <ClusterGrid />
+      <ClusterLightbox />
     </div>
   )
 }

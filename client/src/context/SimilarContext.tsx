@@ -4,6 +4,14 @@ import { api, type SimilarGroup, type AnalyzeResult, type SimilarStats, type Ana
 
 type SelectionState = 'keep' | 'delete' | null
 
+interface ClusterLightboxState {
+  open: boolean
+  groupId: string | null
+  currentIndex: number
+  compareMode: boolean
+  compareIndex: number | null
+}
+
 interface SimilarContextType {
   status: 'idle' | 'analyzing' | 'done'
   result: AnalyzeResult | null
@@ -11,6 +19,7 @@ interface SimilarContextType {
   progress: AnalyzeProgress | null
   groups: SimilarGroup[]
   selections: Map<string, Map<string, SelectionState>>
+  lightbox: ClusterLightboxState
   analyze: () => Promise<void>
   abortAnalyze: () => void
   refreshStats: () => Promise<void>
@@ -19,6 +28,12 @@ interface SimilarContextType {
   deleteAllExceptRecommended: (groupId: string) => void
   deleteSelected: () => Promise<number>
   selectedDeleteCount: number
+  openLightbox: (groupId: string) => void
+  closeLightbox: () => void
+  navigateLightbox: (index: number) => void
+  toggleCompareMode: () => void
+  setCompareIndex: (index: number) => void
+  directDelete: (photoId: string) => Promise<void>
 }
 
 const SimilarCtx = createContext<SimilarContextType | null>(null)
@@ -38,6 +53,9 @@ export function SimilarProvider({ children }: { children: ReactNode }) {
   const [groups, setGroups] = useState<SimilarGroup[]>([])
   const [selections, setSelections] = useState<Map<string, Map<string, SelectionState>>>(new Map())
   const [progress, setProgress] = useState<AnalyzeProgress | null>(null)
+  const [lightbox, setLightbox] = useState<ClusterLightboxState>({
+    open: false, groupId: null, currentIndex: 0, compareMode: false, compareIndex: null,
+  })
   const abortRef = useRef<(() => void) | null>(null)
 
   const refreshStats = useCallback(async () => {
@@ -177,13 +195,102 @@ export function SimilarProvider({ children }: { children: ReactNode }) {
     return count
   }, [selections])
 
+  const openLightbox = useCallback((groupId: string) => {
+    setLightbox({ open: true, groupId, currentIndex: 0, compareMode: false, compareIndex: null })
+  }, [])
+
+  const closeLightbox = useCallback(() => {
+    setLightbox({ open: false, groupId: null, currentIndex: 0, compareMode: false, compareIndex: null })
+  }, [])
+
+  const navigateLightbox = useCallback((index: number) => {
+    setLightbox(prev => ({ ...prev, currentIndex: index }))
+  }, [])
+
+  const toggleCompareMode = useCallback(() => {
+    setLightbox(prev => {
+      if (!prev.compareMode) {
+        // Enter compare: pick next photo as default compare target
+        const group = groups.find(g => g.id === prev.groupId)
+        const nextIdx = prev.currentIndex < (group?.photos.length ?? 0) - 1 ? prev.currentIndex + 1 : prev.currentIndex - 1
+        return { ...prev, compareMode: true, compareIndex: nextIdx >= 0 ? nextIdx : null }
+      }
+      return { ...prev, compareMode: false, compareIndex: null }
+    })
+  }, [groups])
+
+  const setCompareIndex = useCallback((index: number) => {
+    setLightbox(prev => ({ ...prev, compareIndex: index }))
+  }, [])
+
+  const directDelete = useCallback(async (photoId: string) => {
+    try {
+      await api.deletePhoto(photoId)
+    } catch {
+      return
+    }
+
+    setGroups(prev => {
+      const deleteSet = new Set([photoId])
+      const updated = prev.map(g => ({
+        ...g,
+        photos: g.photos.filter(p => !deleteSet.has(p.id)),
+      }))
+      // Remove groups with <2 photos
+      const filtered = updated.filter(g => g.photos.length >= 2)
+
+      // If the group this photo belonged to is now too small, close lightbox
+      // NOTE: look in `prev` (before filter) to find the group that contained this photo
+      const targetGroup = prev.find(g => g.photos.some(p => p.id === photoId))
+      if (targetGroup && targetGroup.photos.length < 2) {
+        setLightbox({ open: false, groupId: null, currentIndex: 0, compareMode: false, compareIndex: null })
+      } else if (targetGroup) {
+        // Adjust currentIndex if needed
+        setLightbox(prev => {
+          const deletedIdx = targetGroup.photos.findIndex(p => p.id === photoId)
+          let newIdx = prev.currentIndex
+          if (deletedIdx >= 0 && deletedIdx <= prev.currentIndex) {
+            newIdx = Math.max(0, prev.currentIndex - 1)
+          }
+          // Clamp to new group size
+          const remainingGroup = filtered.find(g => g.id === prev.groupId)
+          if (remainingGroup) {
+            newIdx = Math.min(newIdx, remainingGroup.photos.length - 1)
+          }
+          // Also fix compareIndex
+          let newCompareIdx = prev.compareIndex
+          if (newCompareIdx !== null && deletedIdx >= 0 && deletedIdx <= newCompareIdx) {
+            newCompareIdx = Math.max(0, newCompareIdx - 1)
+            const rg = remainingGroup
+            if (rg) newCompareIdx = Math.min(newCompareIdx, rg.photos.length - 1)
+          }
+          return { ...prev, currentIndex: newIdx, compareIndex: newCompareIdx }
+        })
+      }
+
+      return filtered
+    })
+
+    setSelections(prev => {
+      const next = new Map(prev)
+      for (const [groupId, groupSel] of next) {
+        const updated = new Map(groupSel)
+        updated.delete(photoId)
+        next.set(groupId, updated)
+      }
+      return next
+    })
+  }, [])
+
   const value = useMemo(() => ({
-    status, result, stats, groups, selections, progress,
+    status, result, stats, groups, selections, progress, lightbox,
     analyze, abortAnalyze, refreshStats, toggleSelection, keepRecommended, deleteAllExceptRecommended,
     deleteSelected, selectedDeleteCount,
-  }), [status, result, stats, groups, selections, progress,
+    openLightbox, closeLightbox, navigateLightbox, toggleCompareMode, setCompareIndex, directDelete,
+  }), [status, result, stats, groups, selections, progress, lightbox,
     analyze, abortAnalyze, refreshStats, toggleSelection, keepRecommended, deleteAllExceptRecommended,
-    deleteSelected, selectedDeleteCount])
+    deleteSelected, selectedDeleteCount,
+    openLightbox, closeLightbox, navigateLightbox, toggleCompareMode, setCompareIndex, directDelete])
 
   return (
     <SimilarCtx.Provider value={value}>
