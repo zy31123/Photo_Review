@@ -49,6 +49,8 @@ export interface PhotoGroup {
   subfolder: string
   reviewAction?: 'keep' | 'deleted' | null
   reviewedAt?: string | null
+  rating?: number
+  favorite?: boolean
 }
 
 export interface ScanResult {
@@ -174,6 +176,25 @@ export const api = {
 
   getExif: (id: string) =>
     request<ExifData | null>(`/photos/${encodeURIComponent(id)}/exif`),
+
+  setRating: (photoId: string, rating: number) =>
+    request<{ success: boolean }>(`/photos/${encodeURIComponent(photoId)}/rating`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ rating }),
+    }),
+
+  toggleFavorite: (photoId: string) =>
+    request<{ success: boolean; favorite: boolean }>(`/photos/${encodeURIComponent(photoId)}/favorite`, {
+      method: 'PUT',
+    }),
+
+  setFavorite: (photoId: string, favorite: boolean) =>
+    request<{ success: boolean }>(`/photos/${encodeURIComponent(photoId)}/favorite/set`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ favorite }),
+    }),
 
   analyzeSimilarStream: (
     callbacks: {
