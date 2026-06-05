@@ -18,8 +18,7 @@
 - `npm run dev` — 同时启动前端+后端开发服务器
 - `npm run dev:client` / `npm run dev:server` — 单独启动
 - `npm run build` — 构建前后端
-- `npm run test:e2e` — 运行 Playwright e2e 截图测试（headless）
-- `npm run test:e2e:headed` — 运行 e2e 测试（带浏览器界面）
+- `npm run test:e2e` — 运行 Playwright e2e 截图测试
 
 ## 自动化截图测试
 
@@ -93,10 +92,6 @@ docs/architecture/ # 架构文档
 - `agent-index.md` — 任务路由表 + 文件索引（每次任务必读）
 - `guide.zh-CN.md` / `guide.en.md` — 详细架构参考（仅在需要了解数据模型、API 细节、设计决策时查阅，不要在任务开始时读）
 - 新增文件/接口/模块职责变更时同步更新 agent-index.md。
-
-## Immich API 参考
-
-集成 Immich 照片库时的 API 参考。完整文档: <https://api.immich.app/>
 
 ## 其他
 
