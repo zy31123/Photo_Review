@@ -1,4 +1,4 @@
-import { Check, X } from 'lucide-react'
+import { Check, X, Star, Heart } from 'lucide-react'
 import type { PhotoGroup, ExifData } from '../../api'
 import { formatChineseDate } from '../../utils/date'
 import SectionHeader from '../ui/SectionHeader'
@@ -48,6 +48,33 @@ export default function PhotoDetailsView({ photo, exif, reviewed }: PhotoDetails
           </div>
         </Card>
       )}
+
+      <Card>
+        <SectionHeader title="评分与收藏" compact />
+        <div className="px-4 py-3 flex items-center gap-4">
+          <div className="flex items-center gap-2">
+            <span className="text-micro text-text-tertiary">评分</span>
+            <div className="flex items-center gap-0.5">
+              {[1, 2, 3, 4, 5].map(star => (
+                <Star
+                  key={star}
+                  size={12}
+                  strokeWidth={1.5}
+                  className={star <= (photo.rating ?? 0) ? 'text-amber-400 fill-amber-400' : 'text-text-tertiary/30'}
+                />
+              ))}
+            </div>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <Heart
+              size={12}
+              strokeWidth={1.5}
+              className={photo.favorite ? 'text-red-400 fill-red-400' : 'text-text-tertiary/30'}
+            />
+            <span className="text-micro text-text-secondary">{photo.favorite ? '已收藏' : '未收藏'}</span>
+          </div>
+        </div>
+      </Card>
 
       <Card>
         <SectionHeader title="文件状态" compact />

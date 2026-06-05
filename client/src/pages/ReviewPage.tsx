@@ -79,9 +79,10 @@ function ReviewToolbar() {
 
 function ReviewLayout() {
   const navigate = useNavigate()
+  const { updatePhotoRating, updatePhotoFavorite, undoLastAction } = useApp()
   const {
     filteredPhotos, currentIndex, loading, leftSidebarOpen, rightPanelOpen,
-    goTo, handleAction, toggleLeftSidebar, toggleRightPanel,
+    currentPhoto, goTo, handleAction, toggleLeftSidebar, toggleRightPanel,
   } = useReview()
 
   const shortcuts = useMemo(() => ({
@@ -91,7 +92,11 @@ function ReviewLayout() {
     onDelete: () => handleAction('deleted'),
     onToggleLeft: toggleLeftSidebar,
     onToggleRight: toggleRightPanel,
-  }), [currentIndex, goTo, handleAction, toggleLeftSidebar, toggleRightPanel])
+    onRating: (rating: number) => { if (currentPhoto) updatePhotoRating(currentPhoto.id, rating) },
+    onFavorite: () => { if (currentPhoto) updatePhotoFavorite(currentPhoto.id) },
+    onUndo: undoLastAction,
+  }), [currentIndex, goTo, handleAction, toggleLeftSidebar, toggleRightPanel,
+    currentPhoto, updatePhotoRating, updatePhotoFavorite, undoLastAction])
 
   useKeyboardShortcuts(shortcuts)
 

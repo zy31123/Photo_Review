@@ -8,12 +8,29 @@ interface ShortcutMap {
   onSkip?: () => void
   onToggleLeft?: () => void
   onToggleRight?: () => void
+  onRating?: (rating: number) => void
+  onFavorite?: () => void
+  onUndo?: () => void
 }
 
 export function useKeyboardShortcuts(shortcuts: ShortcutMap) {
   useEffect(() => {
     const handle = (e: KeyboardEvent) => {
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return
+
+      // Ctrl+Z / Cmd+Z: undo
+      if (e.key === 'z' && (e.ctrlKey || e.metaKey)) {
+        e.preventDefault()
+        shortcuts.onUndo?.()
+        return
+      }
+
+      // F: toggle favorite
+      if (e.key === 'f' || e.key === 'F') {
+        shortcuts.onFavorite?.()
+        return
+      }
+
       switch (e.key) {
         case 'ArrowLeft':
           e.preventDefault()
@@ -40,6 +57,12 @@ export function useKeyboardShortcuts(shortcuts: ShortcutMap) {
           break
         case ']':
           shortcuts.onToggleRight?.()
+          break
+        default:
+          if (e.key >= '1' && e.key <= '5' && shortcuts.onRating) {
+            e.preventDefault()
+            shortcuts.onRating(Number(e.key))
+          }
           break
       }
     }
