@@ -2,6 +2,7 @@ import { Router } from 'express'
 import { z } from 'zod'
 import { getPhotosForFolder, removePhoto } from '../services/scanner.js'
 import { getReviewStatuses } from '../services/review.js'
+import { getPhotoMetaBatch, setRating, toggleFavorite, setFavorite } from '../services/photoMeta.js'
 import { getThumbnail, getFullImage, getImageMimeType } from '../services/image.js'
 import { extractExif } from '../services/exif.js'
 import { deletePhoto } from '../services/deleter.js'
@@ -27,13 +28,17 @@ router.get('/', validate(photosQuerySchema), (req, res) => {
 
   const filePaths = photos.map(p => p.jpgPath || p.rawPaths[0] || '')
   const reviewMap = getReviewStatuses(filePaths)
+  const metaMap = getPhotoMetaBatch(filePaths)
 
   const photosWithStatus = photos.map((p, i) => {
     const status = reviewMap.get(filePaths[i])
+    const meta = metaMap.get(filePaths[i])
     return {
       ...p,
       reviewAction: status?.action || null,
       reviewedAt: status?.reviewedAt || null,
+      rating: meta?.rating ?? 0,
+      favorite: meta?.favorite ?? false,
     }
   })
 
@@ -58,6 +63,35 @@ router.get('/', validate(photosQuerySchema), (req, res) => {
     photos: paged,
     total: filtered.length,
   })
+})
+
+// Set rating (0-5)
+const ratingSchema = z.object({
+  rating: z.number().int().min(0).max(5),
+})
+
+router.put('/:id/rating', loadPhoto, validate(ratingSchema, 'body'), (req, res) => {
+  const filePath = req.photo!.jpgPath || req.photo!.rawPaths[0] || ''
+  setRating(filePath, req.body.rating)
+  res.json({ success: true })
+})
+
+// Toggle favorite
+router.put('/:id/favorite', loadPhoto, (req, res) => {
+  const filePath = req.photo!.jpgPath || req.photo!.rawPaths[0] || ''
+  const nowFavorite = toggleFavorite(filePath)
+  res.json({ success: true, favorite: nowFavorite })
+})
+
+// Set favorite (for undo — explicit value)
+const favoriteSchema = z.object({
+  favorite: z.boolean(),
+})
+
+router.put('/:id/favorite/set', loadPhoto, validate(favoriteSchema, 'body'), (req, res) => {
+  const filePath = req.photo!.jpgPath || req.photo!.rawPaths[0] || ''
+  setFavorite(filePath, req.body.favorite)
+  res.json({ success: true })
 })
 
 // Get thumbnail
