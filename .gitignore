@@ -6,19 +6,3 @@ data/
 
 # Logs
 .claude/
-
-# E2E test outputs
-e2e/reports/
-test-results/
-playwright-report/
-report-*.png
-.playwright-mcp/
-.superpowers/
-
-# Screenshot outputs
-e2e/screenshots/
-e2e/screenshot-all.ts
-
-# Root-level screenshots
-*.png
-!docs/**/*.png

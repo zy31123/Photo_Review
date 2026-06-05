@@ -6,31 +6,17 @@
 
 ## 技术栈
 
-- 前端: React 19 + TypeScript, Vite 6, Tailwind 4
+- 前端: React 19 + TypeScript, Vite 6, Tailwind 4, 以apple hig 风格为主
 - 后端: Express 5 + TypeScript, better-sqlite3 (WAL)
 - 图片: sharp (缩略图), exifr (EXIF)
-- 测试: Playwright (E2E)    测试图片目录 "E:\Photos" 与截图输出见 `e2e/` 配置
 - 架构: npm workspaces monorepo (client/ + server/)
 - 端口: 前端 5173 → 代理 /api → 后端 3001
 
 ## 常用命令
 
-### 开发
-
 - `npm run dev` — 同时启动前端+后端开发服务器
 - `npm run dev:client` / `npm run dev:server` — 单独启动
 - `npm run build` — 构建前后端
-
-### 测试
-
-- `npm run test:photos` — 生成测试照片 fixture
-- `npm run test:e2e` — 运行 E2E 测试
-- `npm run test:e2e:headed` — 有头模式运行 E2E 测试
-
-### 截图
-
-- `npm run screenshot` — 全页面截图（使用真实文件夹）
-- `npm run screenshot:close` — 截图并关闭
 
 ## 目录结构
 
@@ -45,9 +31,6 @@ server/src/     # 后端源码
   routes/       # API 路由
   services/     # 业务逻辑
   db/           # 数据库层
-e2e/            # Playwright E2E 测试
-  fixtures/     # 测试照片生成
-  tests/        # 测试用例
 docs/architecture/ # 架构文档
 ```
 
