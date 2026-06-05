@@ -12,11 +12,12 @@ const router = Router()
 const analyzeSchema = z.object({
   folder: z.string().min(1, '缺少 folder 参数'),
   timeGap: z.number().optional(),
-  hashThreshold: z.number().optional(),
+  strictThreshold: z.number().optional(),
+  relaxedThreshold: z.number().optional(),
 })
 
 router.post('/analyze', validate(analyzeSchema, 'body'), async (req, res) => {
-  const { folder, timeGap, hashThreshold } = req.body
+  const { folder, timeGap, strictThreshold, relaxedThreshold } = req.body
   if (!isPathAllowed(folder)) throw new ForbiddenError('不允许访问此路径')
 
   res.setHeader('Content-Type', 'text/event-stream')
@@ -29,7 +30,7 @@ router.post('/analyze', validate(analyzeSchema, 'body'), async (req, res) => {
   }
 
   try {
-    const result = await analyzeFolder(folder, timeGap, hashThreshold, (current, total) => {
+    const result = await analyzeFolder(folder, timeGap, strictThreshold, relaxedThreshold, (current, total) => {
       send('progress', { current, total })
     })
     send('complete', result)
@@ -43,7 +44,8 @@ router.post('/analyze', validate(analyzeSchema, 'body'), async (req, res) => {
 const groupsSchema = z.object({
   folder: z.string().min(1, '缺少 folder 参数'),
   timeGap: z.coerce.number().optional(),
-  hashThreshold: z.coerce.number().optional(),
+  strictThreshold: z.coerce.number().optional(),
+  relaxedThreshold: z.coerce.number().optional(),
   page: z.coerce.number().int().positive().optional(),
   limit: z.coerce.number().int().positive().optional(),
 })
@@ -53,11 +55,12 @@ router.get('/groups', validate(groupsSchema), (req, res) => {
   if (!isPathAllowed(folder)) throw new ForbiddenError('不允许访问此路径')
 
   const timeGap = Number(req.query.timeGap) || undefined
-  const hashThreshold = Number(req.query.hashThreshold) || undefined
+  const strictThreshold = Number(req.query.strictThreshold) || undefined
+  const relaxedThreshold = Number(req.query.relaxedThreshold) || undefined
   const page = Number(req.query.page) || 1
   const limit = Number(req.query.limit) || 50
 
-  const groups = getSimilarGroups(folder, timeGap, hashThreshold)
+  const groups = getSimilarGroups(folder, timeGap, strictThreshold, relaxedThreshold)
   const start = (page - 1) * limit
   const paged = groups.slice(start, start + limit)
 

@@ -25,6 +25,7 @@ interface HashRecord {
   width: number
   height: number
   fileSize: number
+  colorHist: string | null
 }
 
 // --- dHash computation ---
@@ -62,6 +63,66 @@ async function computeDHash(imagePath: string): Promise<{ hash: string; width: n
   }
 }
 
+// --- Color histogram ---
+
+const HIST_BINS = 16
+const HIST_CHANNELS = 3 // RGB
+const HIST_SIZE = HIST_BINS * HIST_CHANNELS // 48 values
+
+async function computeColorHistogram(imagePath: string): Promise<string> {
+  const { data, info } = await sharp(imagePath, { failOn: 'none' })
+    .resize(64, 64, { fit: 'cover' })
+    .raw()
+    .toBuffer({ resolveWithObject: true })
+
+  const bins = new Float32Array(HIST_SIZE)
+  const pixelCount = info.width * info.height
+
+  for (let i = 0; i < pixelCount; i++) {
+    const r = data[i * 3]
+    const g = data[i * 3 + 1]
+    const b = data[i * 3 + 2]
+    bins[Math.floor(r / (256 / HIST_BINS))] += 1
+    bins[HIST_BINS + Math.floor(g / (256 / HIST_BINS))] += 1
+    bins[HIST_BINS * 2 + Math.floor(b / (256 / HIST_BINS))] += 1
+  }
+
+  // Normalize per channel
+  for (let c = 0; c < HIST_CHANNELS; c++) {
+    let sum = 0
+    for (let i = 0; i < HIST_BINS; i++) sum += bins[c * HIST_BINS + i]
+    if (sum > 0) {
+      for (let i = 0; i < HIST_BINS; i++) bins[c * HIST_BINS + i] /= sum
+    }
+  }
+
+  // Compact: quantize to 0–255 range for compact storage
+  const quantized = new Uint8Array(HIST_SIZE)
+  for (let i = 0; i < HIST_SIZE; i++) {
+    quantized[i] = Math.round(bins[i] * 255)
+  }
+
+  return Buffer.from(quantized).toString('base64')
+}
+
+function histogramSimilarity(a: string, b: string): number {
+  const binsA = new Float32Array(HIST_SIZE)
+  const binsB = new Float32Array(HIST_SIZE)
+  const bufA = Buffer.from(a, 'base64')
+  const bufB = Buffer.from(b, 'base64')
+  for (let i = 0; i < HIST_SIZE; i++) {
+    binsA[i] = bufA[i] / 255
+    binsB[i] = bufB[i] / 255
+  }
+
+  // Histogram intersection (sum of min values, already normalized)
+  let intersection = 0
+  for (let i = 0; i < HIST_SIZE; i++) {
+    intersection += Math.min(binsA[i], binsB[i])
+  }
+  return intersection / HIST_CHANNELS // 0–1 per channel average
+}
+
 // --- Hamming distance ---
 
 function hammingDistance(a: string, b: string): number {
@@ -76,10 +137,39 @@ function hammingDistance(a: string, b: string): number {
   return count
 }
 
+// --- Dual-threshold similarity check ---
+
+function isSimilar(recA: HashRecord, recB: HashRecord, strictThreshold: number, relaxedThreshold: number): boolean {
+  const dist = hammingDistance(recA.dhash, recB.dhash)
+
+  // Strict: hash distance low enough → similar
+  if (dist <= strictThreshold) return true
+
+  // Beyond relaxed threshold → not similar
+  if (dist > relaxedThreshold) return false
+
+  // Relaxed: require metadata OR color histogram corroboration
+  // 1. Color histogram similarity (if available)
+  if (recA.colorHist && recB.colorHist) {
+    const histSim = histogramSimilarity(recA.colorHist, recB.colorHist)
+    if (histSim >= 0.85) return true
+  }
+
+  // 2. Dimensions within 5%
+  if (recA.width > 0 && recB.width > 0 && recA.height > 0 && recB.height > 0) {
+    const widthRatio = Math.min(recA.width, recB.width) / Math.max(recA.width, recB.width)
+    const heightRatio = Math.min(recA.height, recB.height) / Math.max(recA.height, recB.height)
+    if (widthRatio < 0.95 || heightRatio < 0.95) return false
+  }
+  // 3. File size within 50%
+  const sizeRatio = Math.min(recA.fileSize, recB.fileSize) / Math.max(recA.fileSize, recB.fileSize)
+  return sizeRatio >= 0.5
+}
+
 // --- Query hashes for a folder's photos ---
 
 const getHashesStmt = () =>
-  getDb().prepare('SELECT file_path, dhash, width, height, file_size FROM photo_hashes WHERE file_path = ?')
+  getDb().prepare('SELECT file_path, dhash, width, height, file_size, color_hist FROM photo_hashes WHERE file_path = ?')
 
 function loadHashesForPhotos(photos: PhotoGroup[]): Map<string, HashRecord> {
   const stmt = getHashesStmt()
@@ -141,7 +231,8 @@ class UnionFind {
 export async function analyzeFolder(
   folder: string,
   timeGap = 30,
-  hashThreshold = 10,
+  strictThreshold = 8,
+  relaxedThreshold = 15,
   onProgress?: (current: number, total: number) => void,
 ): Promise<AnalyzeResult> {
   const photos = getPhotosForFolder(folder)
@@ -152,7 +243,7 @@ export async function analyzeFolder(
 
   // 2. Compute hashes for photos that don't have one yet — parallel with p-limit
   const insertStmt = db.prepare(
-    'INSERT OR REPLACE INTO photo_hashes (file_path, dhash, width, height, file_size) VALUES (?, ?, ?, ?, ?)'
+    'INSERT OR REPLACE INTO photo_hashes (file_path, dhash, width, height, file_size, color_hist) VALUES (?, ?, ?, ?, ?, ?)'
   )
   let computed = 0
   let skipped = 0
@@ -169,19 +260,33 @@ export async function analyzeFolder(
 
     const existing = existingHashes.get(photo.id)
     if (existing) {
+      // Backfill color histogram for records that lack one
+      if (!existing.colorHist) {
+        try {
+          const hist = await computeColorHistogram(filePath)
+          existing.colorHist = hist
+          db.prepare('UPDATE photo_hashes SET color_hist = ? WHERE file_path = ?').run(hist, filePath)
+        } catch {
+          // Keep existing record without histogram
+        }
+      }
       photoHashMap.set(photo.id, existing)
       skipped++
     } else {
       try {
-        const result = await computeDHash(filePath)
+        const [dhashResult, colorHist] = await Promise.all([
+          computeDHash(filePath),
+          computeColorHistogram(filePath),
+        ])
         const record: HashRecord = {
           filePath,
-          dhash: result.hash,
-          width: result.width,
-          height: result.height,
-          fileSize: result.fileSize,
+          dhash: dhashResult.hash,
+          width: dhashResult.width,
+          height: dhashResult.height,
+          fileSize: dhashResult.fileSize,
+          colorHist,
         }
-        insertStmt.run(filePath, result.hash, result.width, result.height, result.fileSize)
+        insertStmt.run(filePath, dhashResult.hash, dhashResult.width, dhashResult.height, dhashResult.fileSize, colorHist)
         photoHashMap.set(photo.id, record)
         computed++
       } catch {
@@ -193,7 +298,7 @@ export async function analyzeFolder(
   })))
 
   // 3. Build similar groups
-  const groups = buildGroups(photos, photoHashMap, timeGap, hashThreshold)
+  const groups = buildGroups(photos, photoHashMap, timeGap, strictThreshold, relaxedThreshold)
 
   return {
     computed,
@@ -206,18 +311,20 @@ export async function analyzeFolder(
 export function getSimilarGroups(
   folder: string,
   timeGap = 30,
-  hashThreshold = 10,
+  strictThreshold = 8,
+  relaxedThreshold = 15,
 ): SimilarGroup[] {
   const photos = getPhotosForFolder(folder)
   const photoHashMap = loadHashesForPhotos(photos)
-  return buildGroups(photos, photoHashMap, timeGap, hashThreshold)
+  return buildGroups(photos, photoHashMap, timeGap, strictThreshold, relaxedThreshold)
 }
 
 function buildGroups(
   photos: PhotoGroup[],
   photoHashMap: Map<string, HashRecord>,
   timeGap: number,
-  hashThreshold: number,
+  strictThreshold: number,
+  relaxedThreshold: number,
 ): SimilarGroup[] {
   // Filter to photos with hashes and valid dates
   const candidates = photos.filter(p => {
@@ -256,11 +363,10 @@ function buildGroups(
     const uf = new UnionFind(ids)
 
     for (let i = 0; i < session.length; i++) {
-      const hashA = photoHashMap.get(session[i].id)!.dhash
+      const recA = photoHashMap.get(session[i].id)!
       for (let j = i + 1; j < session.length; j++) {
-        const hashB = photoHashMap.get(session[j].id)!.dhash
-        const dist = hammingDistance(hashA, hashB)
-        if (dist <= hashThreshold) {
+        const recB = photoHashMap.get(session[j].id)!
+        if (isSimilar(recA, recB, strictThreshold, relaxedThreshold)) {
           uf.union(session[i].id, session[j].id)
         }
       }
