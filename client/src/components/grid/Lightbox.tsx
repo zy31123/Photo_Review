@@ -9,7 +9,7 @@ interface LightboxProps {
   onNavigate: (index: number) => void
 }
 
-const overlayBtn = 'w-14 h-14 rounded-2xl bg-white/8 backdrop-blur-md text-white/70 hover:text-white hover:bg-white/15 flex items-center justify-center transition-all duration-fast z-10'
+const overlayBtn = 'w-14 h-14 rounded-full bg-white/10 backdrop-blur-md text-white/70 hover:text-white hover:bg-white/20 flex items-center justify-center transition-all duration-fast z-10'
 
 export default function Lightbox({ photos, currentIndex, onClose, onNavigate }: LightboxProps) {
   const photo = photos[currentIndex]
@@ -31,7 +31,7 @@ export default function Lightbox({ photos, currentIndex, onClose, onNavigate }: 
 
   return (
     <div
-      className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center"
+      className="fixed inset-0 z-50 bg-black/95 backdrop-blur-sm flex items-center justify-center"
       onClick={onClose}
     >
       <button
@@ -46,7 +46,7 @@ export default function Lightbox({ photos, currentIndex, onClose, onNavigate }: 
           onClick={(e) => { e.stopPropagation(); onNavigate(currentIndex - 1) }}
           className={`absolute left-5 top-1/2 -translate-y-1/2 ${overlayBtn}`}
         >
-          <ChevronLeft className="size-7" />
+          <ChevronLeft className="size-8" />
         </button>
       )}
 
@@ -55,7 +55,7 @@ export default function Lightbox({ photos, currentIndex, onClose, onNavigate }: 
           onClick={(e) => { e.stopPropagation(); onNavigate(currentIndex + 1) }}
           className={`absolute right-5 top-1/2 -translate-y-1/2 ${overlayBtn}`}
         >
-          <ChevronRight className="size-7" />
+          <ChevronRight className="size-8" />
         </button>
       )}
 
@@ -66,7 +66,7 @@ export default function Lightbox({ photos, currentIndex, onClose, onNavigate }: 
         onClick={e => e.stopPropagation()}
       />
 
-      <div className="absolute bottom-5 left-1/2 -translate-x-1/2 text-white/70 text-caption flex items-center gap-3">
+      <div className="absolute bottom-5 left-1/2 -translate-x-1/2 text-white/70 text-caption flex items-center gap-3 bg-black/30 backdrop-blur-md rounded-full px-4 py-2">
         <span>{photo.name}</span>
         <span className="text-white/25">|</span>
         <span className="tabular-nums font-medium">{currentIndex + 1} / {photos.length}</span>

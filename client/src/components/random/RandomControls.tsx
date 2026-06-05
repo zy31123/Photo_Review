@@ -16,7 +16,7 @@ export default function RandomControls({
 }: RandomControlsProps) {
   return (
     <div className="absolute bottom-5 left-1/2 -translate-x-1/2 z-10">
-      <div className="flex items-center gap-2.5 bg-[#1D1D1F]/85 backdrop-blur-xl rounded-xl px-3 py-2 shadow-lg">
+      <div className="flex items-center gap-3 bg-[#1D1D1F]/90 backdrop-blur-2xl rounded-2xl px-4 py-2.5 shadow-[0_4px_24px_rgba(0,0,0,0.3)]">
         <ActionBtn onClick={onPrev} disabled={!canGoPrev} label="上一张" shortcut="←" icon={ChevronLeft} />
         <div className="w-px h-5 bg-white/10" />
         <ActionBtn onClick={onDelete} variant="danger" label="废片" shortcut="D" icon={X} />

@@ -83,14 +83,17 @@ export default function HomePage() {
         <div className="flex items-center gap-2">
           <h1
             className="font-semibold text-text tracking-tight"
-            style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--text-body)' }}
+            style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--text-title-2)' }}
           >
             Photo Review
           </h1>
         </div>
         <div className="flex items-center gap-3">
           <span className="flex items-center gap-1.5 text-text-tertiary text-micro">
-            <CircleDot className="size-1.5 text-success fill-success" />
+            <span className="relative flex size-1.5">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-success opacity-75" />
+              <CircleDot className="relative size-1.5 text-success fill-success" />
+            </span>
             已连接
           </span>
           <button className="w-7 h-7 rounded-md flex items-center justify-center text-text-tertiary hover:text-text hover:bg-fill-subtle transition-colors duration-fast">
@@ -102,24 +105,19 @@ export default function HomePage() {
       <div className="flex-1 flex overflow-hidden">
         {/* ── Sidebar ── */}
         <aside className="w-52 bg-bg-elevated/60 border-r border-border flex flex-col shrink-0">
-          {/* Favorites */}
+          {/* Quick action */}
           <div className="px-3 pt-4 pb-2">
-            <span className="text-micro font-semibold text-text-tertiary uppercase tracking-wider">
-              收藏
-            </span>
-          </div>
-          <nav className="px-2 flex-1">
             <button
               onClick={() => setPickerOpen(true)}
-              className="w-full flex items-center gap-2.5 px-3 py-1.5 rounded-md text-caption text-text-secondary hover:bg-fill-subtle transition-colors duration-fast"
+              className="w-full flex items-center gap-2.5 px-3 py-1.5 rounded-md text-caption text-text-secondary hover:bg-fill-subtle hover:text-accent transition-colors duration-fast"
             >
               <FolderPlus className="size-3.5 text-accent" strokeWidth={1.5} />
               选择文件夹
             </button>
-          </nav>
+          </div>
 
           {/* Recent section */}
-          <div className="px-3 pt-4 pb-2">
+          <div className="px-3 pt-4 pb-3">
             <span className="text-micro font-semibold text-text-tertiary uppercase tracking-wider">
               最近使用
             </span>
@@ -159,17 +157,17 @@ export default function HomePage() {
 
           {recentFolders.length === 0 ? (
             /* Empty state */
-            <div className="flex flex-col items-center gap-5 text-center">
-              <div className="w-20 h-20 rounded-2xl bg-fill-subtle flex items-center justify-center">
-                <FolderOpen className="size-10 text-text-tertiary" strokeWidth={1.25} />
+            <div className="flex flex-col items-center gap-6 text-center">
+              <div className="w-24 h-24 rounded-2xl bg-fill-subtle flex items-center justify-center">
+                <FolderOpen className="size-12 text-text-tertiary" strokeWidth={1.25} />
               </div>
-              <div className="space-y-1.5">
-                <p className="text-body font-medium text-text">尚未打开过文件夹</p>
-                <p className="text-caption text-text-secondary">选择一个文件夹开始审阅照片</p>
+              <div className="space-y-2">
+                <p className="font-semibold text-text" style={{ fontSize: 'var(--text-title-1)' }}>尚未打开过文件夹</p>
+                <p className="text-text-secondary" style={{ fontSize: 'var(--text-body)' }}>选择一个文件夹开始审阅照片</p>
               </div>
               <button
                 onClick={() => setPickerOpen(true)}
-                className="px-6 py-2 rounded-lg bg-accent text-white font-semibold text-caption hover:bg-accent-hover transition-colors duration-fast shadow-sm"
+                className="px-8 py-3 rounded-xl bg-accent text-white font-semibold text-body hover:bg-accent-hover transition-all duration-fast shadow-card active:scale-[0.97]"
               >
                 选择文件夹
               </button>
@@ -177,16 +175,16 @@ export default function HomePage() {
           ) : (
             /* Folder grid */
             <div className="w-full h-full overflow-y-auto p-8">
-              <div className="grid gap-5" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))' }}>
+              <div className="grid gap-5" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))' }}>
                 {/* Add new folder card */}
                 <button
                   onClick={() => setPickerOpen(true)}
-                  className="flex flex-col items-center gap-2.5 p-4 rounded-xl border-2 border-dashed border-text-tertiary/20 hover:border-accent/50 hover:bg-accent-subtle/50 transition-all duration-fast group"
+                  className="flex flex-col items-center gap-2.5 p-5 rounded-xl border-2 border-dashed border-text-tertiary/20 hover:border-accent/50 hover:bg-accent-subtle/50 transition-all duration-fast group"
                 >
                   <div className="w-12 h-12 rounded-xl bg-fill-subtle group-hover:bg-accent-subtle flex items-center justify-center transition-colors duration-fast">
                     <FolderPlus className="size-5 text-text-tertiary group-hover:text-accent transition-colors duration-fast" strokeWidth={1.5} />
                   </div>
-                  <span className="text-micro text-text-secondary group-hover:text-accent transition-colors duration-fast">添加文件夹</span>
+                  <span className="text-caption text-text-secondary group-hover:text-accent transition-colors duration-fast">添加文件夹</span>
                 </button>
 
                 {/* Recent folder cards */}
@@ -198,7 +196,7 @@ export default function HomePage() {
                       key={p}
                       onClick={() => handleScan(p)}
                       disabled={loading !== null}
-                      className="flex flex-col items-center gap-2.5 p-4 rounded-xl bg-bg-elevated shadow-[0_1px_2px_rgba(0,0,0,0.04),0_2px_8px_rgba(0,0,0,0.06)] hover:shadow-[0_2px_4px_rgba(0,0,0,0.06),0_4px_12px_rgba(0,0,0,0.08)] hover:-translate-y-0.5 transition-all duration-fast disabled:opacity-40 group"
+                      className="flex flex-col items-center gap-2.5 p-5 rounded-xl bg-bg-elevated shadow-card hover:shadow-card-hover hover:-translate-y-1 transition-all duration-fast disabled:opacity-40 group"
                       title={p}
                     >
                       <div className="w-12 h-12 rounded-xl bg-accent-subtle flex items-center justify-center">

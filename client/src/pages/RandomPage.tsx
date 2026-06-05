@@ -210,9 +210,9 @@ export default function RandomPage() {
 
                   {/* Progress bar */}
                   {batch.batchTotal > 0 && (
-                    <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-white/10">
+                    <div className="absolute bottom-0 left-0 right-0 h-1 bg-white/10">
                       <div
-                        className="h-full bg-accent/60 transition-all duration-slow"
+                        className="h-full bg-accent/80 transition-all duration-slow"
                         style={{ width: `${(batch.batchReviewed / batch.batchTotal) * 100}%` }}
                       />
                     </div>

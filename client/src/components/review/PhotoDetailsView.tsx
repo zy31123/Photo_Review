@@ -11,7 +11,7 @@ interface PhotoDetailsViewProps {
 }
 
 function Card({ children }: { children: React.ReactNode }) {
-  return <div className="mx-4 mb-3 rounded-md border border-border-subtle bg-glass-thin overflow-hidden">{children}</div>
+  return <div className="mx-4 mb-3 rounded-lg bg-fill-subtle overflow-hidden">{children}</div>
 }
 
 export default function PhotoDetailsView({ photo, exif, reviewed }: PhotoDetailsViewProps) {
@@ -109,7 +109,7 @@ function CompactExifBar({ exif }: { exif: ExifData }) {
 function MetaRow({ label, value, mono }: { label: string; value: string; mono?: boolean }) {
   return (
     <div className="grid grid-cols-[5rem_1fr] gap-x-3 items-start">
-      <span className="text-caption text-text-secondary shrink-0">{label}</span>
+      <span className="text-micro text-text-tertiary uppercase tracking-wider shrink-0">{label}</span>
       <span className={`text-caption font-medium text-text text-left break-all ${mono ? 'font-mono' : ''}`} title={value}>
         {value || '—'}
       </span>

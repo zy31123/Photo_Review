@@ -52,8 +52,8 @@ function GridLayout() {
     return map
   }, [filteredPhotos])
 
-  const HEADER_HEIGHT_REM = 3.5
-  const GAP_REM = 0.25
+  const HEADER_HEIGHT_REM = 3.75
+  const GAP_REM = 0.375
 
   const rowVirtualizer = useVirtualizer({
     count: virtualItems.length,
@@ -133,9 +133,9 @@ function GridLayout() {
           className="flex-1 min-h-0 overflow-y-auto"
         >
           {stickyHeader && (
-            <div className="sticky top-0 z-10 backdrop-blur-xl bg-glass border-b border-border-subtle px-4 py-2 flex items-center gap-3">
-              <span className="text-body font-semibold text-text">{stickyHeader.label}</span>
-              <div className="flex-1 h-px bg-border-subtle" />
+            <div className="sticky top-0 z-10 backdrop-blur-2xl bg-glass border-b border-border-subtle px-4 py-2.5 flex items-center gap-3">
+              <span className="text-body font-bold text-text">{stickyHeader.label}</span>
+              <div className="flex-1 h-px bg-border" />
               <span className="text-micro text-text-tertiary tabular-nums">{stickyHeader.count} 张</span>
             </div>
           )}
@@ -163,10 +163,10 @@ function GridLayout() {
                       height: `${virtualRow.size}px`,
                       transform: `translateY(${virtualRow.start}px)`,
                     }}
-                    className="flex items-end px-4 pb-2 pt-6"
+                    className="flex items-end px-4 pb-3 pt-8"
                   >
                     <div className="flex items-center gap-3 w-full">
-                      <span className="text-text text-body font-semibold whitespace-nowrap">
+                      <span className="text-text text-body font-bold whitespace-nowrap">
                         {item.label}
                       </span>
                       <div className="flex-1 h-px bg-border-subtle" />
@@ -189,14 +189,14 @@ function GridLayout() {
                     height: `${virtualRow.size}px`,
                     transform: `translateY(${virtualRow.start}px)`,
                   }}
-                  className="flex gap-1 px-4"
+                  className="flex gap-1.5 px-4"
                 >
                   {item.photos.map((photo) => {
                     const photoIndex = photoIndexMap.get(photo.id)!
                     return (
                       <div
                         key={photo.id}
-                        className="relative group cursor-pointer rounded-sm overflow-hidden"
+                        className="relative group cursor-pointer rounded-md overflow-hidden hover:ring-1 hover:ring-accent/30 hover:scale-[1.02] transition-all duration-normal"
                         style={{ width: `calc((100% - ${GAP_REM * (columns + 1)}rem) / ${columns})` }}
                         onClick={() => handleSingleClick(photoIndex)}
                         onDoubleClick={() => handleDoubleClick(photo.id)}

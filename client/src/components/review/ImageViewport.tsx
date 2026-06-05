@@ -3,7 +3,7 @@ import { api } from '../../api'
 import { useReview } from '../../context/ReviewContext'
 import { useDragImage } from '../../hooks/useDragImage'
 import { useImageZoom } from '../../hooks/useImageZoom'
-import { ChevronLeft, ChevronRight, ImageIcon } from 'lucide-react'
+import { ChevronLeft, ChevronRight, ImageIcon, Check, X } from 'lucide-react'
 import ReviewControls from './ReviewControls'
 
 export default function ImageViewport() {
@@ -11,6 +11,8 @@ export default function ImageViewport() {
   const [loaded, setLoaded] = useState(false)
   const [hoveringLeft, setHoveringLeft] = useState(false)
   const [hoveringRight, setHoveringRight] = useState(false)
+  const [actionFeedback, setActionFeedback] = useState<'keep' | 'delete' | null>(null)
+  const wheelTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const { resetZoom, zoomStyle, handleWheel: zoomWheel, handlers: zoomHandlers } = useImageZoom()
 
@@ -19,15 +21,40 @@ export default function ImageViewport() {
 
   useEffect(() => { resetZoom() }, [currentPhoto?.id, resetZoom])
 
+  // Show action feedback overlay then fade out
   useEffect(() => {
-    const el = containerRef.current
-    if (!el) return
-    el.addEventListener('wheel', zoomWheel, { passive: false })
-    return () => el.removeEventListener('wheel', zoomWheel)
-  }, [zoomWheel])
+    if (!actionFeedback) return
+    const timer = setTimeout(() => setActionFeedback(null), 800)
+    return () => clearTimeout(timer)
+  }, [actionFeedback])
 
   const handlePrev = useCallback(() => goTo(currentIndex - 1), [currentIndex, goTo])
   const handleNext = useCallback(() => goTo(currentIndex + 1), [currentIndex, goTo])
+
+  const handleWheelNav = useCallback((e: WheelEvent) => {
+    if (e.ctrlKey) return
+    e.preventDefault()
+    if (wheelTimerRef.current) return
+    if (e.deltaY > 0) {
+      goTo(currentIndex + 1)
+    } else if (e.deltaY < 0) {
+      goTo(currentIndex - 1)
+    }
+    wheelTimerRef.current = setTimeout(() => {
+      wheelTimerRef.current = null
+    }, 150)
+  }, [currentIndex, goTo])
+
+  useEffect(() => {
+    const el = containerRef.current
+    if (!el) return
+    el.addEventListener('wheel', handleWheelNav, { passive: false })
+    el.addEventListener('wheel', zoomWheel, { passive: false })
+    return () => {
+      el.removeEventListener('wheel', handleWheelNav)
+      el.removeEventListener('wheel', zoomWheel)
+    }
+  }, [handleWheelNav, zoomWheel])
 
   if (!currentPhoto) {
     return (
@@ -86,7 +113,19 @@ export default function ImageViewport() {
       </div>
 
       {/* Controls overlay */}
-      <ReviewControls />
+      <ReviewControls onActionFeedback={setActionFeedback} />
+
+      {/* Action feedback overlay */}
+      {actionFeedback && (
+        <div className={`absolute inset-0 flex items-center justify-center z-20 pointer-events-none animate-fade-in ${actionFeedback === 'keep' ? 'bg-success/15' : 'bg-danger/15'}`}>
+          <div className={`w-20 h-20 rounded-full flex items-center justify-center ${actionFeedback === 'keep' ? 'bg-success/80' : 'bg-danger/80'}`}>
+            {actionFeedback === 'keep'
+              ? <Check className="size-10 text-white" strokeWidth={2} />
+              : <X className="size-10 text-white" strokeWidth={2} />
+            }
+          </div>
+        </div>
+      )}
 
       {/* Error toast */}
       {error && (

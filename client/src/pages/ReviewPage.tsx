@@ -125,8 +125,8 @@ function ReviewLayout() {
     )
   }
 
-  const leftW = '15rem'
-  const rightW = '20rem'
+  const leftW = '13rem'
+  const rightW = '18rem'
 
   const gridCols = leftSidebarOpen
     ? rightPanelOpen

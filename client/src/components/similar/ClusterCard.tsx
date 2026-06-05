@@ -11,18 +11,18 @@ export default function ClusterCard({ group }: { group: SimilarGroup }) {
     : 0
 
   return (
-    <div className="bg-bg-elevated rounded-md border border-border-subtle overflow-hidden">
+    <div className="bg-bg-elevated rounded-xl shadow-card hover:shadow-card-hover transition-all duration-fast overflow-hidden">
       {/* Header */}
-      <div className="flex items-center gap-2 px-3 py-2 border-b border-border-subtle">
-        <span className="text-text text-caption font-medium">
+      <div className="flex items-center gap-2 px-4 py-2.5 border-b border-border-subtle">
+        <span className="text-text text-body font-semibold">
           {group.photos.length} 张相似
         </span>
-        <span className="text-text-tertiary text-micro">
-          平均距离 {group.avgDistance}
+        <span className="text-text-tertiary text-micro ml-1">
+          距离 {group.avgDistance}
         </span>
         <button
           onClick={() => keepRecommended(group.id)}
-          className="ml-auto text-micro text-text-tertiary hover:text-accent transition-colors duration-fast flex items-center gap-1"
+          className="ml-auto text-caption text-text-tertiary hover:text-accent transition-colors duration-fast flex items-center gap-1"
         >
           <Star className="size-3" />
           仅保留推荐
@@ -30,7 +30,7 @@ export default function ClusterCard({ group }: { group: SimilarGroup }) {
       </div>
 
       {/* Thumbnails */}
-      <div className="flex gap-1.5 p-3 overflow-x-auto">
+      <div className="flex gap-2 p-3 overflow-x-auto">
         {group.photos.map((photo, idx) => {
           const isSelected = groupSel?.get(photo.id) === 'delete'
           const isRecommended = idx === group.coverIndex
@@ -45,7 +45,7 @@ export default function ClusterCard({ group }: { group: SimilarGroup }) {
                 src={api.thumbnailUrl(photo.id)}
                 alt={photo.name}
                 loading="lazy"
-                className="w-22 h-22 object-cover rounded-sm transition-opacity duration-fast"
+                className="w-24 h-24 object-cover rounded-md transition-opacity duration-fast"
                 style={{
                   opacity: isSelected ? 0.4 : 1,
                   outline: isSelected ? '2px solid rgb(239 68 68)' : isRecommended ? '2px solid rgb(0 122 255)' : 'none',
@@ -55,7 +55,7 @@ export default function ClusterCard({ group }: { group: SimilarGroup }) {
 
               {/* Recommended badge */}
               {isRecommended && (
-                <div className="absolute top-0.5 left-0.5 bg-accent text-white rounded-sm px-1 py-px text-[10px] font-bold flex items-center gap-0.5">
+                <div className="absolute bottom-0 inset-x-0 bg-accent/80 text-white text-center py-0.5 text-[10px] font-bold flex items-center justify-center gap-0.5">
                   <Star className="size-2.5" />
                   推荐
                 </div>
