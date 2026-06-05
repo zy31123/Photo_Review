@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useCallback, useMemo, type ReactNode } from 'react'
+import { createContext, useContext, useState, useCallback, useMemo, useRef, type ReactNode } from 'react'
 import { api, setActiveFolder, type PhotoGroup } from '../api'
 import { useUndoHistory, type UndoAction } from '../hooks/useUndoHistory'
 import { useToast } from '../hooks/useToast'
@@ -31,6 +31,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [isLoaded, setIsLoaded] = useState(false)
   const undoHistory = useUndoHistory()
   const toast = useToast()
+  const photosRef = useRef(photos)
+  photosRef.current = photos
 
   const loadPhotos = useCallback(async (folder: string) => {
     setActiveFolder(folder)
@@ -47,23 +49,23 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, [undoHistory])
 
   const updatePhotoRating = useCallback(async (photoId: string, rating: number) => {
-    const photo = photos.find(p => p.id === photoId)
+    const photo = photosRef.current.find(p => p.id === photoId)
     if (!photo) return
     const before = photo.rating ?? 0
     await api.setRating(photoId, rating)
     undoHistory.push({ type: 'rating', photoId, before, after: rating })
     setPhotos(prev => prev.map(p => p.id === photoId ? { ...p, rating } : p))
-  }, [photos, undoHistory])
+  }, [undoHistory])
 
   const updatePhotoFavorite = useCallback(async (photoId: string, favorite?: boolean) => {
-    const photo = photos.find(p => p.id === photoId)
+    const photo = photosRef.current.find(p => p.id === photoId)
     if (!photo) return
     const before = photo.favorite ?? false
     const result = await api.toggleFavorite(photoId)
     const newValue = result.favorite
     undoHistory.push({ type: 'favorite', photoId, before, after: newValue })
     setPhotos(prev => prev.map(p => p.id === photoId ? { ...p, favorite: newValue } : p))
-  }, [photos, undoHistory])
+  }, [undoHistory])
 
   const undoLastAction = useCallback(async (): Promise<UndoAction | null> => {
     const action = await undoHistory.undo()

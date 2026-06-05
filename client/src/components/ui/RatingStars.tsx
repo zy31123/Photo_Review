@@ -5,9 +5,15 @@ interface RatingStarsProps {
   onChange?: (rating: number) => void
   size?: number
   className?: string
+  /** 'dark' for overlay controls (default), 'light' for detail panels */
+  theme?: 'dark' | 'light'
 }
 
-export default function RatingStars({ rating, onChange, size = 16, className = '' }: RatingStarsProps) {
+export default function RatingStars({ rating, onChange, size = 16, className = '', theme = 'dark' }: RatingStarsProps) {
+  const emptyClass = theme === 'dark'
+    ? 'text-white/20 hover:text-white/40'
+    : 'text-text-tertiary/30'
+
   return (
     <div className={`flex items-center gap-0.5 ${className}`}>
       {[1, 2, 3, 4, 5].map(star => {
@@ -23,7 +29,7 @@ export default function RatingStars({ rating, onChange, size = 16, className = '
             <Star
               size={size}
               strokeWidth={1.5}
-              className={filled ? 'text-amber-400 fill-amber-400' : 'text-white/20'}
+              className={filled ? 'text-amber-400 fill-amber-400' : emptyClass}
             />
           </button>
         )

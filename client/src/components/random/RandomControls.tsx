@@ -1,5 +1,6 @@
-import { Star, Heart, ChevronLeft, X, Check, RefreshCw, ChevronRight } from 'lucide-react'
+import { Heart, ChevronLeft, X, Check, RefreshCw, ChevronRight } from 'lucide-react'
 import ActionBtn from '../ui/ActionBtn'
+import RatingStars from '../ui/RatingStars'
 import Tooltip from '../ui/Tooltip'
 
 interface RandomControlsProps {
@@ -26,20 +27,8 @@ export default function RandomControls({
         <ActionBtn onClick={onPrev} disabled={!canGoPrev} label="上一张" shortcut="←" icon={ChevronLeft} />
         <div className="w-px h-5 bg-white/10" />
         <Tooltip label="评分" shortcut="1-5">
-          <div className="flex items-center gap-0.5 px-1">
-            {[1, 2, 3, 4, 5].map(star => (
-              <button
-                key={star}
-                onClick={() => onRating(star === rating ? 0 : star)}
-                className="transition-colors duration-fast hover:scale-110"
-              >
-                <Star
-                  size={14}
-                  strokeWidth={1.5}
-                  className={star <= rating ? 'text-amber-400 fill-amber-400' : 'text-white/25 hover:text-white/40'}
-                />
-              </button>
-            ))}
+          <div className="px-1">
+            <RatingStars rating={rating} onChange={onRating} size={14} />
           </div>
         </Tooltip>
         <ActionBtn

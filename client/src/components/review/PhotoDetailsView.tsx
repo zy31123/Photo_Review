@@ -1,8 +1,9 @@
-import { Check, X, Star, Heart } from 'lucide-react'
+import { Check, X, Heart } from 'lucide-react'
 import type { PhotoGroup, ExifData } from '../../api'
 import { formatChineseDate } from '../../utils/date'
 import SectionHeader from '../ui/SectionHeader'
 import Badge from '../ui/Badge'
+import RatingStars from '../ui/RatingStars'
 
 interface PhotoDetailsViewProps {
   photo: PhotoGroup
@@ -54,16 +55,7 @@ export default function PhotoDetailsView({ photo, exif, reviewed }: PhotoDetails
         <div className="px-4 py-3 flex items-center gap-4">
           <div className="flex items-center gap-2">
             <span className="text-micro text-text-tertiary">评分</span>
-            <div className="flex items-center gap-0.5">
-              {[1, 2, 3, 4, 5].map(star => (
-                <Star
-                  key={star}
-                  size={12}
-                  strokeWidth={1.5}
-                  className={star <= (photo.rating ?? 0) ? 'text-amber-400 fill-amber-400' : 'text-text-tertiary/30'}
-                />
-              ))}
-            </div>
+            <RatingStars rating={photo.rating ?? 0} size={12} theme="light" />
           </div>
           <div className="flex items-center gap-1.5">
             <Heart
