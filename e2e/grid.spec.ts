@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test'
-import { scanFromHome, waitForPhotos, waitForFullImage } from './helpers'
+import { scanFromHome, waitForPhotos, waitForFullImage, screenshotDir } from './helpers'
 
 test.describe('网格浏览页', () => {
   test.beforeEach(async ({ page }) => {
@@ -12,7 +12,7 @@ test.describe('网格浏览页', () => {
     })
 
     await test.step('截图：网格默认视图', async () => {
-      await page.screenshot({ path: 'e2e/screenshots/grid-default.png', fullPage: false })
+      await page.screenshot({ path: `${screenshotDir('grid')}/default.png`, fullPage: false })
     })
   })
 
@@ -29,7 +29,7 @@ test.describe('网格浏览页', () => {
     })
 
     await test.step('截图：Lightbox', async () => {
-      await page.screenshot({ path: 'e2e/screenshots/grid-lightbox.png', fullPage: false })
+      await page.screenshot({ path: `${screenshotDir('grid')}/lightbox.png`, fullPage: false })
     })
   })
 })

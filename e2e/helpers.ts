@@ -1,6 +1,17 @@
 import { Page, expect } from '@playwright/test'
+import fs from 'fs'
+import path from 'path'
 
 export const TEST_FOLDER = 'E:\\Photos'
+
+const SCREENSHOT_BASE = 'e2e/screenshots'
+
+/** 生成截图路径并确保目录存在 */
+export function screenshotDir(pageName: string): string {
+  const dir = path.join(SCREENSHOT_BASE, pageName)
+  fs.mkdirSync(dir, { recursive: true })
+  return dir
+}
 
 /** 在页面加载前注入 localStorage，使首页显示 E:\Photos 为最近文件夹 */
 export async function injectRecentFolder(page: Page) {

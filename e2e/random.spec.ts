@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test'
-import { scanFromHome, waitForPhotos, waitForFullImage, navigateViaNavBar } from './helpers'
+import { scanFromHome, waitForPhotos, waitForFullImage, navigateViaNavBar, screenshotDir } from './helpers'
 
 test.describe('随机浏览页', () => {
   test.beforeEach(async ({ page }) => {
@@ -21,7 +21,7 @@ test.describe('随机浏览页', () => {
     })
 
     await test.step('截图：随机浏览', async () => {
-      await page.screenshot({ path: 'e2e/screenshots/random-default.png', fullPage: false })
+      await page.screenshot({ path: `${screenshotDir('random')}/default.png`, fullPage: false })
     })
   })
 })

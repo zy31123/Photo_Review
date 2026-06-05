@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test'
-import { scanFromHome, waitForPhotos, waitForFullImage, navigateViaNavBar } from './helpers'
+import { scanFromHome, waitForPhotos, waitForFullImage, navigateViaNavBar, screenshotDir } from './helpers'
 
 test.describe('审阅页', () => {
   test.beforeEach(async ({ page }) => {
@@ -14,7 +14,7 @@ test.describe('审阅页', () => {
     })
 
     await test.step('截图：审阅页默认状态', async () => {
-      await page.screenshot({ path: 'e2e/screenshots/review-default.png', fullPage: false })
+      await page.screenshot({ path: `${screenshotDir('review')}/default.png`, fullPage: false })
     })
   })
 
@@ -34,7 +34,7 @@ test.describe('审阅页', () => {
     })
 
     await test.step('截图：审阅操作后', async () => {
-      await page.screenshot({ path: 'e2e/screenshots/review-after-action.png', fullPage: false })
+      await page.screenshot({ path: `${screenshotDir('review')}/after-action.png`, fullPage: false })
     })
   })
 })

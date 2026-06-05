@@ -17,7 +17,7 @@ export default defineConfig({
       },
     },
   ],
-  outputDir: 'e2e/screenshots',
+  outputDir: 'test-results',
   webServer: {
     command: 'npm run dev',
     url: 'http://localhost:5173',
