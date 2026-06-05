@@ -17,7 +17,7 @@ import ToolbarDivider from '../components/ui/ToolbarDivider'
 
 export default function RandomPage() {
   const navigate = useNavigate()
-  const { isLoaded } = useApp()
+  const { isLoaded, updatePhotoRating, updatePhotoFavorite, undoLastAction } = useApp()
   const batch = useRandomBatch()
   const exif = useExif(batch.currentPhoto)
   const drag = useDragImage(batch.currentPhoto)
@@ -62,7 +62,10 @@ export default function RandomPage() {
     onDelete: () => batch.handleAction('deleted'),
     onSkip: () => batch.handleAction('skip'),
     onToggleRight: batch.toggleRightPanel,
-  }), [batch.goPrev, batch.goNext, batch.handleAction, batch.toggleRightPanel])
+    onRating: (rating: number) => { if (batch.currentPhoto) updatePhotoRating(batch.currentPhoto.id, rating) },
+    onFavorite: () => { if (batch.currentPhoto) updatePhotoFavorite(batch.currentPhoto.id) },
+    onUndo: undoLastAction,
+  }), [batch, updatePhotoRating, updatePhotoFavorite, undoLastAction])
 
   useKeyboardShortcuts(reviewing ? shortcuts : {})
 
@@ -201,11 +204,15 @@ export default function RandomPage() {
                   <RandomControls
                     canGoPrev={batch.canGoPrev}
                     canGoNext={batch.canGoNext}
+                    rating={batch.currentPhoto?.rating ?? 0}
+                    favorite={batch.currentPhoto?.favorite ?? false}
                     onPrev={batch.goPrev}
                     onNext={batch.goNext}
                     onSkip={() => batch.handleAction('skip')}
                     onKeep={() => batch.handleAction('keep')}
                     onDelete={() => batch.handleAction('deleted')}
+                    onRating={(rating: number) => { if (batch.currentPhoto) updatePhotoRating(batch.currentPhoto.id, rating) }}
+                    onFavorite={() => { if (batch.currentPhoto) updatePhotoFavorite(batch.currentPhoto.id) }}
                   />
 
                   {/* Progress bar */}
