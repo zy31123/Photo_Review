@@ -1,5 +1,5 @@
 import { useEffect, useCallback } from 'react'
-import { ChevronLeft, ChevronRight, X } from 'lucide-react'
+import { ChevronLeft, ChevronRight, X, Star, Heart } from 'lucide-react'
 import type { PhotoGroup } from '../../api'
 
 interface LightboxProps {
@@ -28,6 +28,9 @@ export default function Lightbox({ photos, currentIndex, onClose, onNavigate }: 
   }, [handleKey])
 
   if (!photo) return null
+
+  const rating = photo.rating ?? 0
+  const favorite = photo.favorite ?? false
 
   return (
     <div
@@ -68,6 +71,22 @@ export default function Lightbox({ photos, currentIndex, onClose, onNavigate }: 
 
       <div className="absolute bottom-5 left-1/2 -translate-x-1/2 text-white/70 text-caption flex items-center gap-3 bg-black/30 backdrop-blur-md rounded-full px-4 py-2">
         <span>{photo.name}</span>
+        <span className="text-white/25">|</span>
+        {rating > 0 && (
+          <div className="flex items-center gap-0.5">
+            {[1, 2, 3, 4, 5].map(star => (
+              <Star
+                key={star}
+                size={12}
+                strokeWidth={1.5}
+                className={star <= rating ? 'text-amber-400 fill-amber-400' : 'text-white/20'}
+              />
+            ))}
+          </div>
+        )}
+        {favorite && (
+          <Heart size={12} strokeWidth={1.5} className="text-red-400 fill-red-400" />
+        )}
         <span className="text-white/25">|</span>
         <span className="tabular-nums font-medium">{currentIndex + 1} / {photos.length}</span>
       </div>

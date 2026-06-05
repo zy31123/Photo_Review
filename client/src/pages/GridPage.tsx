@@ -1,7 +1,7 @@
 import { useEffect, useCallback, useRef, useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useVirtualizer } from '@tanstack/react-virtual'
-import { Minus, Plus } from 'lucide-react'
+import { Minus, Plus, Star, Heart } from 'lucide-react'
 import { useApp } from '../context/AppContext'
 import { GridProvider, useGrid, type VirtualItem } from '../context/GridContext'
 import { api } from '../api'
@@ -209,6 +209,18 @@ function GridLayout() {
                           style={{ opacity: 0 }}
                           onLoad={e => { (e.target as HTMLImageElement).style.opacity = '1' }}
                         />
+                        {/* Rating/favorite overlay badges */}
+                        {(photo.rating ?? 0) > 0 && (
+                          <div className="absolute top-1 left-1 flex items-center gap-0.5 bg-black/50 rounded-sm px-1 py-0.5 opacity-0 group-hover:opacity-100 transition-opacity duration-fast">
+                            <Star size={10} strokeWidth={1.5} className="text-amber-400 fill-amber-400" />
+                            <span className="text-white text-micro font-medium">{photo.rating}</span>
+                          </div>
+                        )}
+                        {photo.favorite && (
+                          <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity duration-fast">
+                            <Heart size={12} strokeWidth={1.5} className="text-red-400 fill-red-400 drop-shadow" />
+                          </div>
+                        )}
                       </div>
                     )
                   })}
