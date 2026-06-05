@@ -9,6 +9,7 @@
 - 前端: React 19 + TypeScript, Vite 6, Tailwind 4, 以apple hig 风格为主
 - 后端: Express 5 + TypeScript, better-sqlite3 (WAL)
 - 图片: sharp (缩略图), exifr (EXIF)
+- 测试: @playwright/test (e2e 截图测试)
 - 架构: npm workspaces monorepo (client/ + server/)
 - 端口: 前端 5173 → 代理 /api → 后端 3001
 
@@ -17,6 +18,19 @@
 - `npm run dev` — 同时启动前端+后端开发服务器
 - `npm run dev:client` / `npm run dev:server` — 单独启动
 - `npm run build` — 构建前后端
+- `npm run test:e2e` — 运行 Playwright e2e 截图测试（headless）
+- `npm run test:e2e:headed` — 运行 e2e 测试（带浏览器界面）
+
+## 自动化截图测试
+
+- 工具: `@playwright/test` (Chromium only)
+- 配置: 根目录 `playwright.config.ts`
+- 测试目录: `e2e/`（每个页面一个 spec 文件）
+- 截图保存: `e2e/screenshots/`（已在 .gitignore 中）
+- 测试数据: 真实照片文件夹 `E:\Photos`（仅读取，不修改）
+- 流程: Playwright 自动启动 `npm run dev` → 注入 localStorage 模拟最近文件夹 → 点击扫描 → 通过 NavBar 导航各页面 → 等待图片完全加载后截图
+- 等待策略: `waitForPhotos`（缩略图 DOM + complete + networkidle）/ `waitForFullImage`（大图加载完成）
+- 导航: 必须通过 NavBar 按钮做客户端跳转（`page.goto` 会丢失 React Context）
 
 ## 目录结构
 
@@ -31,6 +45,9 @@ server/src/     # 后端源码
   routes/       # API 路由
   services/     # 业务逻辑
   db/           # 数据库层
+e2e/            # Playwright e2e 截图测试
+  helpers.ts    # 共享工具函数
+  *.spec.ts     # 每页面一个测试
 docs/architecture/ # 架构文档
 ```
 

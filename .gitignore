@@ -6,3 +6,8 @@ data/
 
 # Logs
 .claude/
+.playwright-mcp/
+
+# Playwright
+e2e/screenshots/
+test-results/

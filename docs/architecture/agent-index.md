@@ -22,6 +22,7 @@
 | 修改全局导航 | NavBar.tsx | App.tsx | 导航栏组件 + 路由定义 |
 | 修改通用 UI | ui/ActionBtn.tsx | ui/Tooltip.tsx, ui/Badge.tsx, ui/SegmentedControl.tsx | ui/ 下所有共享组件 |
 | 安全相关 | routes/index.ts (isPathAllowed) | server/src/index.ts (127.0.0.1 绑定) | 路径白名单 + 网络绑定 |
+| 修改 e2e 测试 | playwright.config.ts | e2e/helpers.ts, 对应 spec 文件 | Playwright 配置在根目录，辅助函数在 helpers，每页面一个 spec |
 | 修改根级状态 | AppContext.tsx | api/index.ts, HomePage.tsx | 根 Context + API 层 + 首页初始化 |
 
 ## 文件索引
@@ -97,6 +98,19 @@
 - `App.tsx` — 5 条路由: `/` `/grid` `/review` `/random` `/similar`
 - `styles/index.css` — Tailwind 4 @theme Darkroom 配色
 - `utils/date.ts` — formatChineseDate()
+
+### 测试 (`e2e/`)
+
+- `helpers.ts` — 共享工具: `scanFromHome` (注入 localStorage → 点击扫描 → 到达 /grid)、`waitForPhotos` (三重等待: DOM + complete + networkidle)、`waitForFullImage` (大图加载)、`navigateViaNavBar` (客户端导航，避免丢失 Context)、`TEST_FOLDER` (`E:\Photos`)
+- `home.spec.ts` — 首页空状态 + 最近文件夹列表 + 扫描跳转
+- `grid.spec.ts` — 网格缩略图 + Lightbox 大图
+- `review.spec.ts` — 审阅页默认状态 + 接受操作
+- `random.spec.ts` — 随机浏览 + 开始审阅
+- `similar.spec.ts` — 相似分析空闲 + 触发分析结果
+
+### 测试配置
+
+- `playwright.config.ts` — Chromium only, viewport 1440×900, screenshot: on, outputDir: `e2e/screenshots/`, webServer 通过 `npm run dev` 自动启动
 
 ## 数据模型位置
 
