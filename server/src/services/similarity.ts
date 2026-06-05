@@ -1,6 +1,7 @@
 import fs from 'fs'
 import sharp from 'sharp'
 import crypto from 'crypto'
+import pLimit from 'p-limit'
 import { getDb } from '../db/index.js'
 import { getPhotosForFolder, type PhotoGroup } from './scanner.js'
 
@@ -149,7 +150,7 @@ export async function analyzeFolder(
   // 1. Load existing hashes for this folder's photos only
   const existingHashes = loadHashesForPhotos(photos)
 
-  // 2. Compute hashes for photos that don't have one yet
+  // 2. Compute hashes for photos that don't have one yet — parallel with p-limit
   const insertStmt = db.prepare(
     'INSERT OR REPLACE INTO photo_hashes (file_path, dhash, width, height, file_size) VALUES (?, ?, ?, ?, ?)'
   )
@@ -160,9 +161,11 @@ export async function analyzeFolder(
   let processed = 0
   const photoHashMap = new Map<string, HashRecord>()
 
-  for (const photo of photos) {
+  const limit = pLimit(4)
+
+  await Promise.all(photos.map(photo => limit(async () => {
     const filePath = photo.jpgPath || photo.rawPaths[0]
-    if (!filePath) continue
+    if (!filePath) return
 
     const existing = existingHashes.get(photo.id)
     if (existing) {
@@ -187,7 +190,7 @@ export async function analyzeFolder(
     }
     processed++
     onProgress?.(processed, total)
-  }
+  })))
 
   // 3. Build similar groups
   const groups = buildGroups(photos, photoHashMap, timeGap, hashThreshold)

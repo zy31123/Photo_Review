@@ -1,0 +1,80 @@
+import { Router } from 'express'
+import { z } from 'zod'
+import { analyzeFolder, getSimilarGroups, getSimilarStats } from '../services/similarity.js'
+import { asyncHandler } from '../middleware/asyncHandler.js'
+import { validate } from '../middleware/validate.js'
+import { ForbiddenError } from '../middleware/errorHandler.js'
+import { isPathAllowed } from '../utils/security.js'
+
+const router = Router()
+
+// Analyze folder for similar photos (SSE streaming progress)
+const analyzeSchema = z.object({
+  folder: z.string().min(1, '缺少 folder 参数'),
+  timeGap: z.number().optional(),
+  hashThreshold: z.number().optional(),
+})
+
+router.post('/analyze', validate(analyzeSchema, 'body'), async (req, res) => {
+  const { folder, timeGap, hashThreshold } = req.body
+  if (!isPathAllowed(folder)) throw new ForbiddenError('不允许访问此路径')
+
+  res.setHeader('Content-Type', 'text/event-stream')
+  res.setHeader('Cache-Control', 'no-cache')
+  res.setHeader('Connection', 'keep-alive')
+  res.flushHeaders()
+
+  const send = (event: string, data: unknown) => {
+    res.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`)
+  }
+
+  try {
+    const result = await analyzeFolder(folder, timeGap, hashThreshold, (current, total) => {
+      send('progress', { current, total })
+    })
+    send('complete', result)
+  } catch (e: any) {
+    send('error', { message: e.message })
+  }
+  res.end()
+})
+
+// Get similar groups
+const groupsSchema = z.object({
+  folder: z.string().min(1, '缺少 folder 参数'),
+  timeGap: z.coerce.number().optional(),
+  hashThreshold: z.coerce.number().optional(),
+  page: z.coerce.number().int().positive().optional(),
+  limit: z.coerce.number().int().positive().optional(),
+})
+
+router.get('/groups', validate(groupsSchema), (req, res) => {
+  const folder = req.query.folder as string
+  if (!isPathAllowed(folder)) throw new ForbiddenError('不允许访问此路径')
+
+  const timeGap = Number(req.query.timeGap) || undefined
+  const hashThreshold = Number(req.query.hashThreshold) || undefined
+  const page = Number(req.query.page) || 1
+  const limit = Number(req.query.limit) || 50
+
+  const groups = getSimilarGroups(folder, timeGap, hashThreshold)
+  const start = (page - 1) * limit
+  const paged = groups.slice(start, start + limit)
+
+  res.json({ groups: paged, total: groups.length })
+})
+
+// Get similarity stats
+const statsSchema = z.object({
+  folder: z.string().min(1, '缺少 folder 参数'),
+})
+
+router.get('/stats', validate(statsSchema), (req, res) => {
+  const folder = req.query.folder as string
+  if (!isPathAllowed(folder)) throw new ForbiddenError('不允许访问此路径')
+
+  const stats = getSimilarStats(folder)
+  res.json(stats)
+})
+
+export default router

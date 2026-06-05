@@ -1,6 +1,7 @@
-import exifr from 'exifr'
 import fs from 'fs'
+import exifr from 'exifr'
 import { type PhotoGroup } from './scanner.js'
+import { getCachedExif, setCachedExif } from '../cache/exifCache.js'
 
 export interface ExifData {
   camera: string
@@ -16,11 +17,20 @@ export interface ExifData {
 }
 
 export async function extractExif(photo: PhotoGroup): Promise<ExifData | null> {
+  // Check cache first
+  const cached = getCachedExif(photo.id)
+  if (cached) return cached
+
   const sourcePath = photo.jpgPath || photo.rawPaths[0]
   if (!sourcePath || !fs.existsSync(sourcePath)) return null
 
   try {
-    const buf = fs.readFileSync(sourcePath)
+    // Read only first 256KB for EXIF extraction (EXIF data is in file header)
+    const handle = await fs.promises.open(sourcePath, 'r')
+    const buf = Buffer.alloc(256 * 1024)
+    await handle.read(buf, 0, buf.length, 0)
+    await handle.close()
+
     const data = await exifr.parse(buf, {
       pick: [
         'Make', 'Model', 'LensModel',
@@ -66,7 +76,7 @@ export async function extractExif(photo: PhotoGroup): Promise<ExifData | null> {
     }
     const totalSize = jpgSize + rawSize
 
-    return {
+    const result: ExifData = {
       camera,
       lens: data.LensModel || '—',
       focalLength,
@@ -78,6 +88,9 @@ export async function extractExif(photo: PhotoGroup): Promise<ExifData | null> {
       dateTime: dateTimeStr,
       fileSize: formatSize(totalSize) + (jpgSize > 0 && rawSize > 0 ? ` (JPG ${formatSize(jpgSize)} + RAW ${formatSize(rawSize)})` : ''),
     }
+
+    setCachedExif(photo.id, result)
+    return result
   } catch {
     return null
   }

@@ -70,37 +70,36 @@ export function removePhoto(id: string): boolean {
   return true
 }
 
-export function scanFolder(folderPath: string): {
+export async function scanFolder(folderPath: string): Promise<{
   photos: PhotoGroup[]
   total: number
   paired: number
   orphanJpg: number
   orphanRaw: number
-} {
+}> {
   const normalized = resolveNormalized(folderPath)
 
   if (!fs.existsSync(normalized)) {
     throw new Error(`文件夹不存在: ${normalized}`)
   }
 
-  const stat = fs.statSync(normalized)
+  const stat = await fs.promises.stat(normalized)
   if (!stat.isDirectory()) {
     throw new Error('路径不是一个文件夹')
   }
 
   const groups = new Map<string, { jpg: string[]; raw: string[]; dir: string }>()
-
   const visited = new Set<string>()
 
-  const walkDir = (dir: string) => {
-    const realDir = fs.realpathSync(dir)
+  const walkDir = async (dir: string) => {
+    const realDir = await fs.promises.realpath(dir)
     if (visited.has(realDir)) return
     visited.add(realDir)
-    const entries = fs.readdirSync(dir, { withFileTypes: true })
+    const entries = await fs.promises.readdir(dir, { withFileTypes: true })
     for (const entry of entries) {
       const fullPath = normalizePath(path.join(dir, entry.name))
       if (entry.isDirectory()) {
-        walkDir(fullPath)
+        await walkDir(fullPath)
       } else if (entry.isFile()) {
         const ext = path.extname(entry.name).toLowerCase()
         const baseName = path.basename(entry.name, path.extname(entry.name))
@@ -121,7 +120,7 @@ export function scanFolder(folderPath: string): {
     }
   }
 
-  walkDir(normalized)
+  await walkDir(normalized)
 
   const photos: PhotoGroup[] = []
   let paired = 0
@@ -139,8 +138,8 @@ export function scanFolder(folderPath: string): {
 
     let date: string | undefined
     try {
-      const stat = fs.statSync(group.jpg[0] || group.raw[0])
-      date = stat.mtime.toISOString().slice(0, 10)
+      const fileStat = await fs.promises.stat(group.jpg[0] || group.raw[0])
+      date = fileStat.mtime.toISOString().slice(0, 10)
     } catch {}
 
     const relative = path.relative(normalized, group.dir) || '.'
