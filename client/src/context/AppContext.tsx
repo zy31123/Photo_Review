@@ -2,6 +2,7 @@ import { createContext, useContext, useState, useCallback, useMemo, useRef, type
 import { api, setActiveFolder, type PhotoGroup } from '../api'
 import { useUndoHistory, type UndoAction } from '../hooks/useUndoHistory'
 import { useToast } from '../hooks/useToast'
+import { photoEvents } from '../hooks/photoEvents'
 import ToastContainer from '../components/ui/Toast'
 
 interface AppContext {
@@ -13,6 +14,7 @@ interface AppContext {
   updatePhotoRating: (photoId: string, rating: number) => Promise<void>
   updatePhotoFavorite: (photoId: string, favorite?: boolean) => Promise<void>
   undoLastAction: () => Promise<UndoAction | null>
+  pushUndo: (action: UndoAction) => void
   toast: ReturnType<typeof useToast>
 }
 
@@ -39,7 +41,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setActive(folder)
     await api.scanFolder(folder)
     const [result, s] = await Promise.all([
-      api.getPhotos({ limit: 2000 }),
+      api.getPhotos({ limit: 5000 }),
       api.getSettings(),
     ])
     setPhotos(result.photos)
@@ -67,22 +69,108 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setPhotos(prev => prev.map(p => p.id === photoId ? { ...p, favorite: newValue } : p))
   }, [undoHistory])
 
+  const pushUndo = useCallback((action: UndoAction) => {
+    undoHistory.push(action)
+  }, [undoHistory])
+
   const undoLastAction = useCallback(async (): Promise<UndoAction | null> => {
     const action = await undoHistory.undo()
     if (!action) return null
 
-    setPhotos(prev => prev.map(p => {
-      if (p.id !== action.photoId) return p
-      switch (action.type) {
-        case 'rating': return { ...p, rating: action.before as number }
-        case 'favorite': return { ...p, favorite: action.before as boolean }
-        case 'review': return { ...p, reviewAction: action.before }
-        default: return p
-      }
-    }))
+    switch (action.type) {
+      case 'rating':
+      case 'favorite':
+      case 'review': {
+        // Update existing photo in list
+        setPhotos(prev => prev.map(p => {
+          if (p.id !== action.photoId) return p
+          switch (action.type) {
+            case 'rating': return { ...p, rating: action.before as number }
+            case 'favorite': return { ...p, favorite: action.before as boolean }
+            case 'review': return { ...p, reviewAction: action.before ?? null }
+            default: return p
+          }
+        }))
 
-    const typeLabels: Record<string, string> = { rating: '评分', favorite: '收藏', review: '审阅' }
-    toast.show(`已撤销: ${typeLabels[action.type] || action.type}`)
+        // For review undo: if the photo was removed from list (random mode delete), re-add it
+        if (action.type === 'review' && action.photoData) {
+          setPhotos(prev => {
+            if (prev.find(p => p.id === action.photoId)) return prev
+            const restored = {
+              ...action.photoData!,
+              reviewAction: action.before ?? null,
+            }
+            return [...prev, restored]
+          })
+          photoEvents.emit('photo:restored', {
+            photoId: action.photoId,
+            photo: { ...action.photoData, reviewAction: action.before ?? null },
+          })
+        }
+
+        const typeLabels: Record<string, string> = { rating: '评分', favorite: '收藏', review: '审阅' }
+        toast.show(`已撤销: ${typeLabels[action.type]}`)
+        break
+      }
+
+      case 'delete': {
+        // The API call was already made in undoHistory.undo()
+        // Re-fetch the restored photo with status
+        try {
+          const result = await api.getPhotos({ limit: 5000 })
+          const restoredPhoto = result.photos.find(p => p.id === action.photoId)
+          if (restoredPhoto) {
+            setPhotos(prev => {
+              if (prev.find(p => p.id === action.photoId)) return prev
+              return [...prev, restoredPhoto]
+            })
+            photoEvents.emit('photo:restored', { photoId: action.photoId, photo: restoredPhoto })
+          }
+        } catch {
+          // If re-fetch fails, try with stored photoData
+          if (action.photoData) {
+            setPhotos(prev => {
+              if (prev.find(p => p.id === action.photoId)) return prev
+              return [...prev, action.photoData!]
+            })
+            photoEvents.emit('photo:restored', { photoId: action.photoId, photo: action.photoData! })
+          }
+        }
+        toast.show(`已恢复: ${action.photoData?.name || '照片'}`)
+        break
+      }
+
+      case 'delete_batch': {
+        const count = action.items?.length ?? 0
+        try {
+          const result = await api.getPhotos({ limit: 5000 })
+          const restoredIds = new Set(action.items?.map(i => i.photoId) ?? [])
+          const restoredPhotos = result.photos.filter(p => restoredIds.has(p.id))
+          if (restoredPhotos.length > 0) {
+            setPhotos(prev => {
+              const existingIds = new Set(prev.map(p => p.id))
+              const newPhotos = restoredPhotos.filter(p => !existingIds.has(p.id))
+              if (newPhotos.length === 0) return prev
+              return [...prev, ...newPhotos]
+            })
+            photoEvents.emit('photos:restored-batch', { photos: restoredPhotos })
+          }
+        } catch {
+          if (action.items) {
+            const restoredPhotos = action.items.map(i => i.photoData)
+            setPhotos(prev => {
+              const existingIds = new Set(prev.map(p => p.id))
+              const newPhotos = restoredPhotos.filter(p => !existingIds.has(p.id))
+              if (newPhotos.length === 0) return prev
+              return [...prev, ...newPhotos]
+            })
+            photoEvents.emit('photos:restored-batch', { photos: restoredPhotos })
+          }
+        }
+        toast.show(`已恢复 ${count} 张照片`)
+        break
+      }
+    }
 
     return action
   }, [undoHistory, toast])
@@ -96,9 +184,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
     updatePhotoRating,
     updatePhotoFavorite,
     undoLastAction,
+    pushUndo,
     toast,
   }), [activeFolder, photos, settings, isLoaded, loadPhotos,
-    updatePhotoRating, updatePhotoFavorite, undoLastAction, toast])
+    updatePhotoRating, updatePhotoFavorite, undoLastAction, pushUndo, toast])
 
   return (
     <Ctx.Provider value={value}>

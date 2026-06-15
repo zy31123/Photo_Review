@@ -1,6 +1,7 @@
-import { createContext, useContext, useState, useMemo, useCallback, useRef, type ReactNode } from 'react'
+import { createContext, useContext, useState, useMemo, useCallback, useRef, useEffect, type ReactNode } from 'react'
 import { useApp } from './AppContext'
-import { api, type SimilarGroup, type AnalyzeResult, type SimilarStats, type AnalyzeProgress } from '../api'
+import { api, type SimilarGroup, type AnalyzeResult, type SimilarStats, type AnalyzeProgress, type PhotoGroup } from '../api'
+import { photoEvents } from '../hooks/photoEvents'
 
 type SelectionState = 'keep' | 'delete' | null
 
@@ -45,7 +46,7 @@ export function useSimilar() {
 }
 
 export function SimilarProvider({ children }: { children: ReactNode }) {
-  const { activeFolder } = useApp()
+  const { activeFolder, pushUndo, toast, undoLastAction } = useApp()
 
   const [status, setStatus] = useState<'idle' | 'analyzing' | 'done'>('idle')
   const [result, setResult] = useState<AnalyzeResult | null>(null)
@@ -148,33 +149,62 @@ export function SimilarProvider({ children }: { children: ReactNode }) {
     }
     if (toDelete.length === 0) return 0
 
-    let deleted = 0
+    // Collect photo data and trash paths for undo
+    const undoItems: Array<{ photoId: string; photoData: PhotoGroup; trashPaths: Record<string, string>; previousReviewAction?: string | null }> = []
+    const deletedIds = new Set<string>()
+
     for (const id of toDelete) {
+      // Find the photo in groups
+      let photoData: PhotoGroup | null = null
+      for (const g of groups) {
+        const found = g.photos.find(p => p.id === id)
+        if (found) { photoData = found; break }
+      }
+      if (!photoData) continue
+
       try {
-        await api.deletePhoto(id)
-        deleted++
+        const result = await api.deletePhoto(id)
+        deletedIds.add(id)
+        undoItems.push({
+          photoId: id,
+          photoData: { ...photoData },
+          trashPaths: result.trashPaths,
+          previousReviewAction: photoData.reviewAction ?? null,
+        })
       } catch {
         // skip failed deletions
       }
     }
 
+    if (undoItems.length > 0) {
+      pushUndo({
+        type: 'delete_batch',
+        photoId: undoItems[0].photoId,
+        before: 'deleted',
+        after: null,
+        items: undoItems,
+      })
+      toast.show(`已删除 ${undoItems.length} 张照片`, 5000, {
+        label: '撤销',
+        onClick: () => undoLastAction(),
+      })
+    }
+
     // Remove deleted photos from groups
     setGroups(prev => {
-      const deleteSet = new Set(toDelete)
       return prev
         .map(g => ({
           ...g,
-          photos: g.photos.filter(p => !deleteSet.has(p.id)),
+          photos: g.photos.filter(p => !deletedIds.has(p.id)),
         }))
         .filter(g => g.photos.length >= 2)
     })
 
     setSelections(prev => {
       const next = new Map(prev)
-      const deleteSet = new Set(toDelete)
       for (const [groupId, groupSel] of next) {
         const updated = new Map(groupSel)
-        for (const id of deleteSet) {
+        for (const id of deletedIds) {
           updated.delete(id)
         }
         next.set(groupId, updated)
@@ -182,8 +212,8 @@ export function SimilarProvider({ children }: { children: ReactNode }) {
       return next
     })
 
-    return deleted
-  }, [selections])
+    return deletedIds.size
+  }, [selections, groups, pushUndo, toast, undoLastAction])
 
   const selectedDeleteCount = useMemo(() => {
     let count = 0
@@ -224,10 +254,36 @@ export function SimilarProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const directDelete = useCallback(async (photoId: string) => {
+    // Find photo data before deletion
+    let photoData: PhotoGroup | null = null
+    for (const g of groups) {
+      const found = g.photos.find(p => p.id === photoId)
+      if (found) { photoData = found; break }
+    }
+
+    let trashPaths: Record<string, string> | undefined
     try {
-      await api.deletePhoto(photoId)
+      const result = await api.deletePhoto(photoId)
+      trashPaths = result.trashPaths
     } catch {
       return
+    }
+
+    // Push undo entry
+    if (photoData && trashPaths) {
+      pushUndo({
+        type: 'delete',
+        photoId,
+        before: 'deleted',
+        after: null,
+        photoData: { ...photoData },
+        trashPaths,
+        previousReviewAction: photoData.reviewAction ?? null,
+      })
+      toast.show(`已删除: ${photoData.name}`, 5000, {
+        label: '撤销',
+        onClick: () => undoLastAction(),
+      })
     }
 
     setGroups(prev => {
@@ -280,6 +336,42 @@ export function SimilarProvider({ children }: { children: ReactNode }) {
       }
       return next
     })
+  }, [groups, pushUndo, toast, undoLastAction])
+
+  // Listen for photo restore events (from undo)
+  useEffect(() => {
+    const singleHandler = ({ photo }: { photoId: string; photo: PhotoGroup }) => {
+      setGroups(prev => {
+        // Check if already in a group
+        for (const g of prev) {
+          if (g.photos.some(p => p.id === photo.id)) return prev
+        }
+        // Try to find the best group (same folder) or create new entry
+        // For now, add to the first group that has room
+        if (prev.length > 0) {
+          return prev.map((g, i) =>
+            i === 0 ? { ...g, photos: [...g.photos, photo] } : g
+          )
+        }
+        return prev
+      })
+    }
+    const batchHandler = ({ photos }: { photos: PhotoGroup[] }) => {
+      setGroups(prev => {
+        const existingIds = new Set(prev.flatMap(g => g.photos.map(p => p.id)))
+        const newPhotos = photos.filter(p => !existingIds.has(p.id))
+        if (newPhotos.length === 0 || prev.length === 0) return prev
+        return prev.map((g, i) =>
+          i === 0 ? { ...g, photos: [...g.photos, ...newPhotos] } : g
+        )
+      })
+    }
+    photoEvents.on('photo:restored', singleHandler)
+    photoEvents.on('photos:restored-batch', batchHandler)
+    return () => {
+      photoEvents.off('photo:restored', singleHandler)
+      photoEvents.off('photos:restored-batch', batchHandler)
+    }
   }, [])
 
   const value = useMemo(() => ({
