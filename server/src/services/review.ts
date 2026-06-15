@@ -22,6 +22,11 @@ export function getReviewStatuses(filePaths: string[]): Map<string, ReviewStatus
   return result
 }
 
+export function deleteReviewRecord(filePath: string): void {
+  const db = getDb()
+  db.prepare('DELETE FROM review_records WHERE file_path = ?').run(filePath)
+}
+
 export function recordReview(filePath: string, fileName: string, action: 'keep' | 'deleted', mode: 'sequential' | 'random', cacheDays?: number) {
   const db = getDb()
   let cacheUntil: string | null = null

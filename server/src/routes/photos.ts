@@ -1,11 +1,12 @@
 import { Router } from 'express'
 import { z } from 'zod'
-import { getPhotosForFolder, removePhoto } from '../services/scanner.js'
-import { getReviewStatuses } from '../services/review.js'
+import { getPhotosForFolder, removePhoto, addPhoto } from '../services/scanner.js'
+import { getReviewStatuses, recordReview, deleteReviewRecord } from '../services/review.js'
 import { getPhotoMetaBatch, setRating, toggleFavorite, setFavorite } from '../services/photoMeta.js'
 import { getThumbnail, getFullImage, getImageMimeType } from '../services/image.js'
 import { extractExif } from '../services/exif.js'
-import { deletePhoto } from '../services/deleter.js'
+import { moveToTrash, restoreFromTrash } from '../services/trash.js'
+import { getDb } from '../db/index.js'
 import { asyncHandler } from '../middleware/asyncHandler.js'
 import { validate } from '../middleware/validate.js'
 import { loadPhoto } from '../middleware/loadPhoto.js'
@@ -55,7 +56,7 @@ router.get('/', validate(photosQuerySchema), (req, res) => {
   }
 
   const page = Number(req.query.page) || 1
-  const limit = Number(req.query.limit) || 2000
+  const limit = Number(req.query.limit) || 5000
   const start = (page - 1) * limit
   const paged = filtered.slice(start, start + limit)
 
@@ -125,11 +126,128 @@ router.get('/:id/exif', loadPhoto, asyncHandler(async (req, res) => {
   res.json(exif)
 }))
 
-// Delete photo
+// Delete photo (move to app trash)
 router.delete('/:id', loadPhoto, asyncHandler(async (req, res) => {
-  const deleted = await deletePhoto(req.photo!)
-  removePhoto(req.photo!.id)
-  res.json({ success: true, deleted })
+  const photo = req.photo!
+  const { trashPaths, failed } = moveToTrash(photo)
+
+  if (Object.keys(trashPaths).length === 0) {
+    res.status(500).json({ success: false, message: '无法移动文件到回收站' })
+    return
+  }
+
+  // Record in deleted_photos table for undo
+  const db = getDb()
+  const originalPaths = [photo.jpgPath, ...photo.rawPaths].filter(Boolean) as string[]
+  db.prepare(`
+    INSERT OR REPLACE INTO deleted_photos (id, original_paths, trash_paths, photo_data, folder)
+    VALUES (?, ?, ?, ?, ?)
+  `).run(
+    photo.id,
+    JSON.stringify(originalPaths),
+    JSON.stringify(trashPaths),
+    JSON.stringify(photo),
+    photo.folder,
+  )
+
+  removePhoto(photo.id)
+  res.json({ success: true, trashPaths })
+}))
+
+// Restore a deleted photo
+const restoreSchema = z.object({
+  photoId: z.string().min(1),
+  trashPaths: z.record(z.string(), z.string()),
+  previousReviewAction: z.string().nullable().optional(),
+})
+
+router.post('/restore', validate(restoreSchema, 'body'), asyncHandler(async (req, res) => {
+  const { photoId, trashPaths, previousReviewAction } = req.body
+
+  // Restore files from trash
+  const { restored, failed } = restoreFromTrash(photoId, trashPaths)
+  if (restored.length === 0) {
+    res.status(404).json({ success: false, message: '回收站中未找到文件' })
+    return
+  }
+
+  // Read photo data from deleted_photos
+  const db = getDb()
+  const row = db.prepare('SELECT photo_data, folder FROM deleted_photos WHERE id = ?').get(photoId) as { photo_data: string; folder: string } | undefined
+
+  if (!row) {
+    res.status(404).json({ success: false, message: '未找到已删除照片记录' })
+    return
+  }
+
+  const photoData = JSON.parse(row.photo_data)
+
+  // Re-add to in-memory store
+  addPhoto(photoData)
+
+  // Handle review record
+  const filePath = photoData.jpgPath || photoData.rawPaths?.[0] || ''
+  if (previousReviewAction) {
+    recordReview(filePath, photoData.name, previousReviewAction as 'keep' | 'deleted', 'sequential')
+  } else {
+    deleteReviewRecord(filePath)
+  }
+
+  // Remove from deleted_photos
+  db.prepare('DELETE FROM deleted_photos WHERE id = ?').run(photoId)
+
+  // Re-fetch with status
+  const reviewMap = getReviewStatuses([filePath])
+  const metaMap = getPhotoMetaBatch([filePath])
+  const status = reviewMap.get(filePath)
+  const meta = metaMap.get(filePath)
+  const restoredPhoto = {
+    ...photoData,
+    reviewAction: status?.action || null,
+    reviewedAt: status?.reviewedAt || null,
+    rating: meta?.rating ?? 0,
+    favorite: meta?.favorite ?? false,
+  }
+
+  res.json({ success: true, photo: restoredPhoto })
+}))
+
+// Batch restore deleted photos
+const restoreBatchSchema = z.object({
+  items: z.array(z.object({
+    photoId: z.string().min(1),
+    trashPaths: z.record(z.string(), z.string()),
+    previousReviewAction: z.string().nullable().optional(),
+  })),
+})
+
+router.post('/restore-batch', validate(restoreBatchSchema, 'body'), asyncHandler(async (req, res) => {
+  const { items } = req.body
+  const db = getDb()
+  const restoredPhotos: any[] = []
+
+  for (const item of items) {
+    const { restored } = restoreFromTrash(item.photoId, item.trashPaths)
+    if (restored.length === 0) continue
+
+    const row = db.prepare('SELECT photo_data, folder FROM deleted_photos WHERE id = ?').get(item.photoId) as { photo_data: string; folder: string } | undefined
+    if (!row) continue
+
+    const photoData = JSON.parse(row.photo_data)
+    addPhoto(photoData)
+
+    const filePath = photoData.jpgPath || photoData.rawPaths?.[0] || ''
+    if (item.previousReviewAction) {
+      recordReview(filePath, photoData.name, item.previousReviewAction as 'keep' | 'deleted', 'sequential')
+    } else {
+      deleteReviewRecord(filePath)
+    }
+
+    db.prepare('DELETE FROM deleted_photos WHERE id = ?').run(item.photoId)
+    restoredPhotos.push(photoData)
+  }
+
+  res.json({ success: true, photos: restoredPhotos })
 }))
 
 export default router

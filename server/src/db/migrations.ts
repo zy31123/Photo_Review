@@ -91,4 +91,17 @@ export const migrations = [
       CREATE INDEX IF NOT EXISTS idx_exif_date ON photo_exif_index(date_taken);
     `,
   },
+  {
+    version: 4,
+    up: `
+      CREATE TABLE IF NOT EXISTS deleted_photos (
+        id TEXT PRIMARY KEY,
+        original_paths TEXT NOT NULL,
+        trash_paths TEXT NOT NULL,
+        photo_data TEXT NOT NULL,
+        folder TEXT NOT NULL,
+        deleted_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      );
+    `,
+  },
 ]

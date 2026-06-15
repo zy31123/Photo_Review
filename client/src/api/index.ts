@@ -143,7 +143,24 @@ export const api = {
   },
 
   deletePhoto: (id: string) =>
-    request<{ success: boolean }>(`/photos/${encodeURIComponent(id)}`, { method: 'DELETE' }),
+    request<{ success: boolean; trashPaths: Record<string, string> }>(`/photos/${encodeURIComponent(id)}`, { method: 'DELETE' }),
+
+  restorePhoto: (data: { photoId: string; trashPaths: Record<string, string>; previousReviewAction?: string | null }) =>
+    request<{ success: boolean; photo: PhotoGroup }>('/photos/restore', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    }),
+
+  restorePhotos: (items: Array<{ photoId: string; trashPaths: Record<string, string>; previousReviewAction?: string | null }>) =>
+    request<{ success: boolean; photos: PhotoGroup[] }>('/photos/restore-batch', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ items }),
+    }),
+
+  deleteReview: (photoId: string) =>
+    request<{ success: boolean }>(`/reviews/${encodeURIComponent(photoId)}`, { method: 'DELETE' }),
 
   submitReview: (photoId: string, action: ReviewAction, mode: ReviewMode) =>
     request<{ success: boolean }>('/reviews', {

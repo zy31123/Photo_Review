@@ -15,10 +15,12 @@
 
 ## 常用命令
 
+- `npm install` — 安装所有 workspace 依赖（首次或依赖变更后执行）
 - `npm run dev` — 同时启动前端+后端开发服务器
 - `npm run dev:client` / `npm run dev:server` — 单独启动
 - `npm run build` — 构建前后端
 - `npm run test:e2e` — 运行 Playwright e2e 截图测试
+- `npm run test:e2e:headed` — 有头模式运行（调试用）
 
 ## 自动化截图测试
 
@@ -26,35 +28,72 @@
 - 配置: 根目录 `playwright.config.ts`
 - 测试目录: `e2e/`（每个页面一个 spec 文件）
 - 截图保存: `e2e/screenshots/`（已在 .gitignore 中）
-- 测试数据: 真实照片文件夹 `E:\Photos`（仅读取，不修改）
 - 流程: Playwright 自动启动 `npm run dev` → 注入 localStorage 模拟最近文件夹 → 点击扫描 → 通过 NavBar 导航各页面 → 等待图片完全加载后截图
 - 等待策略: `waitForPhotos`（缩略图 DOM + complete + networkidle）/ `waitForFullImage`（大图加载完成）
 - 导航: 必须通过 NavBar 按钮做客户端跳转（`page.goto` 会丢失 React Context）
+- 测试结果报告: `e2e/reports/`（HTML 报告）
 
 ## 目录结构
 
 ```
-client/src/     # 前端源码
-  pages/        # 页面组件
-  components/   # 通用组件 (grid/, ui/)
-  hooks/        # 自定义 hooks
-  context/      # React context
-  api/          # API 调用层
-server/src/     # 后端源码
-  routes/       # API 路由
-  services/     # 业务逻辑
-  db/           # 数据库层
-e2e/            # Playwright e2e 截图测试
-  helpers.ts    # 共享工具函数
-  *.spec.ts     # 每页面一个测试
+client/src/        # 前端源码
+  App.tsx          # 根组件（路由定义）
+  main.tsx         # 入口文件
+  pages/           # 页面组件
+  components/      # 通用组件 (grid/, ui/)
+  hooks/           # 自定义 hooks
+  context/         # React context
+  api/             # API 调用层
+  styles/          # 全局样式
+  utils/           # 前端工具函数
+server/src/        # 后端源码
+  index.ts         # 入口文件
+  routes/          # API 路由
+  services/        # 业务逻辑
+  db/              # 数据库层
+  cache/           # 缓存（缩略图等）
+  middleware/       # Express 中间件
+  utils/           # 后端工具函数
+e2e/               # Playwright e2e 截图测试
+  helpers.ts       # 共享工具函数
+  *.spec.ts        # 每页面一个测试
+  reports/         # HTML 测试报告
 docs/architecture/ # 架构文档
 ```
+
+## 核心依赖
+
+| 库 | 用途 |
+| -- | -- |
+| `react-router-dom` | 客户端路由（客户端跳转，勿用 `page.goto`） |
+| `@tanstack/react-virtual` | 大列表虚拟化（照片网格） |
+| `lucide-react` | 图标库 |
+| `zod` | 请求/响应校验 |
+| `trash` | 文件移入回收站（非硬删除） |
+| `p-limit` | 并发控制（图片处理） |
+| `cors` | 跨域中间件 |
 
 ## 工作流
 
 - 新功能前询问是否保存修改、新建分支。
 - 3+ 独立子任务时建议多 agent 并行。
 - 功能完成后提醒使用 `/code-review` 审查代码。
+
+## 研发检索流程（高优先级）
+
+**触发条件**：开发新功能、优化现有功能、修复非平凡 bug 时，**必须**执行以下检索流程。仅以下情况可跳过：纯排版调整、typo 修复、单行配置修改等无需技术决策的简单任务。
+
+### 检索顺序（严格依次执行，不可跳步）
+
+1. **技术文档优先**：涉及 React、Vite、Tailwind、Express、better-sqlite3 等第三方库时，**必须先通过 context7 MCP 查询官方文档**，获取最新 API 用法和最佳实践。禁止跳过此步直接 web 搜索。
+2. **开源方案检索**：通过 web 搜索寻找同类功能的优秀开源实现（GitHub 高星项目、知名技术博客），重点关注 React/Node.js 生态。
+3. **深入阅读**：对检索到的优质方案，提取其核心设计思路和关键实现代码作为参考。
+
+### 检索结果应用
+
+- 综合文档和开源方案后，再结合项目现有架构制定实现方案。
+- 引用参考来源时简要说明出处，便于后续追溯。
+- 若文档检索和 web 搜索结果冲突，以官方文档为准。
 
 ### 提交流程（用户发出提交指令时严格执行）
 

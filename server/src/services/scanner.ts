@@ -70,6 +70,16 @@ export function removePhoto(id: string): boolean {
   return true
 }
 
+export function addPhoto(photo: PhotoGroup): void {
+  if (photoIndex.has(photo.id)) return
+  const folderKey = resolveNormalized(photo.folder)
+  if (!photoStore.has(folderKey)) {
+    photoStore.set(folderKey, [])
+  }
+  photoStore.get(folderKey)!.push(photo)
+  photoIndex.set(photo.id, photo)
+}
+
 export async function scanFolder(folderPath: string): Promise<{
   photos: PhotoGroup[]
   total: number

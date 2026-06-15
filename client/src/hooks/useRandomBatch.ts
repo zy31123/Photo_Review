@@ -1,5 +1,7 @@
-import { useState, useCallback, useRef } from 'react'
+import { useState, useCallback, useRef, useEffect } from 'react'
 import { api, type PhotoGroup } from '../api'
+import { useApp } from '../context/AppContext'
+import { photoEvents } from './photoEvents'
 
 export function useRandomBatch() {
   const [photos, setPhotos] = useState<PhotoGroup[]>([])
@@ -13,11 +15,24 @@ export function useRandomBatch() {
   const [actionedSet, setActionedSet] = useState<Set<number>>(new Set())
   const [batchComplete, setBatchComplete] = useState(false)
   const processingRef = useRef(false)
+  const { pushUndo, toast, undoLastAction } = useApp()
 
   const currentPhoto = currentIndex >= 0 && currentIndex < photos.length ? photos[currentIndex] : null
   const batchReviewed = actionedSet.size
   const canGoPrev = currentIndex > 0
   const canGoNext = currentIndex < photos.length - 1
+
+  // Listen for photo restore events (from undo)
+  useEffect(() => {
+    const handler = ({ photo }: { photoId: string; photo: PhotoGroup }) => {
+      setPhotos(prev => {
+        if (prev.find(p => p.id === photo.id)) return prev
+        return [...prev, photo]
+      })
+    }
+    photoEvents.on('photo:restored', handler)
+    return () => { photoEvents.off('photo:restored', handler) }
+  }, [])
 
   const loadBatch = useCallback(async (size?: number) => {
     const count = size ?? batchSize
@@ -80,6 +95,15 @@ export function useRandomBatch() {
       setSessionReviewed(prev => prev + 1)
 
       if (action === 'deleted') {
+        // Push review undo (random mode doesn't delete files, only marks review)
+        pushUndo({
+          type: 'review',
+          photoId: photo.id,
+          before: null,
+          after: 'deleted',
+          photoData: { ...photo },
+        })
+
         const remaining = photos.filter(p => p.id !== photo.id)
         setPhotos(remaining)
         if (remaining.length === 0) {
@@ -88,6 +112,10 @@ export function useRandomBatch() {
           const adjustedIndex = Math.min(currentIndex, remaining.length - 1)
           setCurrentIndex(Math.max(0, adjustedIndex))
         }
+        toast.show('已标记废片', 5000, {
+          label: '撤销',
+          onClick: () => undoLastAction(),
+        })
       } else if (currentIndex < photos.length - 1) {
         setCurrentIndex(currentIndex + 1)
       } else {
@@ -98,7 +126,7 @@ export function useRandomBatch() {
     } finally {
       processingRef.current = false
     }
-  }, [photos, currentIndex])
+  }, [photos, currentIndex, pushUndo, toast, undoLastAction])
 
   const changeBatchSize = useCallback((size: number) => {
     setBatchSize(size)

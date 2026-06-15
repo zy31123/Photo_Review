@@ -1,7 +1,8 @@
-import { useEffect } from 'react'
+import { useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useApp } from '../context/AppContext'
 import { SimilarProvider, useSimilar } from '../context/SimilarContext'
+import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts'
 import NavBar from '../components/NavBar'
 import SimilarToolbar from '../components/similar/SimilarToolbar'
 import ClusterGrid from '../components/similar/ClusterGrid'
@@ -9,8 +10,14 @@ import ClusterLightbox from '../components/similar/ClusterLightbox'
 
 function SimilarLayout() {
   const { status, groups, progress, refreshStats, analyze } = useSimilar()
+  const { undoLastAction } = useApp()
 
   useEffect(() => { refreshStats() }, [refreshStats])
+
+  const shortcuts = useMemo(() => ({
+    onUndo: undoLastAction,
+  }), [undoLastAction])
+  useKeyboardShortcuts(shortcuts)
 
   if (status === 'analyzing') {
     const pct = progress ? Math.round((progress.current / progress.total) * 100) : 0
