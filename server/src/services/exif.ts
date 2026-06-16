@@ -1,6 +1,7 @@
 import fs from 'fs'
 import exifr from 'exifr'
-import { type PhotoGroup } from './scanner.js'
+import type { PhotoGroup } from '@photo-review/shared'
+import { getPrimaryPath } from '../utils/path.js'
 import { getCachedExif, setCachedExif } from '../cache/exifCache.js'
 
 export interface ExifData {
@@ -21,7 +22,7 @@ export async function extractExif(photo: PhotoGroup): Promise<ExifData | null> {
   const cached = getCachedExif(photo.id)
   if (cached) return cached
 
-  const sourcePath = photo.jpgPath || photo.rawPaths[0]
+  const sourcePath = getPrimaryPath(photo)
   if (!sourcePath || !fs.existsSync(sourcePath)) return null
 
   try {

@@ -1,6 +1,6 @@
 import { Router } from 'express'
 import { z } from 'zod'
-import { getPhotosForFolder } from '../services/scanner.js'
+import { getPhotosForFolder } from '../services/photoStore.js'
 import { deleteOrphanedFiles } from '../services/deleter.js'
 import { asyncHandler } from '../middleware/asyncHandler.js'
 import { validate } from '../middleware/validate.js'

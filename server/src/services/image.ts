@@ -1,14 +1,15 @@
 import fs from 'fs'
 import path from 'path'
 import sharp from 'sharp'
-import { type PhotoGroup } from './scanner.js'
+import type { PhotoGroup } from '@photo-review/shared'
+import { getPrimaryPath } from '../utils/path.js'
 
 const RAW_EXTS = new Set(['.cr2', '.cr3', '.nef'])
 
 export { getOrGenerateThumbnail as getThumbnail } from '../cache/thumbnailCache.js'
 
 export async function getFullImage(photo: PhotoGroup): Promise<Buffer | NodeJS.ReadableStream | null> {
-  const sourcePath = photo.jpgPath || photo.rawPaths[0]
+  const sourcePath = getPrimaryPath(photo)
   if (!sourcePath || !fs.existsSync(sourcePath)) return null
 
   const ext = path.extname(sourcePath).toLowerCase()
@@ -24,7 +25,7 @@ export async function getFullImage(photo: PhotoGroup): Promise<Buffer | NodeJS.R
 }
 
 export function getImageMimeType(photo: PhotoGroup): string {
-  const sourcePath = photo.jpgPath || photo.rawPaths[0]
+  const sourcePath = getPrimaryPath(photo)
   if (!sourcePath) return 'image/jpeg'
   const ext = path.extname(sourcePath).toLowerCase()
   if (RAW_EXTS.has(ext)) return 'image/jpeg'

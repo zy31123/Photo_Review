@@ -1,6 +1,8 @@
 import { Router } from 'express'
 import { z } from 'zod'
-import { getPhotoById, getPhotosForFolder, scanFolder } from '../services/scanner.js'
+import { getPhotoById, getPhotosForFolder } from '../services/photoStore.js'
+import { scanFolder } from '../services/scanner.js'
+import { getPrimaryPath } from '../utils/path.js'
 import { recordReview, getRandomUnreviewedPhoto, getRandomUnreviewedPhotos, getCacheDays, deleteReviewRecord } from '../services/review.js'
 import { asyncHandler } from '../middleware/asyncHandler.js'
 import { validate } from '../middleware/validate.js'
@@ -22,7 +24,7 @@ router.post('/', validate(reviewSchema, 'body'), (req, res) => {
   const photo = getPhotoById(photoId)
   if (!photo) throw new NotFoundError('照片不存在')
 
-  const filePath = photo.jpgPath || photo.rawPaths[0] || ''
+  const filePath = getPrimaryPath(photo) || ''
   const cacheDays = mode === 'random' ? getCacheDays() : undefined
   recordReview(filePath, photo.name, action, mode, cacheDays)
   res.json({ success: true })
@@ -33,7 +35,7 @@ router.delete('/:photoId', (req, res) => {
   const photo = getPhotoById(req.params.photoId)
   if (!photo) throw new NotFoundError('照片不存在')
 
-  const filePath = photo.jpgPath || photo.rawPaths[0] || ''
+  const filePath = getPrimaryPath(photo) || ''
   deleteReviewRecord(filePath)
   res.json({ success: true })
 })

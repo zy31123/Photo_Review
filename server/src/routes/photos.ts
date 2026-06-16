@@ -1,6 +1,8 @@
 import { Router } from 'express'
 import { z } from 'zod'
-import { getPhotosForFolder, removePhoto, addPhoto } from '../services/scanner.js'
+import type { PhotoGroup } from '@photo-review/shared'
+import { getPhotosForFolder, removePhoto, addPhoto } from '../services/photoStore.js'
+import { getPrimaryPath } from '../utils/path.js'
 import { getReviewStatuses, recordReview, deleteReviewRecord } from '../services/review.js'
 import { getPhotoMetaBatch, setRating, toggleFavorite, setFavorite } from '../services/photoMeta.js'
 import { getThumbnail, getFullImage, getImageMimeType } from '../services/image.js'
@@ -27,7 +29,7 @@ router.get('/', validate(photosQuerySchema), (req, res) => {
   const folder = req.query.folder as string
   const photos = getPhotosForFolder(folder)
 
-  const filePaths = photos.map(p => p.jpgPath || p.rawPaths[0] || '')
+  const filePaths = photos.map(p => getPrimaryPath(p) || '')
   const reviewMap = getReviewStatuses(filePaths)
   const metaMap = getPhotoMetaBatch(filePaths)
 
@@ -72,14 +74,14 @@ const ratingSchema = z.object({
 })
 
 router.put('/:id/rating', loadPhoto, validate(ratingSchema, 'body'), (req, res) => {
-  const filePath = req.photo!.jpgPath || req.photo!.rawPaths[0] || ''
+  const filePath = getPrimaryPath(req.photo!) || ''
   setRating(filePath, req.body.rating)
   res.json({ success: true })
 })
 
 // Toggle favorite
 router.put('/:id/favorite', loadPhoto, (req, res) => {
-  const filePath = req.photo!.jpgPath || req.photo!.rawPaths[0] || ''
+  const filePath = getPrimaryPath(req.photo!) || ''
   const nowFavorite = toggleFavorite(filePath)
   res.json({ success: true, favorite: nowFavorite })
 })
@@ -90,7 +92,7 @@ const favoriteSchema = z.object({
 })
 
 router.put('/:id/favorite/set', loadPhoto, validate(favoriteSchema, 'body'), (req, res) => {
-  const filePath = req.photo!.jpgPath || req.photo!.rawPaths[0] || ''
+  const filePath = getPrimaryPath(req.photo!) || ''
   setFavorite(filePath, req.body.favorite)
   res.json({ success: true })
 })
@@ -186,7 +188,7 @@ router.post('/restore', validate(restoreSchema, 'body'), asyncHandler(async (req
   addPhoto(photoData)
 
   // Handle review record
-  const filePath = photoData.jpgPath || photoData.rawPaths?.[0] || ''
+  const filePath = getPrimaryPath(photoData) || ''
   if (previousReviewAction) {
     recordReview(filePath, photoData.name, previousReviewAction as 'keep' | 'deleted', 'sequential')
   } else {
@@ -236,7 +238,7 @@ router.post('/restore-batch', validate(restoreBatchSchema, 'body'), asyncHandler
     const photoData = JSON.parse(row.photo_data)
     addPhoto(photoData)
 
-    const filePath = photoData.jpgPath || photoData.rawPaths?.[0] || ''
+    const filePath = getPrimaryPath(photoData) || ''
     if (item.previousReviewAction) {
       recordReview(filePath, photoData.name, item.previousReviewAction as 'keep' | 'deleted', 'sequential')
     } else {

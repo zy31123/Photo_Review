@@ -3,21 +3,9 @@ import sharp from 'sharp'
 import crypto from 'crypto'
 import pLimit from 'p-limit'
 import { getDb } from '../db/index.js'
-import { getPhotosForFolder, type PhotoGroup } from './scanner.js'
-
-export interface SimilarGroup {
-  id: string
-  photos: PhotoGroup[]
-  coverIndex: number
-  avgDistance: number
-}
-
-export interface AnalyzeResult {
-  computed: number
-  skipped: number
-  totalGroups: number
-  totalPhotos: number
-}
+import type { PhotoGroup, SimilarGroup, AnalyzeResult } from '@photo-review/shared'
+import { getPhotosForFolder } from './photoStore.js'
+import { getPrimaryPath } from '../utils/path.js'
 
 interface HashRecord {
   filePath: string
@@ -175,7 +163,7 @@ function loadHashesForPhotos(photos: PhotoGroup[]): Map<string, HashRecord> {
   const stmt = getHashesStmt()
   const result = new Map<string, HashRecord>()
   for (const photo of photos) {
-    const filePath = photo.jpgPath || photo.rawPaths[0]
+    const filePath = getPrimaryPath(photo)
     if (!filePath) continue
     const row = stmt.get(filePath) as HashRecord | undefined
     if (row) result.set(photo.id, row)
@@ -255,7 +243,7 @@ export async function analyzeFolder(
   const limit = pLimit(4)
 
   await Promise.all(photos.map(photo => limit(async () => {
-    const filePath = photo.jpgPath || photo.rawPaths[0]
+    const filePath = getPrimaryPath(photo)
     if (!filePath) return
 
     const existing = existingHashes.get(photo.id)

@@ -1,7 +1,7 @@
 import fs from 'fs'
 import path from 'path'
 import os from 'os'
-import { type PhotoGroup } from './scanner.js'
+import type { PhotoGroup } from '@photo-review/shared'
 
 const TRASH_DIR = path.join(os.tmpdir(), '.photoreview-trash')
 

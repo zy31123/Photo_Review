@@ -1,5 +1,6 @@
 import { type Request, type Response, type NextFunction } from 'express'
-import { getPhotoById, type PhotoGroup } from '../services/scanner.js'
+import type { PhotoGroup } from '@photo-review/shared'
+import { getPhotoById } from '../services/photoStore.js'
 import { NotFoundError } from './errorHandler.js'
 
 declare global {

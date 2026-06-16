@@ -2,7 +2,8 @@ import fs from 'fs'
 import path from 'path'
 import { fileURLToPath } from 'url'
 import sharp from 'sharp'
-import { type PhotoGroup } from '../services/scanner.js'
+import type { PhotoGroup } from '@photo-review/shared'
+import { getPrimaryPath } from '../utils/path.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const CACHE_DIR = path.join(__dirname, '..', '..', 'data', 'thumbnails')
@@ -58,7 +59,7 @@ function cleanupDiskCache(): void {
 }
 
 export async function getOrGenerateThumbnail(photo: PhotoGroup): Promise<Buffer | null> {
-  const sourcePath = photo.jpgPath || photo.rawPaths[0]
+  const sourcePath = getPrimaryPath(photo)
   if (!sourcePath) return null
 
   // Layer 1: Memory cache

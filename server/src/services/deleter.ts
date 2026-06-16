@@ -1,6 +1,6 @@
 import trash from 'trash'
 import fs from 'fs'
-import { type PhotoGroup } from './scanner.js'
+import type { PhotoGroup } from '@photo-review/shared'
 
 async function safeDelete(filePath: string): Promise<boolean> {
   try {

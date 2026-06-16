@@ -1,5 +1,21 @@
-export type ReviewAction = 'keep' | 'deleted'
-export type ReviewMode = 'sequential' | 'random'
+import type {
+  PhotoGroupWithStatus,
+  ReviewAction,
+  ReviewMode,
+  ScanResult,
+  Stats,
+  SubfolderInfo,
+  BrowseResult,
+  ExifData,
+  SimilarGroup,
+  AnalyzeResult,
+  SimilarStats,
+  AnalyzeProgress,
+} from '@photo-review/shared'
+
+// Client always works with photos that include review/rating/favorite status
+export type PhotoGroup = PhotoGroupWithStatus
+export type { PhotoGroupWithStatus, ReviewAction, ReviewMode, ScanResult, ExifData, SimilarGroup, AnalyzeResult, SimilarStats, AnalyzeProgress, Stats, SubfolderInfo, BrowseResult }
 
 const BASE = '/api'
 
@@ -33,89 +49,6 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
     }
   }
   throw new Error('请求失败')
-}
-
-export interface PhotoGroup {
-  id: string
-  name: string
-  jpgPath: string | null
-  rawPaths: string[]
-  hasJpg: boolean
-  hasRaw: boolean
-  isOrphan: boolean
-  orphanType?: 'jpg' | 'raw'
-  date?: string
-  folder: string
-  subfolder: string
-  reviewAction?: 'keep' | 'deleted' | null
-  reviewedAt?: string | null
-  rating?: number
-  favorite?: boolean
-}
-
-export interface ScanResult {
-  total: number
-  paired: number
-  orphanJpg: number
-  orphanRaw: number
-}
-
-export interface Stats {
-  total: number
-  reviewed: number
-  pending: number
-  orphanJpg: number
-  orphanRaw: number
-}
-
-export interface SubfolderInfo {
-  name: string
-  path: string
-  count: number
-}
-
-export interface BrowseResult {
-  current: string
-  parent: string | null
-  children: { name: string; path: string }[]
-}
-
-export interface ExifData {
-  camera: string
-  lens: string
-  focalLength: string
-  aperture: string
-  shutterSpeed: string
-  iso: string
-  width: number
-  height: number
-  dateTime: string
-  fileSize: string
-}
-
-export interface SimilarGroup {
-  id: string
-  photos: PhotoGroup[]
-  coverIndex: number
-  avgDistance: number
-}
-
-export interface AnalyzeResult {
-  computed: number
-  skipped: number
-  totalGroups: number
-  totalPhotos: number
-}
-
-export interface SimilarStats {
-  analyzed: number
-  total: number
-  groups: number
-}
-
-export interface AnalyzeProgress {
-  current: number
-  total: number
 }
 
 export const api = {
@@ -219,13 +152,13 @@ export const api = {
       onComplete?: (result: AnalyzeResult) => void
       onError?: (message: string) => void
     },
-    params?: { timeGap?: number; hashThreshold?: number },
+    params?: { timeGap?: number; strictThreshold?: number },
   ) => {
     const controller = new AbortController()
     fetch(`${BASE}/similarity/analyze`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ folder: activeFolder, ...params }),
+      body: JSON.stringify({ folder: activeFolder, timeGap: params?.timeGap, strictThreshold: params?.strictThreshold }),
       signal: controller.signal,
     })
       .then(async (res) => {
@@ -266,13 +199,13 @@ export const api = {
     return () => controller.abort()
   },
 
-  getSimilarGroups: (params?: { page?: number; limit?: number; timeGap?: number; hashThreshold?: number }) => {
+  getSimilarGroups: (params?: { page?: number; limit?: number; timeGap?: number; strictThreshold?: number }) => {
     const qs = new URLSearchParams()
     qs.set('folder', activeFolder)
     if (params?.page) qs.set('page', String(params.page))
     if (params?.limit) qs.set('limit', String(params.limit))
     if (params?.timeGap) qs.set('timeGap', String(params.timeGap))
-    if (params?.hashThreshold) qs.set('hashThreshold', String(params.hashThreshold))
+    if (params?.strictThreshold) qs.set('strictThreshold', String(params.strictThreshold))
     return request<{ groups: SimilarGroup[]; total: number }>(`/similarity/groups?${qs.toString()}`)
   },
 

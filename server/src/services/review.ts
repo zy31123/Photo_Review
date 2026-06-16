@@ -1,8 +1,10 @@
 import { getDb } from '../db/index.js'
-import { type PhotoGroup, getPhotosForFolder } from './scanner.js'
+import type { PhotoGroup, ReviewAction } from '@photo-review/shared'
+import { getPhotosForFolder } from './photoStore.js'
+import { getPrimaryPath } from '../utils/path.js'
 
 export interface ReviewStatus {
-  action: string
+  action: ReviewAction
   reviewedAt: string
 }
 
@@ -14,7 +16,7 @@ export function getReviewStatuses(filePaths: string[]): Map<string, ReviewStatus
   const placeholders = filePaths.map(() => '?').join(',')
   const rows = db.prepare(
     `SELECT file_path, action, reviewed_at FROM review_records WHERE file_path IN (${placeholders})`
-  ).all(...filePaths) as { file_path: string; action: string; reviewed_at: string }[]
+  ).all(...filePaths) as { file_path: string; action: ReviewAction; reviewed_at: string }[]
 
   for (const row of rows) {
     result.set(row.file_path, { action: row.action, reviewedAt: row.reviewed_at })
@@ -48,7 +50,7 @@ function getCandidates(folder: string): PhotoGroup[] {
   if (photos.length === 0) return []
 
   const now = new Date().toISOString()
-  const filePaths = photos.map(p => p.jpgPath || p.rawPaths[0] || '')
+  const filePaths = photos.map(p => getPrimaryPath(p) || '')
   const placeholders = filePaths.map(() => '?').join(',')
 
   const cached = filePaths.length > 0
@@ -58,7 +60,7 @@ function getCandidates(folder: string): PhotoGroup[] {
   const cachedPaths = new Set(cached.map(r => r.file_path))
 
   return photos.filter(p => {
-    const filePath = p.jpgPath || p.rawPaths[0] || ''
+    const filePath = getPrimaryPath(p) || ''
     return !cachedPaths.has(filePath)
   })
 }
@@ -97,7 +99,7 @@ export function getStats(folder: string) {
 
   const total = photos.filter(p => !p.isOrphan).length
 
-  const filePaths = photos.map(p => p.jpgPath || p.rawPaths[0] || '')
+  const filePaths = photos.map(p => getPrimaryPath(p) || '')
   const placeholders = filePaths.map(() => '?').join(',')
   const reviewedCount = filePaths.length > 0
     ? (db.prepare(`SELECT COUNT(*) as count FROM review_records WHERE file_path IN (${placeholders})`).get(...filePaths) as { count: number }).count

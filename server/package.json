@@ -9,6 +9,7 @@
     "start": "node dist/index.js"
   },
   "dependencies": {
+    "@photo-review/shared": "*",
     "better-sqlite3": "^11.9.1",
     "cors": "^2.8.5",
     "exifr": "^7.1.3",
