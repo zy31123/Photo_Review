@@ -95,14 +95,14 @@ router.get('/:id/exif', loadPhoto, asyncHandler(async (req, res) => {
 }))
 
 // Delete photo (move to app trash)
-router.delete('/:id', loadPhoto, (req, res) => {
-  const result = deletePhotoToTrash(req.photo!)
+router.delete('/:id', loadPhoto, asyncHandler(async (req, res) => {
+  const result = await deletePhotoToTrash(req.photo!)
   if (!result.success) {
     res.status(500).json({ success: false, message: result.message })
     return
   }
   res.json({ success: true, trashPaths: result.trashPaths })
-})
+}))
 
 // Restore a deleted photo
 const restoreSchema = z.object({
@@ -111,9 +111,9 @@ const restoreSchema = z.object({
   previousReviewAction: z.string().nullable().optional(),
 })
 
-router.post('/restore', validate(restoreSchema, 'body'), (req, res) => {
+router.post('/restore', validate(restoreSchema, 'body'), asyncHandler(async (req, res) => {
   const { photoId, trashPaths, previousReviewAction } = req.body
-  const photo = restorePhoto({
+  const photo = await restorePhoto({
     photoId,
     trashPaths,
     previousReviewAction: (previousReviewAction as ReviewAction) ?? null,
@@ -123,7 +123,7 @@ router.post('/restore', validate(restoreSchema, 'body'), (req, res) => {
     return
   }
   res.json({ success: true, photo })
-})
+}))
 
 // Batch restore deleted photos
 const restoreBatchSchema = z.object({
@@ -134,14 +134,14 @@ const restoreBatchSchema = z.object({
   })),
 })
 
-router.post('/restore-batch', validate(restoreBatchSchema, 'body'), (req, res) => {
+router.post('/restore-batch', validate(restoreBatchSchema, 'body'), asyncHandler(async (req, res) => {
   const items = req.body.items.map((item: { photoId: string; trashPaths: Record<string, string>; previousReviewAction?: string | null }) => ({
     photoId: item.photoId,
     trashPaths: item.trashPaths,
     previousReviewAction: (item.previousReviewAction as ReviewAction) ?? null,
   }))
-  const photos = restorePhotos(items)
+  const photos = await restorePhotos(items)
   res.json({ success: true, photos })
-})
+}))
 
 export default router

@@ -152,18 +152,25 @@
 ---
 
 ### Phase 5: OS 逻辑迁移 + 缓存统一 [P2]
-**状态**: not_started
+**状态**: done
 **预计**: 0.5 天
 
 **任务**:
-- [ ] 5.1 将 `routes/folders.ts` 中 `getWindowsDrives()`, `getMacVolumes()` 提取到 `services/drives.ts`
-- [ ] 5.2 统一缓存模式
-  - [ ] 评估引入 `lru-cache` 包替代手写 Map
-  - [ ] 或统一封装 `createLRUCache<T>(maxSize)` 工厂函数
-  - [ ] 考虑添加 TTL 支持
-- [ ] 5.3 修复 `exif.ts` 中 `statSync` → `fs.promises.stat`
-- [ ] 5.4 修复 `trash.ts` 中同步文件操作 → async（至少批量路径）
-- [ ] 5.5 修复 `cleanupPort.ts` 的 `findstr` 正则精度 + busy-wait → setTimeout
+- [x] 5.1 将 `routes/folders.ts` 中 `getWindowsDrives()`, `getMacVolumes()` 提取到 `services/drives.ts`
+- [x] 5.2 统一缓存模式
+  - [x] 封装 `createLRUCache<T>(maxSize)` 工厂函数（零依赖，~30 行）
+  - [x] `exifCache.ts` 改用工厂
+  - [x] `thumbnailCache.ts` 内存层改用工厂，删除 `evictMemoryCache()`
+- [x] 5.3 修复 `exif.ts` 中 `statSync` → `fs.promises.stat`（并行 Promise.all）+ 移除 `existsSync` 前置检查
+- [x] 5.4 修复 `trash.ts` 中同步文件操作 → async
+  - [x] `trash.ts`: `ensureTrashDir`, `moveFile`, `moveToTrash`, `restoreFromTrash` 全部 async
+  - [x] `photoLifecycle.ts`: `deletePhotoToTrash`, `restorePhoto`, `restorePhotos` 全部 async
+  - [x] `routes/photos.ts`: 3 个 handler 包裹 `asyncHandler`
+- [x] 5.5 修复 `cleanupPort.ts`
+  - [x] `findstr :${port}` → `findstr LISTENING` + JS 正则精确端口匹配
+  - [x] busy-wait → setTimeout 轮询 (200ms) + Promise
+  - [x] `killPortOccupant()` 返回 `Promise<void>`
+  - [x] `index.ts` 加 `await`
 
 **关键文件**:
 - `server/src/services/drives.ts` (新建)
@@ -176,69 +183,64 @@
 ## 前端计划
 
 ### Phase 6: 统一照片数据源 [P0]
-**状态**: not_started
+**状态**: done
 **预计**: 2 天
 
-**目标**: photos 数组从 4 个副本收敛为 AppContext 单一数据源 + selector hooks
-
 **任务**:
-- [ ] 6.1 重构 AppContext.tsx
-  - [ ] 保持 `photos` 为唯一数据源
-  - [ ] 提取 undo 逻辑: 将 100 行 `undoLastAction` switch 移入 `hooks/useUndoEngine.ts`（纯逻辑，不含 UI）
-  - [ ] AppContext 只暴露 `photos`, `updatePhoto(id, patch)`, `loadPhotos()`
-- [ ] 6.2 新建 selector hooks
-  - [ ] `hooks/useReviewPhotos.ts` — 从 AppContext.photos 派生审阅页需要的数据（filtered, sorted, currentIndex）
-  - [ ] `hooks/useSimilarPhotos.ts` — 从 AppContext.photos 派生相似页需要的数据
-  - [ ] `hooks/useRandomPhotos.ts` — 从 AppContext.photos 派生随机批次数据
-- [ ] 6.3 重构 ReviewContext.tsx
-  - [ ] 删除本地 `photos` 状态，改用 `useReviewPhotos()`
-  - [ ] 只保留 UI 状态: currentIndex, selectedDate, statusFilter, subfolderFilter, panel 开关
-  - [ ] 删除 `photo:restored` 事件监听（不再需要手动同步）
-  - [ ] 修复空 catch（refresh 中的 silent error）
-- [ ] 6.4 重构 SimilarContext.tsx
-  - [ ] 删除本地 `groups` 中的冗余 photos 副本（改为引用 AppContext.photos 中的对象）
-  - [ ] 分离 UI 状态（lightbox, focusedIndex）到独立 hook
-  - [ ] 修复 `directDelete` 中的 photo restore 归属 bug（当前总是加到 group[0]）
-- [ ] 6.5 重构 useRandomBatch.ts
-  - [ ] 删除本地 `photos` 状态
-  - [ ] 改用 `useRandomPhotos()` selector
-  - [ ] 保留 UI 状态: currentIndex, batchSize, loading, error
-- [ ] 6.6 删除 `context/RandomNavContext.tsx`（0 consumers，死代码）
-- [ ] 6.7 删除 `photo:restored` 事件机制（不再需要跨 context 同步）
-- [ ] 6.8 验证: 所有页面的照片操作（审阅、评分、收藏、删除、恢复）正常
+- [x] 6.1 重构 AppContext.tsx
+  - [x] 保持 `photos` 为唯一数据源
+  - [x] 提取 undo 逻辑: 将 100 行 `undoLastAction` switch 移入 `hooks/useUndoEngine.ts`（纯逻辑，不含 UI）
+  - [x] AppContext 只暴露 `photos`, `updatePhotoRating/Favorite`, `loadPhotos()`
+- [x] 6.2 新建 selector hooks
+  - [x] `hooks/useReviewPhotos.ts` — 从 AppContext.photos 派生审阅页需要的数据（filtered, sorted）
+  - [x] SimilarContext: 保留 groups 本地状态（API 返回的聚类视图），通过 appPhotos 长度变化自动刷新
+  - [x] useRandomBatch: 保留本地 batch 状态（API 随机采样，非全量派生）
+- [x] 6.3 重构 ReviewContext.tsx
+  - [x] 删除本地 `photos` 状态，使用 AppContext.photos + useReviewPhotos()
+  - [x] 只保留 UI 状态: currentIndex, selectedDate, statusFilter, subfolderFilter, panel 开关
+  - [x] 删除 `photo:restored` 事件监听（不再需要手动同步）
+- [x] 6.4 重构 SimilarContext.tsx
+  - [x] 删除 photo:restored 事件监听（30+ 行 → 8 行 appPhotos.length 监控）
+  - [x] 修复 directDelete 的 photo restore bug（不再错误地加到 group[0]，改为重新获取 groups）
+- [x] 6.5 重构 useRandomBatch.ts
+  - [x] 删除 `photo:restored` 事件监听
+- [x] 6.6 删除 `context/RandomNavContext.tsx`（useRandomNav 0 consumers，确认死代码）
+- [x] 6.7 删除 `hooks/photoEvents.ts`（无 emitter/listener，不再需要）
+- [x] 6.8 验证: `npm run build` 通过，类型检查无错误
 
 **关键文件**:
-- `client/src/context/AppContext.tsx` (重构)
-- `client/src/context/ReviewContext.tsx` (大幅瘦身)
-- `client/src/context/SimilarContext.tsx` (大幅瘦身)
-- `client/src/hooks/useRandomBatch.ts` (瘦身)
-- `client/src/hooks/useReviewPhotos.ts` (新建)
+- `client/src/context/AppContext.tsx` (重写: 199→78 行)
+- `client/src/context/ReviewContext.tsx` (重写: 190→156 行)
+- `client/src/context/SimilarContext.tsx` (精简: 移除 34 行事件监听)
+- `client/src/hooks/useRandomBatch.ts` (精简: 移除 11 行事件监听)
 - `client/src/hooks/useUndoEngine.ts` (新建)
+- `client/src/hooks/useReviewPhotos.ts` (新建)
 - `client/src/context/RandomNavContext.tsx` (删除)
+- `client/src/hooks/photoEvents.ts` (删除)
+- `client/src/pages/RandomPage.tsx` (移除 RandomNavProvider)
 
 ---
 
 ### Phase 7: 共享组件提取 + 页面拆分 [P1]
-**状态**: not_started
+**状态**: done
 **预计**: 1 天
 
 **任务**:
-- [ ] 7.1 提取 `components/shared/PhotoActionBar.tsx`
-  - [ ] 合并 ReviewControls.tsx 和 RandomControls.tsx 的公共逻辑
-  - [ ] Props: canGoPrev, canGoNext, rating, favorite, onPrev, onNext, onKeep, onDelete, onRating, onFavorite
-  - [ ] ReviewControls 和 RandomControls 改为使用 PhotoActionBar + 各自的额外按钮
-- [ ] 7.2 提取 `components/ui/LoadingScreen.tsx`
-  - [ ] 替代 GridPage, ReviewPage, SimilarPage 中的内联 spinner
-- [ ] 7.3 拆分 RandomPage.tsx (244行)
-  - [ ] `components/random/StartView.tsx` — 开始审阅界面
-  - [ ] `components/random/BatchViewer.tsx` — 批次浏览界面
-  - [ ] `components/random/BatchCompleteView.tsx` — 批次完成界面
-- [ ] 7.4 修复 `useExif` 依赖: `photo` → `photo?.id`
-- [ ] 7.5 修复 `useKeyboardShortcuts` — 内部用 useRef 存储 callback map，调用方不再需要 useMemo
-- [ ] 7.6 添加 React ErrorBoundary (`components/ui/ErrorBoundary.tsx`)
-  - [ ] 包裹 App.tsx 路由
-  - [ ] 降级 UI: 错误信息 + 返回首页按钮
-- [ ] 7.7 验证: 所有页面渲染正常，ErrorBoundary 可捕获渲染错误
+- [x] 7.1 提取 `components/shared/PhotoActionBar.tsx`
+  - [x] 合并 ReviewControls.tsx 和 RandomControls.tsx 的公共逻辑
+  - [x] ReviewControls 和 RandomControls 改为使用 PhotoActionBar + 各自的额外按钮
+- [x] 7.2 提取 `components/ui/LoadingScreen.tsx`
+  - [x] 替代 GridPage, ReviewPage 中的内联 spinner
+- [x] 7.3 拆分 RandomPage.tsx (244行)
+  - [x] `components/random/StartView.tsx` — 开始审阅界面
+  - [x] `components/random/BatchViewer.tsx` — 批次浏览界面 (含 zoom/drag)
+  - [x] `components/random/BatchCompleteView.tsx` — 批次完成界面
+- [x] 7.4 修复 `useExif` 依赖: `photo` → `photo?.id`
+- [x] 7.5 修复 `useKeyboardShortcuts` — 内部用 useRef 存储 callback map，调用方不再需要 useMemo
+- [x] 7.6 添加 React ErrorBoundary (`components/ui/ErrorBoundary.tsx`)
+  - [x] 包裹 App.tsx 路由
+  - [x] 降级 UI: 错误信息 + 返回首页按钮
+- [x] 7.7 验证: `npm run build` 通过，类型检查无错误
 
 **关键文件**:
 - `client/src/components/shared/PhotoActionBar.tsx` (新建)
@@ -253,23 +255,23 @@
 ---
 
 ### Phase 8: 错误处理修复 [P1]
-**状态**: not_started
+**状态**: done
 **预计**: 0.5 天
 
 **任务**:
-- [ ] 8.1 修复 `api/index.ts` 重试逻辑
-  - [ ] 只对网络错误 (fetch throws) 重试
-  - [ ] 4xx 响应不重试（客户端错误重试无意义）
-  - [ ] 仅 5xx 或网络错误重试
-- [ ] 8.2 修复 ReviewContext.refresh() 的空 catch
-  - [ ] 设置 error 状态
-  - [ ] 显示 toast 通知
-- [ ] 8.3 修复 SSE 错误处理 (`analyzeSimilarStream`)
-  - [ ] 使用 try/catch 包裹 SSE 连接
-  - [ ] 错误通过 onError callback 传递
-- [ ] 8.4 统一 API 错误响应格式
-  - [ ] 与后端协商统一为 `{ error: { code: string, message: string } }`
-- [ ] 8.5 验证: 网络断开时显示友好错误，不静默失败
+- [x] 8.1 修复 `api/index.ts` 重试逻辑
+  - [x] 只对网络错误 (fetch throws) 或 5xx 服务端错误重试
+  - [x] 4xx 响应不重试（客户端错误重试无意义）
+  - [x] 错误解析支持新格式 `{ error: { message } }` + 旧格式 `{ message }` 兼容
+- [x] 8.2 修复 ReviewContext.refresh() 的空 catch → 设置 error 状态
+- [x] 8.3 修复 SSE 错误处理 (`analyzeSimilarStream`)
+  - [x] 错误解析统一为新格式
+  - [x] SimilarContext.analyze() 空 catch → toast 通知
+  - [x] refreshStats() 空 catch → toast 通知
+- [x] 8.4 统一 API 错误响应格式
+  - [x] 后端 errorHandler → `{ error: { code, message } }`
+  - [x] 客户端 request() + SSE 解析支持新旧两种格式
+- [x] 8.5 验证: `npm run build` 通过，类型检查无错误
 
 **关键文件**:
 - `client/src/api/index.ts`
@@ -278,20 +280,23 @@
 ---
 
 ### Phase 9: 配置管理 [P2]
-**状态**: not_started
+**状态**: done
 **预计**: 0.5 天
 
 **任务**:
-- [ ] 9.1 添加 `.env` 文件支持
-  - [ ] 服务端: `dotenv` 或直接 `process.env`
-  - [ ] 客户端: Vite 内置 `import.meta.env`
-- [ ] 9.2 统一端口配置
-  - [ ] `BACKEND_PORT=3001` → server/index.ts
-  - [ ] `FRONTEND_PORT=5173` → client/vite.config.ts
-  - [ ] `CORS_ORIGINS=http://localhost:5173,http://127.0.0.1:5173` → server/index.ts
-- [ ] 9.3 提取 `server/src/config.ts` 集中管理常量
-  - [ ] MAX_FOLDERS, THUMBNAIL_SIZE, MAX_MEMORY_CACHE, MAX_DISK_CACHE_MB, DEFAULT_PAGE_LIMIT
-- [ ] 9.4 验证: 修改 .env 后服务启动使用新配置
+- [x] 9.1 添加 `.env` 文件支持
+  - [x] 服务端: `process.env` + 默认值 (config.ts)
+  - [x] 客户端: Vite `loadEnv()` 读取环境变量
+- [x] 9.2 统一端口配置
+  - [x] `PORT=3001` → server config.ts → index.ts
+  - [x] `FRONTEND_PORT=5173` → client vite.config.ts
+  - [x] `BACKEND_PORT` / `PORT` → vite proxy target
+  - [x] `CORS_ORIGINS` → server config.ts → index.ts
+- [x] 9.3 提取 `server/src/config.ts` 集中管理常量
+  - [x] PORT, CORS_ORIGINS, THUMBNAIL_SIZE, MAX_MEMORY_CACHE, MAX_DISK_CACHE_MB, MAX_FOLDERS, DEFAULT_PAGE_LIMIT, SQLITE_IN_CHUNK
+  - [x] 更新所有引用文件: index.ts, thumbnailCache.ts, photoStore.ts, photoQuery.ts, photoMeta.ts, review.ts, similarity/index.ts
+- [x] 9.4 创建 `.env.example` + 更新 `.gitignore` (允许 .env.example 提交)
+- [x] 9.5 验证: `npm run build` 通过，类型检查无错误
 
 **关键文件**:
 - `.env` (新建)

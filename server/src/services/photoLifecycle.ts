@@ -24,11 +24,18 @@ export interface DeleteResult {
  * 执行顺序: 文件移动 → DB INSERT → 内存移除。
  * 若 DB INSERT 失败，执行补偿操作将文件移回原位，确保三态一致。
  */
-export function deletePhotoToTrash(photo: PhotoGroup): DeleteResult {
-  const { trashPaths } = moveToTrash(photo)
+export async function deletePhotoToTrash(photo: PhotoGroup): Promise<DeleteResult> {
+  const { trashPaths, failed } = await moveToTrash(photo)
 
   if (Object.keys(trashPaths).length === 0) {
     return { success: false, message: '无法移动文件到回收站' }
+  }
+
+  // Partial failure: some files could not be moved. Roll back the successful
+  // ones so the photo stays intact (all-or-nothing).
+  if (failed.length > 0) {
+    await restoreFromTrash(photo.id, trashPaths)
+    return { success: false, message: `部分文件移动失败 (${failed.length} 个)` }
   }
 
   const db = getDb()
@@ -47,7 +54,7 @@ export function deletePhotoToTrash(photo: PhotoGroup): DeleteResult {
     )
   } catch (err) {
     // DB 写入失败: 补偿回滚，将文件从回收站移回原位
-    restoreFromTrash(photo.id, trashPaths)
+    await restoreFromTrash(photo.id, trashPaths)
     throw err
   }
 
@@ -78,8 +85,8 @@ function buildPhotoWithStatus(photoData: PhotoGroup): PhotoGroupWithStatus {
  * 恢复单张已删除照片（非事务，仅用于单张恢复接口）。
  * 执行顺序: 文件还原 → addPhoto → DB 清理 → 返回带状态对象。
  */
-export function restorePhoto(item: RestoreItem): PhotoGroupWithStatus | null {
-  const { restored } = restoreFromTrash(item.photoId, item.trashPaths)
+export async function restorePhoto(item: RestoreItem): Promise<PhotoGroupWithStatus | null> {
+  const { restored } = await restoreFromTrash(item.photoId, item.trashPaths)
   if (restored.length === 0) return null
 
   const db = getDb()
@@ -113,7 +120,7 @@ export function restorePhoto(item: RestoreItem): PhotoGroupWithStatus | null {
  *
  * 返回成功恢复的照片数组。部分失败时返回已成功项，不会回滚已成功的恢复。
  */
-export function restorePhotos(items: RestoreItem[]): PhotoGroupWithStatus[] {
+export async function restorePhotos(items: RestoreItem[]): Promise<PhotoGroupWithStatus[]> {
   if (items.length === 0) return []
   const db = getDb()
 
@@ -127,7 +134,7 @@ export function restorePhotos(items: RestoreItem[]): PhotoGroupWithStatus[] {
   const entries: RestoredEntry[] = []
 
   for (const item of items) {
-    const { restored } = restoreFromTrash(item.photoId, item.trashPaths)
+    const { restored } = await restoreFromTrash(item.photoId, item.trashPaths)
     if (restored.length === 0) {
       console.error(`[restorePhotos] 文件还原失败: photoId=${item.photoId}`)
       continue
