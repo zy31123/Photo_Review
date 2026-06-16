@@ -2,8 +2,8 @@ import { Star, Trash2, Check } from 'lucide-react'
 import { api, type SimilarGroup } from '../../api'
 import { useSimilar } from '../../context/SimilarContext'
 
-export default function ClusterCard({ group }: { group: SimilarGroup }) {
-  const { selections, openLightbox, keepRecommended } = useSimilar()
+export default function ClusterCard({ group, focused }: { group: SimilarGroup; focused?: boolean }) {
+  const { selections, openLightbox, keepRecommended, toggleSelection } = useSimilar()
   const groupSel = selections.get(group.id)
 
   const deleteCount = groupSel
@@ -12,7 +12,7 @@ export default function ClusterCard({ group }: { group: SimilarGroup }) {
 
   return (
     <div
-      className="bg-bg-elevated rounded-xl shadow-card hover:shadow-card-hover transition-all duration-fast overflow-hidden cursor-pointer"
+      className={`bg-bg-elevated rounded-xl shadow-card hover:shadow-card-hover transition-all duration-fast overflow-hidden cursor-pointer ${focused ? 'ring-2 ring-accent' : ''}`}
       onClick={() => openLightbox(group.id)}
     >
       {/* Header */}
@@ -42,6 +42,7 @@ export default function ClusterCard({ group }: { group: SimilarGroup }) {
             <div
               key={photo.id}
               className="relative flex-shrink-0"
+              onClick={e => { e.stopPropagation(); toggleSelection(group.id, photo.id) }}
             >
               <img
                 src={api.thumbnailUrl(photo.id)}

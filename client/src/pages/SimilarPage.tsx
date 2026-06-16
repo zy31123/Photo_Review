@@ -1,23 +1,78 @@
-import { useEffect, useMemo } from 'react'
+import { useEffect, useCallback, useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useApp } from '../context/AppContext'
 import { SimilarProvider, useSimilar } from '../context/SimilarContext'
-import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts'
 import NavBar from '../components/NavBar'
 import SimilarToolbar from '../components/similar/SimilarToolbar'
 import ClusterGrid from '../components/similar/ClusterGrid'
 import ClusterLightbox from '../components/similar/ClusterLightbox'
 
 function SimilarLayout() {
-  const { status, groups, progress, refreshStats, analyze } = useSimilar()
-  const { undoLastAction } = useApp()
+  const { status, groups, progress, refreshStats, analyze, lightbox, selectedDeleteCount,
+    focusedIndex, setFocusedIndex, keepRecommendedFocused, openLightboxFocused, deleteSelected,
+  } = useSimilar()
 
   useEffect(() => { refreshStats() }, [refreshStats])
 
-  const shortcuts = useMemo(() => ({
-    onUndo: undoLastAction,
-  }), [undoLastAction])
-  useKeyboardShortcuts(shortcuts)
+  // Confirmation state for batch delete
+  const [confirmDelete, setConfirmDelete] = useState(false)
+  const confirmTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+
+  const handleBatchDelete = useCallback(() => {
+    if (confirmDelete) {
+      clearTimeout(confirmTimerRef.current)
+      setConfirmDelete(false)
+      deleteSelected()
+    } else {
+      setConfirmDelete(true)
+      clearTimeout(confirmTimerRef.current)
+      confirmTimerRef.current = setTimeout(() => setConfirmDelete(false), 2000)
+    }
+  }, [confirmDelete, deleteSelected])
+
+  useEffect(() => () => clearTimeout(confirmTimerRef.current), [])
+
+  // Grid-level keyboard shortcuts (only when lightbox is closed)
+  const handleGridKey = useCallback((e: KeyboardEvent) => {
+    if (lightbox.open) return
+    if (status !== 'done' || groups.length === 0) return
+    if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return
+
+    const clamp = (i: number) => Math.max(0, Math.min(i, groups.length - 1))
+
+    switch (e.key) {
+      case 'ArrowDown':
+      case 'j':
+      case 'J':
+        e.preventDefault()
+        if (groups.length > 0) setFocusedIndex(clamp(focusedIndex + 1))
+        break
+      case 'ArrowUp':
+      case 'k':
+      case 'K':
+        e.preventDefault()
+        if (groups.length > 0) setFocusedIndex(clamp(focusedIndex - 1))
+        break
+      case 'Enter':
+        e.preventDefault()
+        openLightboxFocused()
+        break
+      case 'd':
+      case 'D':
+        e.preventDefault()
+        keepRecommendedFocused()
+        break
+      case 'Delete':
+        e.preventDefault()
+        handleBatchDelete()
+        break
+    }
+  }, [lightbox.open, status, groups.length, focusedIndex, setFocusedIndex, openLightboxFocused, keepRecommendedFocused, handleBatchDelete])
+
+  useEffect(() => {
+    document.addEventListener('keydown', handleGridKey)
+    return () => document.removeEventListener('keydown', handleGridKey)
+  }, [handleGridKey])
 
   if (status === 'analyzing') {
     const pct = progress ? Math.round((progress.current / progress.total) * 100) : 0
@@ -97,6 +152,11 @@ function SimilarLayout() {
       <SimilarToolbar />
       <ClusterGrid />
       <ClusterLightbox />
+      {confirmDelete && selectedDeleteCount > 0 && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 px-5 py-2.5 rounded-xl bg-danger/90 text-white text-body font-medium shadow-lg backdrop-blur-sm animate-pulse">
+          再按一次 Delete 确认删除 {selectedDeleteCount} 张照片
+        </div>
+      )}
     </div>
   )
 }

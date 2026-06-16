@@ -21,6 +21,7 @@ interface SimilarContextType {
   groups: SimilarGroup[]
   selections: Map<string, Map<string, SelectionState>>
   lightbox: ClusterLightboxState
+  focusedIndex: number
   analyze: () => Promise<void>
   abortAnalyze: () => void
   refreshStats: () => Promise<void>
@@ -35,6 +36,9 @@ interface SimilarContextType {
   toggleCompareMode: () => void
   setCompareIndex: (index: number) => void
   directDelete: (photoId: string) => Promise<void>
+  setFocusedIndex: (index: number) => void
+  keepRecommendedFocused: () => void
+  openLightboxFocused: () => void
 }
 
 const SimilarCtx = createContext<SimilarContextType | null>(null)
@@ -54,6 +58,16 @@ export function SimilarProvider({ children }: { children: ReactNode }) {
   const [groups, setGroups] = useState<SimilarGroup[]>([])
   const [selections, setSelections] = useState<Map<string, Map<string, SelectionState>>>(new Map())
   const [progress, setProgress] = useState<AnalyzeProgress | null>(null)
+  const [focusedIndex, setFocusedIndex] = useState(0)
+
+  // Clamp focusedIndex when groups shrink
+  useEffect(() => {
+    if (focusedIndex >= groups.length && groups.length > 0) {
+      setFocusedIndex(groups.length - 1)
+    } else if (groups.length === 0) {
+      setFocusedIndex(0)
+    }
+  }, [groups.length, focusedIndex])
   const [lightbox, setLightbox] = useState<ClusterLightboxState>({
     open: false, groupId: null, currentIndex: 0, compareMode: false, compareIndex: null,
   })
@@ -374,15 +388,27 @@ export function SimilarProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
+  const keepRecommendedFocused = useCallback(() => {
+    const group = groups[focusedIndex]
+    if (group) keepRecommended(group.id)
+  }, [groups, focusedIndex, keepRecommended])
+
+  const openLightboxFocused = useCallback(() => {
+    const group = groups[focusedIndex]
+    if (group) openLightbox(group.id)
+  }, [groups, focusedIndex, openLightbox])
+
   const value = useMemo(() => ({
-    status, result, stats, groups, selections, progress, lightbox,
+    status, result, stats, groups, selections, progress, lightbox, focusedIndex,
     analyze, abortAnalyze, refreshStats, toggleSelection, keepRecommended, deleteAllExceptRecommended,
     deleteSelected, selectedDeleteCount,
     openLightbox, closeLightbox, navigateLightbox, toggleCompareMode, setCompareIndex, directDelete,
-  }), [status, result, stats, groups, selections, progress, lightbox,
+    setFocusedIndex, keepRecommendedFocused, openLightboxFocused,
+  }), [status, result, stats, groups, selections, progress, lightbox, focusedIndex,
     analyze, abortAnalyze, refreshStats, toggleSelection, keepRecommended, deleteAllExceptRecommended,
     deleteSelected, selectedDeleteCount,
-    openLightbox, closeLightbox, navigateLightbox, toggleCompareMode, setCompareIndex, directDelete])
+    openLightbox, closeLightbox, navigateLightbox, toggleCompareMode, setCompareIndex, directDelete,
+    setFocusedIndex, keepRecommendedFocused, openLightboxFocused])
 
   return (
     <SimilarCtx.Provider value={value}>
