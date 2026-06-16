@@ -1,7 +1,6 @@
 import { createContext, useContext, useState, useMemo, useCallback, useRef, useEffect, type ReactNode } from 'react'
 import { useApp } from './AppContext'
 import { api, type SimilarGroup, type AnalyzeResult, type SimilarStats, type AnalyzeProgress, type PhotoGroup } from '../api'
-import { photoEvents } from '../hooks/photoEvents'
 
 type SelectionState = 'keep' | 'delete' | null
 
@@ -50,7 +49,7 @@ export function useSimilar() {
 }
 
 export function SimilarProvider({ children }: { children: ReactNode }) {
-  const { activeFolder, pushUndo, toast, undoLastAction } = useApp()
+  const { photos: appPhotos, activeFolder, pushUndo, toast, undoLastAction } = useApp()
 
   const [status, setStatus] = useState<'idle' | 'analyzing' | 'done'>('idle')
   const [result, setResult] = useState<AnalyzeResult | null>(null)
@@ -78,10 +77,10 @@ export function SimilarProvider({ children }: { children: ReactNode }) {
     try {
       const s = await api.getSimilarStats()
       setStats(s)
-    } catch {
-      // ignore
+    } catch (e: any) {
+      toast.show(e.message || '获取统计失败')
     }
-  }, [activeFolder])
+  }, [activeFolder, toast])
 
   const analyze = useCallback(async () => {
     if (!activeFolder) return
@@ -112,11 +111,12 @@ export function SimilarProvider({ children }: { children: ReactNode }) {
       setSelections(newSelections)
       setProgress(null)
       setStatus('done')
-    } catch {
+    } catch (e: any) {
       setProgress(null)
       setStatus('idle')
+      toast.show(e.message || '分析失败')
     }
-  }, [activeFolder])
+  }, [activeFolder, toast])
 
   const abortAnalyze = useCallback(() => {
     abortRef.current?.()
@@ -352,41 +352,20 @@ export function SimilarProvider({ children }: { children: ReactNode }) {
     })
   }, [groups, pushUndo, toast, undoLastAction])
 
-  // Listen for photo restore events (from undo)
+  // When photos are restored via undo (appPhotos grows), re-fetch groups to stay in sync.
+  // No more event plumbing needed — AppContext.photos is the single source of truth.
+  const prevPhotosLenRef = useRef(appPhotos.length)
   useEffect(() => {
-    const singleHandler = ({ photo }: { photoId: string; photo: PhotoGroup }) => {
-      setGroups(prev => {
-        // Check if already in a group
-        for (const g of prev) {
-          if (g.photos.some(p => p.id === photo.id)) return prev
-        }
-        // Try to find the best group (same folder) or create new entry
-        // For now, add to the first group that has room
-        if (prev.length > 0) {
-          return prev.map((g, i) =>
-            i === 0 ? { ...g, photos: [...g.photos, photo] } : g
-          )
-        }
-        return prev
+    const prevLen = prevPhotosLenRef.current
+    prevPhotosLenRef.current = appPhotos.length
+    if (appPhotos.length > prevLen && status === 'done') {
+      api.getSimilarGroups({ limit: 200 }).then(({ groups: g }) => {
+        setGroups(g)
+      }).catch((e: any) => {
+        toast.show(e.message || '刷新相似分组失败')
       })
     }
-    const batchHandler = ({ photos }: { photos: PhotoGroup[] }) => {
-      setGroups(prev => {
-        const existingIds = new Set(prev.flatMap(g => g.photos.map(p => p.id)))
-        const newPhotos = photos.filter(p => !existingIds.has(p.id))
-        if (newPhotos.length === 0 || prev.length === 0) return prev
-        return prev.map((g, i) =>
-          i === 0 ? { ...g, photos: [...g.photos, ...newPhotos] } : g
-        )
-      })
-    }
-    photoEvents.on('photo:restored', singleHandler)
-    photoEvents.on('photos:restored-batch', batchHandler)
-    return () => {
-      photoEvents.off('photo:restored', singleHandler)
-      photoEvents.off('photos:restored-batch', batchHandler)
-    }
-  }, [])
+  }, [appPhotos.length, status])
 
   const keepRecommendedFocused = useCallback(() => {
     const group = groups[focusedIndex]

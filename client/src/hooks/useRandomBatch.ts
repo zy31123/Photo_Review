@@ -1,7 +1,6 @@
-import { useState, useCallback, useRef, useEffect } from 'react'
+import { useState, useCallback, useRef } from 'react'
 import { api, type PhotoGroup } from '../api'
 import { useApp } from '../context/AppContext'
-import { photoEvents } from './photoEvents'
 
 export function useRandomBatch() {
   const [photos, setPhotos] = useState<PhotoGroup[]>([])
@@ -21,18 +20,6 @@ export function useRandomBatch() {
   const batchReviewed = actionedSet.size
   const canGoPrev = currentIndex > 0
   const canGoNext = currentIndex < photos.length - 1
-
-  // Listen for photo restore events (from undo)
-  useEffect(() => {
-    const handler = ({ photo }: { photoId: string; photo: PhotoGroup }) => {
-      setPhotos(prev => {
-        if (prev.find(p => p.id === photo.id)) return prev
-        return [...prev, photo]
-      })
-    }
-    photoEvents.on('photo:restored', handler)
-    return () => { photoEvents.off('photo:restored', handler) }
-  }, [])
 
   const loadBatch = useCallback(async (size?: number) => {
     const count = size ?? batchSize

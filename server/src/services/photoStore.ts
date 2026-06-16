@@ -1,9 +1,9 @@
 import path from 'path'
 import { resolveNormalized } from '../utils/path.js'
+import { MAX_FOLDERS } from '../config.js'
 import type { PhotoGroup, SubfolderInfo } from '@photo-review/shared'
 
 // In-memory store for scanned photos (keyed by folder path)
-const MAX_FOLDERS = 10
 const photoStore = new Map<string, PhotoGroup[]>()
 const photoIndex = new Map<string, PhotoGroup>()
 

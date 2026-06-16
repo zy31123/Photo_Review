@@ -1,18 +1,17 @@
-import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Timer, LayoutList } from 'lucide-react'
 import { api, getActiveFolder } from '../api'
 import { useApp } from '../context/AppContext'
-import { RandomNavProvider } from '../context/RandomNavContext'
 import { useRandomBatch } from '../hooks/useRandomBatch'
 import { useExif } from '../hooks/useExif'
 import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts'
-import { useDragImage } from '../hooks/useDragImage'
-import { useImageZoom } from '../hooks/useImageZoom'
 import NavBar from '../components/NavBar'
-import RandomControls from '../components/random/RandomControls'
-import BatchSelector from '../components/random/BatchSelector'
+import StartView from '../components/random/StartView'
+import BatchViewer from '../components/random/BatchViewer'
+import BatchCompleteView from '../components/random/BatchCompleteView'
 import PhotoDetailsView from '../components/review/PhotoDetailsView'
+import LoadingScreen from '../components/ui/LoadingScreen'
 import ToolbarDivider from '../components/ui/ToolbarDivider'
 
 export default function RandomPage() {
@@ -20,9 +19,6 @@ export default function RandomPage() {
   const { isLoaded, updatePhotoRating, updatePhotoFavorite, undoLastAction } = useApp()
   const batch = useRandomBatch()
   const exif = useExif(batch.currentPhoto)
-  const drag = useDragImage(batch.currentPhoto)
-  const { resetZoom, zoomStyle, handleWheel: zoomWheel, handlers: zoomHandlers } = useImageZoom()
-  const containerRef = useRef<HTMLDivElement>(null)
   const [cacheDays, setCacheDays] = useState(7)
   const [started, setStarted] = useState(false)
 
@@ -38,13 +34,6 @@ export default function RandomPage() {
     })
   }, [])
 
-  useEffect(() => {
-    const el = containerRef.current
-    if (!el) return
-    el.addEventListener('wheel', zoomWheel, { passive: false })
-    return () => el.removeEventListener('wheel', zoomWheel)
-  }, [zoomWheel])
-
   const handleCacheDaysChange = async (days: number) => {
     setCacheDays(days)
     await api.updateSettings({ random_cache_days: String(days) })
@@ -55,7 +44,8 @@ export default function RandomPage() {
     batch.loadBatch()
   }
 
-  const shortcuts = useMemo(() => ({
+  // useKeyboardShortcuts uses useRef internally — no useMemo needed
+  useKeyboardShortcuts(reviewing ? {
     onPrev: batch.goPrev,
     onNext: batch.goNext,
     onKeep: () => batch.handleAction('keep'),
@@ -65,49 +55,10 @@ export default function RandomPage() {
     onRating: (rating: number) => { if (batch.currentPhoto) updatePhotoRating(batch.currentPhoto.id, rating) },
     onFavorite: () => { if (batch.currentPhoto) updatePhotoFavorite(batch.currentPhoto.id) },
     onUndo: undoLastAction,
-  }), [batch, updatePhotoRating, updatePhotoFavorite, undoLastAction])
-
-  useKeyboardShortcuts(reviewing ? shortcuts : {})
-
-  useEffect(() => { resetZoom() }, [batch.currentPhoto?.id, resetZoom])
+  } : {})
 
   const rightW = 'clamp(18.75rem, 18vw, 27.5rem)'
 
-  /** Loading spinner */
-  const loadingView = (
-    <div className="flex items-center justify-center h-full">
-      <div className="w-8 h-8 border-2 border-accent border-t-transparent rounded-full animate-spin" />
-    </div>
-  )
-
-  /** Batch complete — all photos in batch reviewed */
-  const batchCompleteView = (
-    <div className="flex flex-col items-center justify-center h-full gap-4">
-      <p className="text-text-secondary text-callout">本批照片已审阅完毕</p>
-      <button
-        onClick={() => batch.loadBatch()}
-        className="h-10 px-10 rounded-full bg-accent text-white font-semibold text-callout hover:bg-accent-hover transition-colors duration-fast shadow-sm"
-      >
-        加载下一批
-      </button>
-    </div>
-  )
-
-  /** Start screen — not yet started */
-  const startView = !started ? (
-    <div className="flex items-center justify-center w-full h-full">
-      <BatchSelector
-        batchSize={batch.batchSize}
-        onBatchSizeChange={batch.changeBatchSize}
-        onStart={handleStart}
-        loading={batch.loading}
-        exhausted={batch.exhausted}
-        sessionReviewed={batch.sessionReviewed}
-      />
-    </div>
-  ) : null
-
-  /** Toolbar — only when reviewing */
   const toolbar = reviewing && (
     <div className="h-[var(--toolbar-height)] border-b border-border-subtle bg-glass backdrop-blur-xl flex items-center px-4 gap-3 shrink-0">
       <span className="text-text-secondary text-caption font-mono truncate max-w-[10rem]">
@@ -152,21 +103,31 @@ export default function RandomPage() {
     </div>
   )
 
+  const mainContent = !started
+    ? <StartView batchSize={batch.batchSize} onBatchSizeChange={batch.changeBatchSize} onStart={handleStart} loading={batch.loading} exhausted={batch.exhausted} sessionReviewed={batch.sessionReviewed} />
+    : batch.loading ? <LoadingScreen />
+    : batch.batchComplete && batch.photos.length === 0 ? <BatchCompleteView onLoadMore={() => batch.loadBatch()} />
+    : !batch.currentPhoto ? <LoadingScreen />
+    : <BatchViewer
+        photo={batch.currentPhoto}
+        batchReviewed={batch.batchReviewed}
+        batchTotal={batch.batchTotal}
+        canGoPrev={batch.canGoPrev}
+        canGoNext={batch.canGoNext}
+        rating={batch.currentPhoto?.rating ?? 0}
+        favorite={batch.currentPhoto?.favorite ?? false}
+        onPrev={batch.goPrev}
+        onNext={batch.goNext}
+        onSkip={() => batch.handleAction('skip')}
+        onKeep={() => batch.handleAction('keep')}
+        onDelete={() => batch.handleAction('deleted')}
+        onRating={(rating: number) => { if (batch.currentPhoto) updatePhotoRating(batch.currentPhoto.id, rating) }}
+        onFavorite={() => { if (batch.currentPhoto) updatePhotoFavorite(batch.currentPhoto.id) }}
+      />
+
   return (
-    <RandomNavProvider
-      currentPhoto={batch.currentPhoto}
-      batchReviewed={batch.batchReviewed}
-      batchTotal={batch.batchTotal}
-      sessionReviewed={batch.sessionReviewed}
-      rightPanelOpen={batch.rightPanelOpen}
-      onToggleRightPanel={batch.toggleRightPanel}
-      cacheDays={cacheDays}
-      onCacheDaysChange={handleCacheDaysChange}
-    >
     <div className="h-screen flex flex-col bg-bg">
       <NavBar />
-
-      {/* Toolbar: only when reviewing */}
       {toolbar}
 
       {batch.error && (
@@ -176,69 +137,14 @@ export default function RandomPage() {
       )}
 
       <div className="flex-1 min-h-0 flex">
-        {/* Start screen or photo viewer */}
-        {startView || (
-          <div
-            ref={containerRef}
-            className="flex-1 relative flex items-center justify-center overflow-hidden bg-[#1D1D1F]"
-          >
-            {/* Sub-states inside viewer */}
-            {batch.loading ? loadingView
-              : batch.batchComplete && batch.photos.length === 0 ? batchCompleteView
-              : !batch.currentPhoto ? loadingView
-              : (
-                <>
-                  <img
-                    key={batch.currentPhoto.id}
-                    src={api.fullUrl(batch.currentPhoto.id)}
-                    alt={batch.currentPhoto.name}
-                    className="max-h-full max-w-full object-contain rounded-md"
-                    style={{ ...zoomStyle, transformOrigin: '0 0' }}
-                    {...drag}
-                    onMouseDown={zoomHandlers.onMouseDown}
-                    onMouseMove={zoomHandlers.onMouseMove}
-                    onMouseUp={zoomHandlers.onMouseUp}
-                    onMouseLeave={zoomHandlers.onMouseLeave}
-                    onDoubleClick={zoomHandlers.onDoubleClick}
-                  />
-                  <RandomControls
-                    canGoPrev={batch.canGoPrev}
-                    canGoNext={batch.canGoNext}
-                    rating={batch.currentPhoto?.rating ?? 0}
-                    favorite={batch.currentPhoto?.favorite ?? false}
-                    onPrev={batch.goPrev}
-                    onNext={batch.goNext}
-                    onSkip={() => batch.handleAction('skip')}
-                    onKeep={() => batch.handleAction('keep')}
-                    onDelete={() => batch.handleAction('deleted')}
-                    onRating={(rating: number) => { if (batch.currentPhoto) updatePhotoRating(batch.currentPhoto.id, rating) }}
-                    onFavorite={() => { if (batch.currentPhoto) updatePhotoFavorite(batch.currentPhoto.id) }}
-                  />
-
-                  {/* Progress bar */}
-                  {batch.batchTotal > 0 && (
-                    <div className="absolute bottom-0 left-0 right-0 h-1 bg-white/10">
-                      <div
-                        className="h-full bg-accent/80 transition-all duration-slow"
-                        style={{ width: `${(batch.batchReviewed / batch.batchTotal) * 100}%` }}
-                      />
-                    </div>
-                  )}
-                </>
-              )}
-          </div>
-        )}
+        {mainContent}
 
         {reviewing && batch.rightPanelOpen && batch.currentPhoto && (
           <div className="h-full bg-glass-thin backdrop-blur-xl border-l border-border-subtle overflow-y-auto" style={{ width: rightW, paddingRight: '0.75rem' }}>
-            <PhotoDetailsView
-              photo={batch.currentPhoto}
-              exif={exif}
-            />
+            <PhotoDetailsView photo={batch.currentPhoto} exif={exif} />
           </div>
         )}
       </div>
     </div>
-    </RandomNavProvider>
   )
 }

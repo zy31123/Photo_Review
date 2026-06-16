@@ -3,6 +3,7 @@ import { getPhotosForFolder } from './photoStore.js'
 import { getPrimaryPath } from '../utils/path.js'
 import { getReviewStatuses } from './review.js'
 import { getPhotoMetaBatch } from './photoMeta.js'
+import { DEFAULT_PAGE_LIMIT } from '../config.js'
 
 export interface PhotosQueryOptions {
   page?: number
@@ -50,7 +51,7 @@ export function getPhotosWithStatus(
   }
 
   const pageNum = page && page > 0 ? page : 1
-  const limitNum = limit && limit > 0 ? limit : 5000
+  const limitNum = limit && limit > 0 ? limit : DEFAULT_PAGE_LIMIT
   const start = (pageNum - 1) * limitNum
   const paged = filtered.slice(start, start + limitNum)
 

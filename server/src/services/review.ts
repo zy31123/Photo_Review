@@ -2,14 +2,12 @@ import { getDb } from '../db/index.js'
 import type { PhotoGroup, ReviewAction } from '@photo-review/shared'
 import { getPhotosForFolder } from './photoStore.js'
 import { getPrimaryPath } from '../utils/path.js'
+import { SQLITE_IN_CHUNK } from '../config.js'
 
 export interface ReviewStatus {
   action: ReviewAction
   reviewedAt: string
 }
-
-// SQLite SQLITE_MAX_VARIABLE_NUMBER 安全上限
-const SQLITE_IN_CHUNK = 900
 
 export function getReviewStatuses(filePaths: string[]): Map<string, ReviewStatus> {
   const result = new Map<string, ReviewStatus>()

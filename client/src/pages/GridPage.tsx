@@ -9,6 +9,7 @@ import NavBar from '../components/NavBar'
 import FolderSidebar from '../components/grid/FolderSidebar'
 import YearTimeline from '../components/grid/YearTimeline'
 import Lightbox from '../components/grid/Lightbox'
+import LoadingScreen from '../components/ui/LoadingScreen'
 
 function GridToolbar() {
   const { columns, setColumns, filteredPhotos } = useGrid()
@@ -254,12 +255,7 @@ function GridInner() {
     return (
       <div className="h-screen flex flex-col bg-bg">
         <NavBar />
-        <div className="flex-1 flex items-center justify-center">
-          <div className="flex flex-col items-center gap-3">
-            <div className="w-8 h-8 border-2 border-accent border-t-transparent rounded-full animate-spin" />
-            <span className="text-text-secondary text-caption">加载中...</span>
-          </div>
-        </div>
+        <LoadingScreen />
       </div>
     )
   }
