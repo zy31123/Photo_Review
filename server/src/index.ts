@@ -3,6 +3,7 @@ import cors from 'cors'
 import { getDb } from './db/index.js'
 import routes from './routes/index.js'
 import { errorHandler } from './middleware/errorHandler.js'
+import { requestLogger } from './middleware/requestLogger.js'
 import { killPortOccupant } from './utils/cleanupPort.js'
 
 const PORT = process.env.PORT || 3001
@@ -15,6 +16,7 @@ getDb()
 const app = express()
 app.use(cors({ origin: ['http://localhost:5173', 'http://127.0.0.1:5173'] }))
 app.use(express.json())
+app.use(requestLogger)
 app.use('/api', routes)
 app.use(errorHandler)
 
