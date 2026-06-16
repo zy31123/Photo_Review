@@ -1,12 +1,10 @@
 import { getDb } from '../db/index.js'
+import { SQLITE_IN_CHUNK } from '../config.js'
 
 export interface PhotoMeta {
   rating: number
   favorite: boolean
 }
-
-// SQLite SQLITE_MAX_VARIABLE_NUMBER 安全上限
-const SQLITE_IN_CHUNK = 900
 
 /** 批量获取照片 meta，返回 Map<filePath, PhotoMeta> */
 export function getPhotoMetaBatch(filePaths: string[]): Map<string, PhotoMeta> {

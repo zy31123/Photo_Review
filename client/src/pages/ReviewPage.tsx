@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react'
+import { useEffect } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { PanelLeft, LayoutList } from 'lucide-react'
 import { useApp } from '../context/AppContext'
@@ -10,6 +10,7 @@ import ImageViewport from '../components/review/ImageViewport'
 import DetailsPanel from '../components/review/DetailsPanel'
 import Filmstrip from '../components/review/Filmstrip'
 import EmptyState from '../components/ui/EmptyState'
+import LoadingScreen from '../components/ui/LoadingScreen'
 import SegmentedControl from '../components/ui/SegmentedControl'
 import ToolbarDivider from '../components/ui/ToolbarDivider'
 import { ImageIcon } from 'lucide-react'
@@ -85,7 +86,8 @@ function ReviewLayout() {
     currentPhoto, goTo, handleAction, toggleLeftSidebar, toggleRightPanel,
   } = useReview()
 
-  const shortcuts = useMemo(() => ({
+  // useKeyboardShortcuts uses useRef internally — no useMemo needed
+  useKeyboardShortcuts({
     onPrev: () => goTo(currentIndex - 1),
     onNext: () => goTo(currentIndex + 1),
     onKeep: () => handleAction('keep'),
@@ -95,21 +97,13 @@ function ReviewLayout() {
     onRating: (rating: number) => { if (currentPhoto) updatePhotoRating(currentPhoto.id, rating) },
     onFavorite: () => { if (currentPhoto) updatePhotoFavorite(currentPhoto.id) },
     onUndo: undoLastAction,
-  }), [currentIndex, goTo, handleAction, toggleLeftSidebar, toggleRightPanel,
-    currentPhoto, updatePhotoRating, updatePhotoFavorite, undoLastAction])
-
-  useKeyboardShortcuts(shortcuts)
+  })
 
   if (loading) {
     return (
       <div className="h-screen flex flex-col bg-bg">
         <NavBar />
-        <div className="flex-1 flex items-center justify-center bg-bg">
-          <div className="flex flex-col items-center gap-3">
-            <div className="w-8 h-8 border-2 border-accent border-t-transparent rounded-full animate-spin" />
-            <span className="text-text-secondary text-caption">加载中...</span>
-          </div>
-        </div>
+        <LoadingScreen />
       </div>
     )
   }

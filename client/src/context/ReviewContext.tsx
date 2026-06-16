@@ -2,7 +2,6 @@ import { createContext, useContext, useState, useCallback, useMemo, useRef, useE
 import { api, type PhotoGroup, type SubfolderInfo } from '../api'
 import { useApp } from './AppContext'
 import { useDateGroups, type StatusFilter } from '../hooks/useDateGroups'
-import { photoEvents } from '../hooks/photoEvents'
 
 interface ReviewState {
   photos: PhotoGroup[]
@@ -43,8 +42,9 @@ export function useReview(): ReviewContext {
 }
 
 export function ReviewProvider({ startId, initialSubfolder, children }: { startId?: string; initialSubfolder?: string; children: ReactNode }) {
-  const { photos: appPhotos, pushUndo, toast, undoLastAction } = useApp()
-  const [photos, setPhotos] = useState<PhotoGroup[]>([])
+  const { photos, removePhoto, updatePhoto, pushUndo, toast, undoLastAction } = useApp()
+
+  // UI-only state
   const [currentIndex, setCurrentIndex] = useState(0)
   const [selectedDate, setSelectedDate] = useState<string | null>(null)
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
@@ -56,7 +56,8 @@ export function ReviewProvider({ startId, initialSubfolder, children }: { startI
   const [error, setError] = useState('')
   const processingRef = useRef(false)
 
-  const { monthGroups, filteredPhotos, dateOfIndex } = useDateGroups(photos, selectedDate, statusFilter, subfolderFilter)
+  // Photos derived from AppContext — no redundant local copy
+  const { monthGroups, filteredPhotos } = useDateGroups(photos, selectedDate, statusFilter, subfolderFilter)
 
   const currentPhoto = filteredPhotos[currentIndex] ?? null
   const reviewedCount = photos.filter(p => !!p.reviewAction).length
@@ -88,75 +89,66 @@ export function ReviewProvider({ startId, initialSubfolder, children }: { startI
     const photoSnapshot = { ...currentPhoto }
     try {
       await api.submitReview(photoId, action, 'sequential')
-      let trashPaths: Record<string, string> | undefined
       if (action === 'deleted') {
         const result = await api.deletePhoto(photoId)
-        trashPaths = result.trashPaths
-      }
-      if (action === 'deleted') {
         pushUndo({
           type: 'delete',
           photoId,
           before: 'deleted',
           after: null,
           photoData: photoSnapshot,
-          trashPaths,
+          trashPaths: result.trashPaths,
           previousReviewAction: photoSnapshot.reviewAction ?? null,
         })
-        const remaining = photos.filter(p => p.id !== photoId)
-        setPhotos(remaining)
-        setCurrentIndex(Math.max(0, Math.min(currentIndex, remaining.length - 1)))
+        // Remove from single source of truth — filteredPhotos updates reactively
+        removePhoto(photoId)
+        setCurrentIndex(prev => Math.max(0, Math.min(prev, filteredPhotos.length - 2)))
         toast.show(`已删除: ${photoSnapshot.name}`, 5000, {
           label: '撤销',
           onClick: () => undoLastAction(),
         })
       } else {
-        setPhotos(prev => prev.map(p =>
-          p.id === photoId ? { ...p, reviewAction: action, reviewedAt: new Date().toISOString() } : p
-        ))
-        if (currentIndex < filteredPhotos.length - 1) {
-          setCurrentIndex(currentIndex + 1)
-        }
+        // Stamp reviewAction so reviewedCount and statusFilter stay correct
+        updatePhoto(photoId, { reviewAction: action, reviewedAt: new Date().toISOString() })
+        setCurrentIndex(prev => prev < filteredPhotos.length - 1 ? prev + 1 : prev)
       }
     } catch (e: any) {
       setError(e.message || '操作失败')
     } finally {
       processingRef.current = false
     }
-  }, [currentPhoto, currentIndex, filteredPhotos.length, photos, pushUndo, toast, undoLastAction])
+  }, [currentPhoto, filteredPhotos.length, removePhoto, updatePhoto, pushUndo, toast, undoLastAction])
 
-  // Listen for photo restore events (from undo)
-  useEffect(() => {
-    const handler = ({ photo }: { photoId: string; photo: PhotoGroup }) => {
-      setPhotos(prev => {
-        if (prev.find(p => p.id === photo.id)) return prev
-        return [...prev, photo]
-      })
-    }
-    photoEvents.on('photo:restored', handler)
-    return () => { photoEvents.off('photo:restored', handler) }
-  }, [])
+  // Use refs to avoid refresh re-triggering on every photos change
+  const photosRef = useRef(photos)
+  photosRef.current = photos
+  const startIdRef = useRef(startId)
+  startIdRef.current = startId
 
   const refresh = useCallback(async () => {
     setLoading(true)
     try {
-      const resultPhotos = appPhotos.length > 0 ? appPhotos : (await api.getPhotos({ limit: 5000 })).photos
       const subs = await api.getSubfolders()
-      setPhotos(resultPhotos)
       setSubfolders(subs)
 
-      if (startId) {
-        const idx = resultPhotos.findIndex(p => p.id === startId)
+      const currentPhotos = photosRef.current
+      const sid = startIdRef.current
+      if (sid) {
+        const idx = currentPhotos.findIndex(p => p.id === sid)
         setCurrentIndex(idx >= 0 ? idx : 0)
       } else {
-        const firstUnreviewed = resultPhotos.findIndex(p => !p.reviewAction)
+        const firstUnreviewed = currentPhotos.findIndex(p => !p.reviewAction)
         setCurrentIndex(firstUnreviewed >= 0 ? firstUnreviewed : 0)
       }
-    } catch {
+    } catch (e: any) {
+      setError(e.message || '加载子文件夹失败')
     } finally {
       setLoading(false)
     }
-  }, [appPhotos, startId])
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps — runs once on mount
+
+  // Initial load only
+  useEffect(() => { refresh() }, [refresh])
 
   const value = useMemo<ReviewContext>(() => ({
     photos,

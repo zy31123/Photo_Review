@@ -26,9 +26,9 @@ export class ValidationError extends AppError {
 
 export function errorHandler(err: Error, _req: Request, res: Response, _next: NextFunction): void {
   if (err instanceof AppError) {
-    res.status(err.statusCode).json({ message: err.message })
+    res.status(err.statusCode).json({ error: { code: String(err.statusCode), message: err.message } })
   } else {
     console.error('[server] 未处理错误:', err)
-    res.status(500).json({ message: '服务器内部错误' })
+    res.status(500).json({ error: { code: '500', message: '服务器内部错误' } })
   }
 }

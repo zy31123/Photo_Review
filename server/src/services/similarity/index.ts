@@ -10,9 +10,7 @@ import { getReviewStatuses } from '../review.js'
 import { getPhotoMetaBatch } from '../photoMeta.js'
 import { computeDHash, computeColorHistogram } from './hash.js'
 import { buildGroups, type HashRecord, type SimilarGroupRaw } from './clustering.js'
-
-// SQLite SQLITE_MAX_VARIABLE_NUMBER 安全上限（兼容旧版 SQLite < 3.32）
-const SQLITE_IN_CHUNK = 900
+import { SQLITE_IN_CHUNK } from '../../config.js'
 
 // --- 批量加载哈希记录（修复 N+1 查询 + IN 分批） ---
 

@@ -35,12 +35,20 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
     try {
       const res = await fetch(`${BASE}${path}`, options)
       if (!res.ok) {
-        const err = await res.json().catch(() => ({ message: res.statusText }))
-        throw new Error(err.message || `Request failed: ${res.status}`)
+        // Parse error from response — support both { error: { message } } and { message }
+        const body = await res.json().catch(() => null)
+        const message = body?.error?.message || body?.message || res.statusText
+        const err: any = new Error(message || `Request failed: ${res.status}`)
+        err.status = res.status
+        throw err
       }
       return res.json()
     } catch (e: any) {
-      const isRetryable = !options?.method || options.method === 'GET'
+      // Only retry on network errors or server errors (5xx). 4xx are client errors — no point retrying.
+      const status: number | undefined = e.status
+      const isServerError = status != null && status >= 500
+      const isNetworkError = status == null && !e.status
+      const isRetryable = isNetworkError || isServerError
       if (i < maxAttempts - 1 && isRetryable) {
         await new Promise(r => setTimeout(r, 1000 * (i + 1)))
         continue
@@ -163,8 +171,9 @@ export const api = {
     })
       .then(async (res) => {
         if (!res.ok) {
-          const err = await res.json().catch(() => ({ message: res.statusText }))
-          callbacks.onError?.(err.message || `请求失败: ${res.status}`)
+          const body = await res.json().catch(() => null)
+          const message = body?.error?.message || body?.message || res.statusText
+          callbacks.onError?.(message || `请求失败: ${res.status}`)
           return
         }
         const reader = res.body?.getReader()
