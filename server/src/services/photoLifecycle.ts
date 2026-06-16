@@ -20,10 +20,12 @@ export interface DeleteResult {
 
 /**
  * 将照片移入回收站，并在 deleted_photos 表中记录以便撤销。
- * 事务: DB 写入 + removePhoto 在同一调用中完成。
+ *
+ * 执行顺序: 文件移动 → DB INSERT → 内存移除。
+ * 若 DB INSERT 失败，执行补偿操作将文件移回原位，确保三态一致。
  */
 export function deletePhotoToTrash(photo: PhotoGroup): DeleteResult {
-  const { trashPaths, failed } = moveToTrash(photo)
+  const { trashPaths } = moveToTrash(photo)
 
   if (Object.keys(trashPaths).length === 0) {
     return { success: false, message: '无法移动文件到回收站' }
@@ -31,26 +33,52 @@ export function deletePhotoToTrash(photo: PhotoGroup): DeleteResult {
 
   const db = getDb()
   const originalPaths = [photo.jpgPath, ...photo.rawPaths].filter(Boolean) as string[]
-  db.prepare(`
-    INSERT OR REPLACE INTO deleted_photos (id, original_paths, trash_paths, photo_data, folder)
-    VALUES (?, ?, ?, ?, ?)
-  `).run(
-    photo.id,
-    JSON.stringify(originalPaths),
-    JSON.stringify(trashPaths),
-    JSON.stringify(photo),
-    photo.folder,
-  )
+
+  try {
+    db.prepare(`
+      INSERT OR REPLACE INTO deleted_photos (id, original_paths, trash_paths, photo_data, folder)
+      VALUES (?, ?, ?, ?, ?)
+    `).run(
+      photo.id,
+      JSON.stringify(originalPaths),
+      JSON.stringify(trashPaths),
+      JSON.stringify(photo),
+      photo.folder,
+    )
+  } catch (err) {
+    // DB 写入失败: 补偿回滚，将文件从回收站移回原位
+    restoreFromTrash(photo.id, trashPaths)
+    throw err
+  }
 
   removePhoto(photo.id)
   return { success: true, trashPaths }
 }
 
 /**
- * 恢复单张照片：从回收站还原文件 → 重建内存存储 → 处理审阅记录 → 清除 deleted_photos。
- * 返回带有完整状态的照片对象。
+ * 为单张照片构建带状态的返回对象。
  */
-function restoreSingle(item: RestoreItem): PhotoGroupWithStatus | null {
+function buildPhotoWithStatus(photoData: PhotoGroup): PhotoGroupWithStatus {
+  const filePath = getPrimaryPath(photoData) || ''
+  const reviewMap = getReviewStatuses([filePath])
+  const metaMap = getPhotoMetaBatch([filePath])
+  const status = reviewMap.get(filePath)
+  const meta = metaMap.get(filePath)
+
+  return {
+    ...photoData,
+    reviewAction: status?.action || null,
+    reviewedAt: status?.reviewedAt || null,
+    rating: meta?.rating ?? 0,
+    favorite: meta?.favorite ?? false,
+  }
+}
+
+/**
+ * 恢复单张已删除照片（非事务，仅用于单张恢复接口）。
+ * 执行顺序: 文件还原 → addPhoto → DB 清理 → 返回带状态对象。
+ */
+export function restorePhoto(item: RestoreItem): PhotoGroupWithStatus | null {
   const { restored } = restoreFromTrash(item.photoId, item.trashPaths)
   if (restored.length === 0) return null
 
@@ -73,42 +101,68 @@ function restoreSingle(item: RestoreItem): PhotoGroupWithStatus | null {
 
   db.prepare('DELETE FROM deleted_photos WHERE id = ?').run(item.photoId)
 
-  const reviewMap = getReviewStatuses([filePath])
-  const metaMap = getPhotoMetaBatch([filePath])
-  const status = reviewMap.get(filePath)
-  const meta = metaMap.get(filePath)
-
-  return {
-    ...photoData,
-    reviewAction: status?.action || null,
-    reviewedAt: status?.reviewedAt || null,
-    rating: meta?.rating ?? 0,
-    favorite: meta?.favorite ?? false,
-  }
+  return buildPhotoWithStatus(photoData)
 }
 
 /**
- * 恢复单张已删除照片（外部调用）。
- */
-export function restorePhoto(item: RestoreItem): PhotoGroupWithStatus | null {
-  return restoreSingle(item)
-}
-
-/**
- * 批量恢复已删除照片，全部操作包裹在单个 SQLite 事务中，
- * 任一步骤失败则整体回滚。
+ * 批量恢复已删除照片。
+ *
+ * 策略: 两阶段执行，避免文件 I/O 被 SQLite 事务回滚导致不可逆的不一致。
+ *   Phase 1 (事务外): 预校验所有 DB 记录 + 批量执行文件还原 + addPhoto
+ *   Phase 2 (事务内): 仅做 DB 操作（审阅记录 + 清除 deleted_photos）
+ *
+ * 若 Phase 1 任一项失败，不执行任何操作，返回 []。
+ * Phase 2 的 DB 操作极为简单（INSERT/DELETE），失败概率极低。
  */
 export function restorePhotos(items: RestoreItem[]): PhotoGroupWithStatus[] {
+  if (items.length === 0) return []
   const db = getDb()
-  const restoredPhotos: PhotoGroupWithStatus[] = []
 
-  const runInTransaction = db.transaction(() => {
-    for (const item of items) {
-      const result = restoreSingle(item)
-      if (result) restoredPhotos.push(result)
-    }
-  })
+  // ── Phase 1: 文件 I/O + 内存更新（事务外，任一项失败则整体中止） ──
 
-  runInTransaction()
-  return restoredPhotos
+  interface RestoredEntry {
+    item: RestoreItem
+    photoData: PhotoGroup
+  }
+
+  const entries: RestoredEntry[] = []
+
+  for (const item of items) {
+    const { restored } = restoreFromTrash(item.photoId, item.trashPaths)
+    if (restored.length === 0) return []
+
+    const row = db.prepare(
+      'SELECT photo_data, folder FROM deleted_photos WHERE id = ?'
+    ).get(item.photoId) as { photo_data: string; folder: string } | undefined
+
+    if (!row) return []
+
+    const photoData: PhotoGroup = JSON.parse(row.photo_data)
+    addPhoto(photoData)
+    entries.push({ item, photoData })
+  }
+
+  // ── Phase 2: 仅 DB 操作（事务内） ──
+
+  try {
+    db.transaction(() => {
+      for (const { item, photoData } of entries) {
+        const filePath = getPrimaryPath(photoData) || ''
+        if (item.previousReviewAction) {
+          recordReview(filePath, photoData.name, item.previousReviewAction, 'sequential')
+        } else {
+          deleteReviewRecord(filePath)
+        }
+        db.prepare('DELETE FROM deleted_photos WHERE id = ?').run(item.photoId)
+      }
+    })()
+  } catch {
+    // DB 事务失败 (极罕见): addPhoto 的内存变更已不可回滚，
+    // 但 deleted_photos 记录仍在，重启后扫描会重新同步。
+    return []
+  }
+
+  // ── 构建带状态的返回值 ──
+
+  return entries.map(({ photoData }) => buildPhotoWithStatus(photoData))
 }

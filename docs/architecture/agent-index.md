@@ -30,6 +30,9 @@
 ### 服务端 (`server/src/`)
 
 - `services/scanner.ts` — 异步文件扫描 (fs.promises) + JPG/RAW 配对 + MD5 ID + 子文件夹 + 孤立文件检测
+- `services/photoStore.ts` — 内存照片存储 (photoStore Map, photoIndex Map, getPhotoById, getPhotosForFolder, addPhoto, removePhoto)
+- `services/photoQuery.ts` — 照片查询: 合并审阅状态/meta + 按状态/子文件夹过滤 + 分页
+- `services/photoLifecycle.ts` — 删除/恢复事务操作: deletePhotoToTrash (移入回收站+记录撤销) + restorePhoto/restorePhotos (文件还原+DB清理)
 - `services/image.ts` — 缩略图 (委托 thumbnailCache) + 全图 (RAW 转 JPEG / JPG 流式)
 - `services/exif.ts` — EXIF 提取 (exifr, 仅读前 256KB) + 内存缓存
 - `services/review.ts` — 审阅记录 + 随机选取 (Fisher-Yates) + 缓存 + 统计
@@ -41,7 +44,7 @@
 - `middleware/loadPhoto.ts` — param(:id) → getPhotoById + 404 + req.photo 注入
 - `routes/index.ts` — 路由注册入口 (挂载 6 个子路由)
 - `routes/folders.ts` — 文件夹浏览 + 扫描 + 子文件夹 (3 端点)
-- `routes/photos.ts` — 照片列表 + 缩略图 + 全图 + EXIF + 删除 (5 端点)
+- `routes/photos.ts` — 照片列表 + 缩略图 + 全图 + EXIF + 删除/恢复 (业务逻辑在 photoQuery/photoLifecycle)
 - `routes/reviews.ts` — 审阅提交 + 随机照片 + 随机批次 (3 端点)
 - `routes/similarity.ts` — 相似分析 SSE + 分组 + 统计 (3 端点)
 - `routes/settings.ts` — 设置读写 (2 端点)
