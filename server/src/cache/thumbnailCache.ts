@@ -4,12 +4,11 @@ import { fileURLToPath } from 'url'
 import sharp from 'sharp'
 import type { PhotoGroup } from '@photo-review/shared'
 import { getPrimaryPath } from '../utils/path.js'
+import { createLRUCache } from './lruCache.js'
+import { THUMBNAIL_SIZE, MAX_MEMORY_CACHE, MAX_DISK_CACHE_MB } from '../config.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const CACHE_DIR = path.join(__dirname, '..', '..', 'data', 'thumbnails')
-const THUMBNAIL_SIZE = 400
-const MAX_MEMORY_CACHE = 500
-const MAX_DISK_CACHE_MB = 500
 
 // Ensure cache directory exists
 if (!fs.existsSync(CACHE_DIR)) {
@@ -17,17 +16,10 @@ if (!fs.existsSync(CACHE_DIR)) {
 }
 
 // Memory LRU cache
-const memoryCache = new Map<string, Buffer>()
+const memoryCache = createLRUCache<Buffer>(MAX_MEMORY_CACHE)
 
 function getDiskPath(photoId: string): string {
   return path.join(CACHE_DIR, `${photoId}.jpg`)
-}
-
-function evictMemoryCache(): void {
-  if (memoryCache.size > MAX_MEMORY_CACHE) {
-    const oldest = memoryCache.keys().next().value
-    if (oldest !== undefined) memoryCache.delete(oldest)
-  }
 }
 
 function cleanupDiskCache(): void {
@@ -64,19 +56,13 @@ export async function getOrGenerateThumbnail(photo: PhotoGroup): Promise<Buffer 
 
   // Layer 1: Memory cache
   const cached = memoryCache.get(photo.id)
-  if (cached) {
-    // LRU: move to end
-    memoryCache.delete(photo.id)
-    memoryCache.set(photo.id, cached)
-    return cached
-  }
+  if (cached) return cached
 
   // Layer 2: Disk cache
   const diskPath = getDiskPath(photo.id)
   try {
     const diskBuf = fs.readFileSync(diskPath)
     memoryCache.set(photo.id, diskBuf)
-    evictMemoryCache()
     return diskBuf
   } catch {
     // Not on disk, generate below
@@ -98,8 +84,6 @@ export async function getOrGenerateThumbnail(photo: PhotoGroup): Promise<Buffer 
     }
 
     memoryCache.set(photo.id, buf)
-    evictMemoryCache()
-
     return buf
   } catch {
     return null

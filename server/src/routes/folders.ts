@@ -2,57 +2,14 @@ import { Router } from 'express'
 import fs from 'fs'
 import path from 'path'
 import os from 'os'
-import { execSync } from 'child_process'
 import { z } from 'zod'
 import { scanFolder } from '../services/scanner.js'
 import { getSubfolders } from '../services/photoStore.js'
+import { getWindowsDrives, getMacVolumes, isWindowsDriveRoot } from '../services/drives.js'
 import { asyncHandler } from '../middleware/asyncHandler.js'
 import { validate } from '../middleware/validate.js'
 import { ForbiddenError } from '../middleware/errorHandler.js'
 import { isPathAllowed } from '../utils/security.js'
-
-function isWindowsDriveRoot(p: string): boolean {
-  return process.platform === 'win32' && /^[A-Za-z]:\\$/.test(p)
-}
-
-let cachedDrives: string[] | null = null
-let drivesCacheTime = 0
-const DRIVES_CACHE_TTL = 30_000
-
-function getWindowsDrives(): string[] {
-  if (cachedDrives && Date.now() - drivesCacheTime < DRIVES_CACHE_TTL) return cachedDrives
-  try {
-    const result = execSync(
-      'powershell -Command "Get-PSDrive -PSProvider FileSystem | Select-Object -ExpandProperty Root"',
-      { encoding: 'utf-8', timeout: 5000 }
-    )
-    cachedDrives = result
-      .split(/\r?\n/)
-      .map((line: string) => line.trim())
-      .filter((line: string) => line.length > 0 && /^[A-Za-z]:\\$/i.test(line))
-    drivesCacheTime = Date.now()
-    return cachedDrives
-  } catch {
-    return ['C:\\']
-  }
-}
-
-function getMacVolumes(): { name: string; path: string }[] {
-  const volumes: { name: string; path: string }[] = [
-    { name: 'Macintosh HD (系统盘)', path: '/' },
-  ]
-  try {
-    const entries = fs.readdirSync('/Volumes', { withFileTypes: true })
-    for (const e of entries) {
-      if (e.isDirectory() && e.name !== 'Macintosh HD') {
-        volumes.push({ name: e.name, path: `/Volumes/${e.name}` })
-      }
-    }
-  } catch {
-    // /Volumes not accessible
-  }
-  return volumes
-}
 
 const router = Router()
 

@@ -17,7 +17,7 @@
 | 修改快捷键 | useKeyboardShortcuts.ts | ReviewPage.tsx | 快捷键定义在 hook，绑定在 ReviewPage |
 | 修改数据库表 | db/index.ts | review.ts, similarity/index.ts | 建表在 db，消费方在两个 service |
 | 添加新页面 | App.tsx | 参考现有页面, api/index.ts | 路由注册在 App，参考最接近的现有页面 |
-| 修改文件夹浏览 | FolderPicker.tsx | routes/folders.ts (browse) | 前端模态框 + 后端浏览端点 |
+| 修改文件夹浏览 | FolderPicker.tsx | routes/folders.ts (browse), services/drives.ts | 前端模态框 + 后端浏览端点 + OS 盘符探测 |
 | 修改子文件夹 | scanner.ts (getSubfolders) | GridContext.tsx, FolderSidebar.tsx, routes/folders.ts | 扫描器提供数据，网格页消费 |
 | 修改全局导航 | NavBar.tsx | App.tsx | 导航栏组件 + 路由定义 |
 | 修改通用 UI | ui/ActionBtn.tsx | ui/Tooltip.tsx, ui/Badge.tsx, ui/SegmentedControl.tsx | ui/ 下所有共享组件 |
@@ -29,6 +29,7 @@
 
 ### 服务端 (`server/src/`)
 
+- `services/drives.ts` — OS 磁盘/卷探测 (Windows 盘符 + Mac 卷) + 30s TTL 缓存
 - `services/scanner.ts` — 异步文件扫描 (fs.promises) + JPG/RAW 配对 + MD5 ID + 子文件夹 + 孤立文件检测
 - `services/photoStore.ts` — 内存照片存储 (photoStore Map, photoIndex Map, getPhotoById, getPhotosForFolder, addPhoto, removePhoto)
 - `services/photoQuery.ts` — 照片查询: 合并审阅状态/meta + 按状态/子文件夹过滤 + 分页
@@ -40,7 +41,7 @@
 - `services/similarity/hash.ts` — 纯算法：dHash 感知哈希、颜色直方图、汉明距离、直方图相似度（零副作用，可独立测试）
 - `services/similarity/clustering.ts` — Union-Find 聚类 + 时间预分组 + isSimilar 双阈值判定 + buildGroups
 - `services/deleter.ts` — 删除到回收站 (trash)
-- `middleware/errorHandler.ts` — AppError 类 (NotFound/Forbidden/ValidationError) + 全局错误中间件
+- `middleware/errorHandler.ts` — AppError 类 (NotFound/Forbidden/ValidationError) + 全局错误中间件 (统一 `{ error: { code, message } }` 格式)
 - `middleware/asyncHandler.ts` — async 路由 handler 包装 (自动 catch → errorHandler)
 - `middleware/validate.ts` — zod schema 校验中间件 (query/body/params)
 - `middleware/loadPhoto.ts` — param(:id) → getPhotoById + 404 + req.photo 注入
@@ -51,14 +52,16 @@
 - `routes/similarity.ts` — 相似分析 SSE + 分组 + 统计 (3 端点)
 - `routes/settings.ts` — 设置读写 (2 端点)
 - `routes/batch.ts` — 批量孤立文件操作 (2 端点)
+- `cache/lruCache.ts` — 泛型 LRU 缓存工厂 createLRUCache<T>(maxSize)
 - `cache/thumbnailCache.ts` — 内存 LRU (500) + 磁盘双层缩略图缓存 (sharp)
 - `cache/exifCache.ts` — EXIF 结果内存 LRU 缓存 (200)
 - `db/index.ts` — SQLite WAL + 版本迁移机制
 - `db/migrations.ts` — 迁移定义数组 (version + SQL)
 - `utils/path.ts` — normalizePath(), resolveNormalized()
 - `utils/security.ts` — isPathAllowed() 路径白名单检查
-- `utils/cleanupPort.ts` — killPortOccupant() 端口清理
-- `index.ts` — Express 入口, CORS, errorHandler, 127.0.0.1:3001
+- `utils/cleanupPort.ts` — killPortOccupant() 异步端口清理（精确端口匹配 + setTimeout 轮询）
+- `config.ts` — 集中配置: PORT, CORS_ORIGINS, THUMBNAIL_SIZE, MAX_MEMORY_CACHE, MAX_DISK_CACHE_MB, MAX_FOLDERS, DEFAULT_PAGE_LIMIT, SQLITE_IN_CHUNK
+- `index.ts` — Express 入口, CORS, errorHandler, 127.0.0.1:PORT
 
 ### 客户端 (`client/src/`)
 
@@ -66,20 +69,22 @@
 - `HomePage.tsx` — 文件夹选择 + 扫描触发 + 跳转 /grid
 - `GridPage.tsx` — 虚拟化网格 + Lightbox + 文件夹/日期导航
 - `ReviewPage.tsx` — 三栏审阅布局（核心页面）
-- `RandomPage.tsx` — 批次随机 + 详情面板
+- `RandomPage.tsx` — 批次随机 + 详情面板 (拆分为 StartView/BatchViewer/BatchCompleteView)
 - `SimilarPage.tsx` — 相似聚类分析流程
 
 **Context (`context/`):**
-- `AppContext.tsx` — 根级状态 (activeFolder, photos, settings, loadPhotos)
+- `AppContext.tsx` — 根级单一数据源 (activeFolder, photos, settings, loadPhotos, updatePhotoRating/Favorite)
 - `GridContext.tsx` — 网格页状态 (dateSections, virtualItems, subfolder 过滤)
-- `ReviewContext.tsx` — 审阅页状态 (筛选/操作/导航)
-- `SimilarContext.tsx` — 相似页状态 (分析/聚类/选择/删除)
+- `ReviewContext.tsx` — 审阅页 UI 状态 (currentIndex/筛选/面板; photos 从 AppContext 派生)
+- `SimilarContext.tsx` — 相似页状态 (分析/聚类/选择/删除; groups 刷新通过 appPhotos 长度变化触发)
 
 **Hooks (`hooks/`):**
+- `useUndoEngine.ts` — 撤销引擎 (rating/favorite/review/delete/delete_batch 统一处理)
+- `useReviewPhotos.ts` — selector: 从 AppContext.photos 派生审阅页过滤/分组数据
 - `useDateGroups.ts` — 月→日分组 (支持状态和子文件夹筛选)
-- `useKeyboardShortcuts.ts` — Arrow/D/Space/[/] 快捷键
+- `useKeyboardShortcuts.ts` — Arrow/D/Space/[/] 快捷键 (内部 useRef, 调用方无需 useMemo)
 - `useRandomBatch.ts` — 随机批次管理 (加载/导航/操作)
-- `useExif.ts` — 单张 EXIF 懒加载
+- `useExif.ts` — 单张 EXIF 懒加载 (依赖 photo.id 而非 photo 引用)
 - `useDragImage.ts` — 拖拽图片导出
 - `useImageZoom.ts` — 缩放平移 (Ctrl+滚轮/拖拽/双击)
 - `useStaggeredReveal.ts` — IntersectionObserver 交错渐入动画
@@ -92,21 +97,27 @@
 - `grid/YearTimeline.tsx` — 日期时间线
 - `review/DateSidebar.tsx` — 日期导航
 - `review/ImageViewport.tsx` — 图片视口 + 滚轮翻页
-- `review/ReviewControls.tsx` — 操作按钮
+- `review/ReviewControls.tsx` — 审阅操作按钮 (基于 PhotoActionBar)
 - `review/DetailsPanel.tsx` — EXIF 详情面板
 - `review/PhotoDetailsView.tsx` — 纯展示照片详情 (可复用)
 - `review/Filmstrip.tsx` — 胶片条 (窗口化 150+150)
-- `random/RandomControls.tsx` — 随机模式操作按钮
+- `random/RandomControls.tsx` — 随机模式操作按钮 (基于 PhotoActionBar)
 - `random/RandomToolbar.tsx` — 随机模式工具栏
 - `random/BatchSelector.tsx` — 批次大小选择器
+- `random/StartView.tsx` — 随机模式开始界面
+- `random/BatchViewer.tsx` — 随机模式照片浏览 (含 zoom/drag)
+- `random/BatchCompleteView.tsx` — 随机模式批次完成界面
 - `similar/SimilarToolbar.tsx` — 分析/统计/批量删除
 - `similar/ClusterCard.tsx` — 相似组卡片
 - `similar/ClusterGrid.tsx` — 卡片网格
+- `shared/PhotoActionBar.tsx` — 照片操作栏基组件 (导航/评分/收藏/保留/删除)
 - `shared/DateSidebarBase.tsx` — 日期侧栏基组件
 - `shared/useCollapsedMonths.ts` — 月折叠状态
 - `ui/ActionBtn.tsx` — 圆形操作按钮
 - `ui/Badge.tsx` — 状态标签
 - `ui/EmptyState.tsx` — 空状态占位
+- `ui/ErrorBoundary.tsx` — React 错误边界 (降级 UI + 返回首页)
+- `ui/LoadingScreen.tsx` — 全屏加载状态
 - `ui/LoadingSpinner.tsx` — 加载旋转器
 - `ui/SectionHeader.tsx` — 分区标题
 - `ui/SegmentedControl.tsx` — 分段选择器
@@ -114,8 +125,8 @@
 - `ui/Tooltip.tsx` — 悬浮提示
 
 **其他:**
-- `api/index.ts` — 所有后端调用封装 + 类型定义 + GET 自动重试 (3 次)
-- `App.tsx` — 5 条路由: `/` `/grid` `/review` `/random` `/similar`
+- `api/index.ts` — 所有后端调用封装 + 类型定义 + 智能重试 (仅 5xx/网络错误)
+- `App.tsx` — 5 条路由 + ErrorBoundary 包裹
 - `styles/index.css` — Tailwind 4 @theme Darkroom 配色
 - `utils/date.ts` — formatChineseDate()
 

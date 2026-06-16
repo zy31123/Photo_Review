@@ -5,23 +5,19 @@ import type { PhotoGroup } from '@photo-review/shared'
 
 const TRASH_DIR = path.join(os.tmpdir(), '.photoreview-trash')
 
-function ensureTrashDir(): void {
-  if (!fs.existsSync(TRASH_DIR)) {
-    fs.mkdirSync(TRASH_DIR, { recursive: true })
-  }
+async function ensureTrashDir(): Promise<void> {
+  await fs.promises.mkdir(TRASH_DIR, { recursive: true })
 }
 
-function moveFile(src: string, dest: string): void {
+async function moveFile(src: string, dest: string): Promise<void> {
   const destDir = path.dirname(dest)
-  if (!fs.existsSync(destDir)) {
-    fs.mkdirSync(destDir, { recursive: true })
-  }
+  await fs.promises.mkdir(destDir, { recursive: true })
   try {
-    fs.renameSync(src, dest)
+    await fs.promises.rename(src, dest)
   } catch {
     // Cross-device: copy then unlink
-    fs.copyFileSync(src, dest)
-    fs.unlinkSync(src)
+    await fs.promises.copyFile(src, dest)
+    await fs.promises.unlink(src)
   }
 }
 
@@ -30,8 +26,8 @@ export interface TrashResult {
   failed: string[]
 }
 
-export function moveToTrash(photo: PhotoGroup): TrashResult {
-  ensureTrashDir()
+export async function moveToTrash(photo: PhotoGroup): Promise<TrashResult> {
+  await ensureTrashDir()
   const trashPaths: Record<string, string> = {}
   const failed: string[] = []
 
@@ -39,13 +35,9 @@ export function moveToTrash(photo: PhotoGroup): TrashResult {
   const photoTrashDir = path.join(TRASH_DIR, photo.id)
 
   for (const p of paths) {
-    if (!fs.existsSync(p)) {
-      failed.push(p)
-      continue
-    }
     const dest = path.join(photoTrashDir, path.basename(p))
     try {
-      moveFile(p, dest)
+      await moveFile(p, dest)
       trashPaths[p] = dest
     } catch {
       failed.push(p)
@@ -60,32 +52,27 @@ export interface RestoreResult {
   failed: string[]
 }
 
-export function restoreFromTrash(photoId: string, trashPaths: Record<string, string>): RestoreResult {
+export async function restoreFromTrash(photoId: string, trashPaths: Record<string, string>): Promise<RestoreResult> {
   const restored: string[] = []
   const failed: string[] = []
 
   for (const [originalPath, trashPath] of Object.entries(trashPaths)) {
-    if (!fs.existsSync(trashPath)) {
-      failed.push(originalPath)
-      continue
-    }
     const destDir = path.dirname(originalPath)
-    if (!fs.existsSync(destDir)) {
-      fs.mkdirSync(destDir, { recursive: true })
-    }
     try {
-      moveFile(trashPath, originalPath)
+      await fs.promises.mkdir(destDir, { recursive: true })
+      await moveFile(trashPath, originalPath)
       restored.push(originalPath)
     } catch {
       failed.push(originalPath)
     }
   }
 
-  // Clean up trash subdirectory
-  const photoTrashDir = path.join(TRASH_DIR, photoId)
-  if (fs.existsSync(photoTrashDir)) {
+  // Clean up trash subdirectory only when all files were restored successfully.
+  // If some files failed, keep the trash dir so the user can retry.
+  if (failed.length === 0) {
+    const photoTrashDir = path.join(TRASH_DIR, photoId)
     try {
-      fs.rmSync(photoTrashDir, { recursive: true, force: true })
+      await fs.promises.rm(photoTrashDir, { recursive: true, force: true })
     } catch {
       // ignore cleanup failure
     }
