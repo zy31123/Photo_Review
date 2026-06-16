@@ -1,6 +1,6 @@
 import { Router } from 'express'
 import { z } from 'zod'
-import { analyzeFolder, getSimilarGroups, getSimilarStats } from '../services/similarity.js'
+import { analyzeFolder, getSimilarGroups, getSimilarStats } from '../services/similarity/index.js'
 import { asyncHandler } from '../middleware/asyncHandler.js'
 import { validate } from '../middleware/validate.js'
 import { ForbiddenError } from '../middleware/errorHandler.js'
@@ -25,19 +25,51 @@ router.post('/analyze', validate(analyzeSchema, 'body'), async (req, res) => {
   res.setHeader('Connection', 'keep-alive')
   res.flushHeaders()
 
-  const send = (event: string, data: unknown) => {
-    res.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`)
+  // AbortSignal for client disconnect
+  const controller = new AbortController()
+  req.on('close', () => controller.abort())
+
+  const send = (event: string, data: unknown): boolean => {
+    const payload = `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`
+    return res.write(payload)
   }
 
+  // 15s heartbeat to keep connection alive
+  const heartbeat = setInterval(() => {
+    if (!send('heartbeat', null)) {
+      clearInterval(heartbeat)
+    }
+  }, 15000)
+
+  let aborted = false
+  controller.signal.addEventListener('abort', () => {
+    aborted = true
+    clearInterval(heartbeat)
+    console.log('[sse] client disconnected, aborting analysis')
+  })
+
   try {
-    const result = await analyzeFolder(folder, timeGap, strictThreshold, relaxedThreshold, (current, total) => {
-      send('progress', { current, total })
-    })
-    send('complete', result)
+    const result = await analyzeFolder(
+      folder,
+      timeGap,
+      strictThreshold,
+      relaxedThreshold,
+      (current, total) => {
+        if (!aborted) send('progress', { current, total })
+      },
+      controller.signal,
+    )
+    if (!aborted) {
+      send('complete', result)
+    }
   } catch (e: any) {
-    send('error', { message: e.message })
+    if (!aborted) {
+      send('error', { message: e.message })
+    }
+  } finally {
+    clearInterval(heartbeat)
+    res.end()
   }
-  res.end()
 })
 
 // Get similar groups

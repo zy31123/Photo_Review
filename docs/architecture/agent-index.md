@@ -11,11 +11,11 @@
 | 修改审阅流程 | ReviewContext.tsx | ReviewPage.tsx, ReviewControls.tsx, NavBar.tsx, review.ts | 前端状态在 Context，后端逻辑在 review.ts |
 | 修改网格浏览 | GridContext.tsx | GridPage.tsx, FolderSidebar.tsx, YearTimeline.tsx, Lightbox.tsx | 前端状态在 Context，四个子组件 |
 | 修改随机浏览 | useRandomBatch.ts | RandomPage.tsx, RandomToolbar.tsx, RandomControls.tsx, review.ts | hook 管理批次状态，后端用 review.ts |
-| 修改相似聚类 | SimilarContext.tsx | SimilarPage.tsx, similarity.ts, ClusterCard.tsx | 前端状态在 Context，后端算法在 similarity.ts |
+| 修改相似聚类 | SimilarContext.tsx | SimilarPage.tsx, similarity/index.ts, similarity/clustering.ts, ClusterCard.tsx | 前端状态在 Context，后端编排在 similarity/index.ts，纯算法在 similarity/hash.ts + clustering.ts |
 | 修改 API 端点 | routes/对应文件.ts | 对应 service 文件, api/index.ts | 端点分布在 6 个路由文件，客户端封装在 api |
 | 修改 UI 样式 | index.css | 对应组件 | Tailwind 4 @theme 配色在 index.css |
 | 修改快捷键 | useKeyboardShortcuts.ts | ReviewPage.tsx | 快捷键定义在 hook，绑定在 ReviewPage |
-| 修改数据库表 | db/index.ts | review.ts, similarity.ts | 建表在 db，消费方在两个 service |
+| 修改数据库表 | db/index.ts | review.ts, similarity/index.ts | 建表在 db，消费方在两个 service |
 | 添加新页面 | App.tsx | 参考现有页面, api/index.ts | 路由注册在 App，参考最接近的现有页面 |
 | 修改文件夹浏览 | FolderPicker.tsx | routes/folders.ts (browse) | 前端模态框 + 后端浏览端点 |
 | 修改子文件夹 | scanner.ts (getSubfolders) | GridContext.tsx, FolderSidebar.tsx, routes/folders.ts | 扫描器提供数据，网格页消费 |
@@ -36,7 +36,9 @@
 - `services/image.ts` — 缩略图 (委托 thumbnailCache) + 全图 (RAW 转 JPEG / JPG 流式)
 - `services/exif.ts` — EXIF 提取 (exifr, 仅读前 256KB) + 内存缓存
 - `services/review.ts` — 审阅记录 + 随机选取 (Fisher-Yates) + 缓存 + 统计
-- `services/similarity.ts` — dHash 感知哈希 (p-limit 并行) + Union-Find 聚类 + 增量计算 + 持久化
+- `services/similarity/index.ts` — 相似分析编排层（DB 持久化 + p-limit 并行 + 对外暴露 analyzeFolder/getSimilarGroups/getSimilarStats）
+- `services/similarity/hash.ts` — 纯算法：dHash 感知哈希、颜色直方图、汉明距离、直方图相似度（零副作用，可独立测试）
+- `services/similarity/clustering.ts` — Union-Find 聚类 + 时间预分组 + isSimilar 双阈值判定 + buildGroups
 - `services/deleter.ts` — 删除到回收站 (trash)
 - `middleware/errorHandler.ts` — AppError 类 (NotFound/Forbidden/ValidationError) + 全局错误中间件
 - `middleware/asyncHandler.ts` — async 路由 handler 包装 (自动 catch → errorHandler)
@@ -137,5 +139,5 @@
 - `ExifData` → `server/src/services/exif.ts`
 - `SubfolderInfo` → `server/src/services/scanner.ts`
 - `ReviewStatus` → `server/src/services/review.ts`
-- `SimilarGroup` → `server/src/services/similarity.ts`
+- `SimilarGroup` → `packages/shared/src/types.ts`（DTO）/ `server/src/services/similarity/clustering.ts`（SimilarGroupRaw 内部类型）
 - 数据库表结构 → `server/src/db/index.ts`

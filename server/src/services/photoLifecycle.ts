@@ -108,17 +108,16 @@ export function restorePhoto(item: RestoreItem): PhotoGroupWithStatus | null {
  * 批量恢复已删除照片。
  *
  * 策略: 两阶段执行，避免文件 I/O 被 SQLite 事务回滚导致不可逆的不一致。
- *   Phase 1 (事务外): 预校验所有 DB 记录 + 批量执行文件还原 + addPhoto
- *   Phase 2 (事务内): 仅做 DB 操作（审阅记录 + 清除 deleted_photos）
+ *   Phase 1 (事务外): 逐项执行文件还原 + addPhoto，失败项跳过并记录日志。
+ *   Phase 2 (事务内): 仅对成功项做 DB 操作（审阅记录 + 清除 deleted_photos）。
  *
- * 若 Phase 1 任一项失败，不执行任何操作，返回 []。
- * Phase 2 的 DB 操作极为简单（INSERT/DELETE），失败概率极低。
+ * 返回成功恢复的照片数组。部分失败时返回已成功项，不会回滚已成功的恢复。
  */
 export function restorePhotos(items: RestoreItem[]): PhotoGroupWithStatus[] {
   if (items.length === 0) return []
   const db = getDb()
 
-  // ── Phase 1: 文件 I/O + 内存更新（事务外，任一项失败则整体中止） ──
+  // ── Phase 1: 文件 I/O + 内存更新（事务外，失败项跳过） ──
 
   interface RestoredEntry {
     item: RestoreItem
@@ -129,18 +128,26 @@ export function restorePhotos(items: RestoreItem[]): PhotoGroupWithStatus[] {
 
   for (const item of items) {
     const { restored } = restoreFromTrash(item.photoId, item.trashPaths)
-    if (restored.length === 0) return []
+    if (restored.length === 0) {
+      console.error(`[restorePhotos] 文件还原失败: photoId=${item.photoId}`)
+      continue
+    }
 
     const row = db.prepare(
       'SELECT photo_data, folder FROM deleted_photos WHERE id = ?'
     ).get(item.photoId) as { photo_data: string; folder: string } | undefined
 
-    if (!row) return []
+    if (!row) {
+      console.error(`[restorePhotos] deleted_photos 记录缺失: photoId=${item.photoId}`)
+      continue
+    }
 
     const photoData: PhotoGroup = JSON.parse(row.photo_data)
     addPhoto(photoData)
     entries.push({ item, photoData })
   }
+
+  if (entries.length === 0) return []
 
   // ── Phase 2: 仅 DB 操作（事务内） ──
 
@@ -156,10 +163,10 @@ export function restorePhotos(items: RestoreItem[]): PhotoGroupWithStatus[] {
         db.prepare('DELETE FROM deleted_photos WHERE id = ?').run(item.photoId)
       }
     })()
-  } catch {
-    // DB 事务失败 (极罕见): addPhoto 的内存变更已不可回滚，
-    // 但 deleted_photos 记录仍在，重启后扫描会重新同步。
-    return []
+  } catch (err) {
+    // DB 事务失败 (极罕见): 文件已恢复、addPhoto 已执行但 DB 记录未清理。
+    // 返回已成功项，让调用方知晓部分恢复。
+    console.error('[restorePhotos] Phase 2 DB 事务失败:', err)
   }
 
   // ── 构建带状态的返回值 ──
