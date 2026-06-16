@@ -1,13 +1,44 @@
+# Dependencies
 node_modules/
+
+# Build outputs
 dist/
+*.tsbuildinfo
+*.tsbuildinfo.*
+
+# Database
 data/
 *.db
-.DS_Store
+*.db-journal
+*.db-wal
 
 # Logs
+*.log
+npm-debug.log*
+
+# Environment
+.env
+.env.*
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Claude / AI
 .claude/
 .playwright-mcp/
+.agents/
+skills-lock.json
 
 # Playwright
 e2e/screenshots/
+e2e/reports/
 test-results/
+playwright-report/
+blob-report/
+
+# OS
+.DS_Store
+Thumbs.db
