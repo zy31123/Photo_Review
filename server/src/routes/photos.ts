@@ -1,14 +1,12 @@
 import { Router } from 'express'
 import { z } from 'zod'
-import type { PhotoGroup } from '@photo-review/shared'
-import { getPhotosForFolder, removePhoto, addPhoto } from '../services/photoStore.js'
+import type { ReviewAction } from '@photo-review/shared'
+import { getPhotosWithStatus } from '../services/photoQuery.js'
+import { deletePhotoToTrash, restorePhoto, restorePhotos } from '../services/photoLifecycle.js'
 import { getPrimaryPath } from '../utils/path.js'
-import { getReviewStatuses, recordReview, deleteReviewRecord } from '../services/review.js'
-import { getPhotoMetaBatch, setRating, toggleFavorite, setFavorite } from '../services/photoMeta.js'
+import { setRating, toggleFavorite, setFavorite } from '../services/photoMeta.js'
 import { getThumbnail, getFullImage, getImageMimeType } from '../services/image.js'
 import { extractExif } from '../services/exif.js'
-import { moveToTrash, restoreFromTrash } from '../services/trash.js'
-import { getDb } from '../db/index.js'
 import { asyncHandler } from '../middleware/asyncHandler.js'
 import { validate } from '../middleware/validate.js'
 import { loadPhoto } from '../middleware/loadPhoto.js'
@@ -27,45 +25,13 @@ const photosQuerySchema = z.object({
 
 router.get('/', validate(photosQuerySchema), (req, res) => {
   const folder = req.query.folder as string
-  const photos = getPhotosForFolder(folder)
-
-  const filePaths = photos.map(p => getPrimaryPath(p) || '')
-  const reviewMap = getReviewStatuses(filePaths)
-  const metaMap = getPhotoMetaBatch(filePaths)
-
-  const photosWithStatus = photos.map((p, i) => {
-    const status = reviewMap.get(filePaths[i])
-    const meta = metaMap.get(filePaths[i])
-    return {
-      ...p,
-      reviewAction: status?.action || null,
-      reviewedAt: status?.reviewedAt || null,
-      rating: meta?.rating ?? 0,
-      favorite: meta?.favorite ?? false,
-    }
+  const result = getPhotosWithStatus(folder, {
+    page: req.query.page ? Number(req.query.page) : undefined,
+    limit: req.query.limit ? Number(req.query.limit) : undefined,
+    status: req.query.status as 'unreviewed' | 'reviewed' | undefined,
+    subfolder: req.query.subfolder as string | undefined,
   })
-
-  const status = req.query.status as string | undefined
-  const subfolder = req.query.subfolder as string | undefined
-  let filtered = photosWithStatus
-  if (subfolder) {
-    filtered = filtered.filter(p => p.subfolder === subfolder)
-  }
-  if (status === 'unreviewed') {
-    filtered = filtered.filter(p => !p.reviewAction)
-  } else if (status === 'reviewed') {
-    filtered = filtered.filter(p => p.reviewAction)
-  }
-
-  const page = Number(req.query.page) || 1
-  const limit = Number(req.query.limit) || 5000
-  const start = (page - 1) * limit
-  const paged = filtered.slice(start, start + limit)
-
-  res.json({
-    photos: paged,
-    total: filtered.length,
-  })
+  res.json(result)
 })
 
 // Set rating (0-5)
@@ -129,32 +95,14 @@ router.get('/:id/exif', loadPhoto, asyncHandler(async (req, res) => {
 }))
 
 // Delete photo (move to app trash)
-router.delete('/:id', loadPhoto, asyncHandler(async (req, res) => {
-  const photo = req.photo!
-  const { trashPaths, failed } = moveToTrash(photo)
-
-  if (Object.keys(trashPaths).length === 0) {
-    res.status(500).json({ success: false, message: '无法移动文件到回收站' })
+router.delete('/:id', loadPhoto, (req, res) => {
+  const result = deletePhotoToTrash(req.photo!)
+  if (!result.success) {
+    res.status(500).json({ success: false, message: result.message })
     return
   }
-
-  // Record in deleted_photos table for undo
-  const db = getDb()
-  const originalPaths = [photo.jpgPath, ...photo.rawPaths].filter(Boolean) as string[]
-  db.prepare(`
-    INSERT OR REPLACE INTO deleted_photos (id, original_paths, trash_paths, photo_data, folder)
-    VALUES (?, ?, ?, ?, ?)
-  `).run(
-    photo.id,
-    JSON.stringify(originalPaths),
-    JSON.stringify(trashPaths),
-    JSON.stringify(photo),
-    photo.folder,
-  )
-
-  removePhoto(photo.id)
-  res.json({ success: true, trashPaths })
-}))
+  res.json({ success: true, trashPaths: result.trashPaths })
+})
 
 // Restore a deleted photo
 const restoreSchema = z.object({
@@ -163,56 +111,19 @@ const restoreSchema = z.object({
   previousReviewAction: z.string().nullable().optional(),
 })
 
-router.post('/restore', validate(restoreSchema, 'body'), asyncHandler(async (req, res) => {
+router.post('/restore', validate(restoreSchema, 'body'), (req, res) => {
   const { photoId, trashPaths, previousReviewAction } = req.body
-
-  // Restore files from trash
-  const { restored, failed } = restoreFromTrash(photoId, trashPaths)
-  if (restored.length === 0) {
-    res.status(404).json({ success: false, message: '回收站中未找到文件' })
+  const photo = restorePhoto({
+    photoId,
+    trashPaths,
+    previousReviewAction: (previousReviewAction as ReviewAction) ?? null,
+  })
+  if (!photo) {
+    res.status(404).json({ success: false, message: '恢复失败，未找到记录或文件' })
     return
   }
-
-  // Read photo data from deleted_photos
-  const db = getDb()
-  const row = db.prepare('SELECT photo_data, folder FROM deleted_photos WHERE id = ?').get(photoId) as { photo_data: string; folder: string } | undefined
-
-  if (!row) {
-    res.status(404).json({ success: false, message: '未找到已删除照片记录' })
-    return
-  }
-
-  const photoData = JSON.parse(row.photo_data)
-
-  // Re-add to in-memory store
-  addPhoto(photoData)
-
-  // Handle review record
-  const filePath = getPrimaryPath(photoData) || ''
-  if (previousReviewAction) {
-    recordReview(filePath, photoData.name, previousReviewAction as 'keep' | 'deleted', 'sequential')
-  } else {
-    deleteReviewRecord(filePath)
-  }
-
-  // Remove from deleted_photos
-  db.prepare('DELETE FROM deleted_photos WHERE id = ?').run(photoId)
-
-  // Re-fetch with status
-  const reviewMap = getReviewStatuses([filePath])
-  const metaMap = getPhotoMetaBatch([filePath])
-  const status = reviewMap.get(filePath)
-  const meta = metaMap.get(filePath)
-  const restoredPhoto = {
-    ...photoData,
-    reviewAction: status?.action || null,
-    reviewedAt: status?.reviewedAt || null,
-    rating: meta?.rating ?? 0,
-    favorite: meta?.favorite ?? false,
-  }
-
-  res.json({ success: true, photo: restoredPhoto })
-}))
+  res.json({ success: true, photo })
+})
 
 // Batch restore deleted photos
 const restoreBatchSchema = z.object({
@@ -223,33 +134,14 @@ const restoreBatchSchema = z.object({
   })),
 })
 
-router.post('/restore-batch', validate(restoreBatchSchema, 'body'), asyncHandler(async (req, res) => {
-  const { items } = req.body
-  const db = getDb()
-  const restoredPhotos: any[] = []
-
-  for (const item of items) {
-    const { restored } = restoreFromTrash(item.photoId, item.trashPaths)
-    if (restored.length === 0) continue
-
-    const row = db.prepare('SELECT photo_data, folder FROM deleted_photos WHERE id = ?').get(item.photoId) as { photo_data: string; folder: string } | undefined
-    if (!row) continue
-
-    const photoData = JSON.parse(row.photo_data)
-    addPhoto(photoData)
-
-    const filePath = getPrimaryPath(photoData) || ''
-    if (item.previousReviewAction) {
-      recordReview(filePath, photoData.name, item.previousReviewAction as 'keep' | 'deleted', 'sequential')
-    } else {
-      deleteReviewRecord(filePath)
-    }
-
-    db.prepare('DELETE FROM deleted_photos WHERE id = ?').run(item.photoId)
-    restoredPhotos.push(photoData)
-  }
-
-  res.json({ success: true, photos: restoredPhotos })
-}))
+router.post('/restore-batch', validate(restoreBatchSchema, 'body'), (req, res) => {
+  const items = req.body.items.map((item: { photoId: string; trashPaths: Record<string, string>; previousReviewAction?: string | null }) => ({
+    photoId: item.photoId,
+    trashPaths: item.trashPaths,
+    previousReviewAction: (item.previousReviewAction as ReviewAction) ?? null,
+  }))
+  const photos = restorePhotos(items)
+  res.json({ success: true, photos })
+})
 
 export default router
