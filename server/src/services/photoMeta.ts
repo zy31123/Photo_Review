@@ -5,19 +5,26 @@ export interface PhotoMeta {
   favorite: boolean
 }
 
+// SQLite SQLITE_MAX_VARIABLE_NUMBER 安全上限
+const SQLITE_IN_CHUNK = 900
+
 /** 批量获取照片 meta，返回 Map<filePath, PhotoMeta> */
 export function getPhotoMetaBatch(filePaths: string[]): Map<string, PhotoMeta> {
   const result = new Map<string, PhotoMeta>()
   if (filePaths.length === 0) return result
 
   const db = getDb()
-  const placeholders = filePaths.map(() => '?').join(',')
-  const rows = db.prepare(
-    `SELECT photo_path, rating, favorite FROM photo_meta WHERE photo_path IN (${placeholders})`
-  ).all(...filePaths) as { photo_path: string; rating: number; favorite: number }[]
 
-  for (const row of rows) {
-    result.set(row.photo_path, { rating: row.rating, favorite: row.favorite === 1 })
+  for (let i = 0; i < filePaths.length; i += SQLITE_IN_CHUNK) {
+    const chunk = filePaths.slice(i, i + SQLITE_IN_CHUNK)
+    const placeholders = chunk.map(() => '?').join(',')
+    const rows = db.prepare(
+      `SELECT photo_path, rating, favorite FROM photo_meta WHERE photo_path IN (${placeholders})`
+    ).all(...chunk) as { photo_path: string; rating: number; favorite: number }[]
+
+    for (const row of rows) {
+      result.set(row.photo_path, { rating: row.rating, favorite: row.favorite === 1 })
+    }
   }
   return result
 }

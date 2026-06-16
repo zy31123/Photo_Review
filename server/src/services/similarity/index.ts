@@ -174,7 +174,10 @@ export async function analyzeFolder(
     ),
   )
 
-  // 3. Build similar groups
+  // 3. Build similar groups（断连时跳过，避免无意义的 CPU 消耗）
+  if (signal?.aborted) {
+    return { computed, skipped, totalGroups: 0, totalPhotos: 0 }
+  }
   const groups = buildGroups(photos, photoHashMap, timeGap, strictThreshold, relaxedThreshold)
 
   return {
@@ -199,14 +202,19 @@ export function getSimilarGroups(
 }
 
 // 复用已加载的哈希记录，避免 getSimilarGroups 重复执行 loadHashesForPhotos + buildGroups
-export function getSimilarStats(folder: string): { analyzed: number; total: number; groups: number } {
+export function getSimilarStats(
+  folder: string,
+  timeGap = 30,
+  strictThreshold = 8,
+  relaxedThreshold = 15,
+): { analyzed: number; total: number; groups: number } {
   const photos = getPhotosForFolder(folder)
   const total = photos.length
 
   if (total === 0) return { analyzed: 0, total: 0, groups: 0 }
 
   const photoHashMap = loadHashesForPhotos(photos)
-  const groups = buildGroups(photos, photoHashMap, 30, 8, 15)
+  const groups = buildGroups(photos, photoHashMap, timeGap, strictThreshold, relaxedThreshold)
 
   return { analyzed: photoHashMap.size, total, groups: groups.length }
 }

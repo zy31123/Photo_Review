@@ -8,18 +8,25 @@ export interface ReviewStatus {
   reviewedAt: string
 }
 
+// SQLite SQLITE_MAX_VARIABLE_NUMBER 安全上限
+const SQLITE_IN_CHUNK = 900
+
 export function getReviewStatuses(filePaths: string[]): Map<string, ReviewStatus> {
   const result = new Map<string, ReviewStatus>()
   if (filePaths.length === 0) return result
 
   const db = getDb()
-  const placeholders = filePaths.map(() => '?').join(',')
-  const rows = db.prepare(
-    `SELECT file_path, action, reviewed_at FROM review_records WHERE file_path IN (${placeholders})`
-  ).all(...filePaths) as { file_path: string; action: ReviewAction; reviewed_at: string }[]
 
-  for (const row of rows) {
-    result.set(row.file_path, { action: row.action, reviewedAt: row.reviewed_at })
+  for (let i = 0; i < filePaths.length; i += SQLITE_IN_CHUNK) {
+    const chunk = filePaths.slice(i, i + SQLITE_IN_CHUNK)
+    const placeholders = chunk.map(() => '?').join(',')
+    const rows = db.prepare(
+      `SELECT file_path, action, reviewed_at FROM review_records WHERE file_path IN (${placeholders})`
+    ).all(...chunk) as { file_path: string; action: ReviewAction; reviewed_at: string }[]
+
+    for (const row of rows) {
+      result.set(row.file_path, { action: row.action, reviewedAt: row.reviewed_at })
+    }
   }
   return result
 }

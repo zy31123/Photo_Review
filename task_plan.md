@@ -109,6 +109,12 @@
 - [x] 3.6 Code review 修复:
   - [x] SQL IN 分批（SQLITE_IN_CHUNK=900），防超大文件夹溢出
   - [x] colorHist backfill: 预 prepare UPDATE 语句 + 新对象替代就地突变 + 错误日志
+  - [x] enrichGroupsWithStatus 调用链分批: getReviewStatuses + getPhotoMetaBatch 均加 SQLITE_IN_CHUNK
+  - [x] SSE 心跳: 移除背压永久停止逻辑，改为跳过本次等待下次重试
+  - [x] SSE abort: 移除冗余 aborted 布尔量，统一使用 controller.signal.aborted
+  - [x] buildGroups abort 检查: 断连时跳过 O(n²) 聚类
+  - [x] getSimilarStats 接受可选参数，与 getSimilarGroups 保持一致
+  - [x] /groups 和 /stats 路由: 修复 falsy-zero `|| undefined` → 显式 undefined 检查
   - [x] restorePhotos: 失败项 continue 跳过（不 return []），避免部分恢复泄漏
   - [x] computeDHash: 移除动态 `import('fs')`，用 sharp metadata.size 替代 fs.stat
   - [x] agent-index.md: 更新任务路由表和数据模型位置
@@ -130,7 +136,8 @@
   - [x] `req.on('close', ...)` 检测客户端断连
   - [x] `analyzeFolder` 接收 `AbortSignal`，断连时提前退出
   - [x] 添加 15s 心跳 (`:keepalive\n\n`)
-  - [x] 检查 `res.write()` 返回值处理背压
+  - [x] 心跳背压处理: 跳过本次等待下次重试（不永久停止）
+  - [x] 统一使用 `controller.signal.aborted`，移除冗余布尔量
 - [x] 4.2 新建 `middleware/requestLogger.ts`
   - [x] 记录 method, path, status, duration
   - [x] 可选: 添加请求 ID (x-request-id)
